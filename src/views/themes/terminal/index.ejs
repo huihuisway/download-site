@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/themes/terminal.css">
+</head>
+<body>
+
+  <header class="term-header">
+    <div class="term-header-inner">
+      <span class="term-logo">
+        <span class="prompt">$</span> ls <span class="path">~/<%= siteInfo.site_name %></span>
+      </span>
+      <span class="term-stats"><%= formatNumber(totalFiles) %> files · <%= formatNumber(totalDownloads) %> downloads</span>
+    </div>
+  </header>
+
+  <div class="term-layout">
+    <!-- Sidebar -->
+    <aside class="term-sidebar">
+      <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 12px;"># categories</div>
+      <a href="/" class="term-nav-item active">all<span class="term-nav-count">(<%= totalFiles %>)</span></a>
+      <% for (const category of categories) { %>
+        <% const count = (filesByCategory[category] || []).length; %>
+        <a href="/category/<%= encodeURIComponent(category) %>" class="term-nav-item"><%= category %><span class="term-nav-count">(<%= count %>)</span></a>
+      <% } %>
+      <div style="margin-top: 24px;">
+        <a href="/admin" class="term-link" style="font-size: 11px;">$ sudo admin</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="term-main">
+      <% if (categories.length === 0) { %>
+        <div class="term-empty">
+          <div style="color: var(--yellow); margin-bottom: 8px;">// empty directory</div>
+          <div>no files found.</div>
+        </div>
+      <% } else { %>
+        <% for (const category of categories) { %>
+          <% const files = filesByCategory[category] || []; %>
+          <% if (files.length === 0) continue; %>
+          <div class="term-section">
+            <div class="term-section-header">
+              <span class="label">cd</span> ./<%= category %> <span style="color: var(--text-dim);">// <%= files.length %> files</span>
+            </div>
+            <% for (const file of files) { %>
+              <a href="/download/<%= file.id %>" class="term-file">
+                <div class="term-file-name"><%= file.file_name %></div>
+                <% if (file.description) { %>
+                  <div class="term-file-desc"><%= file.description %></div>
+                <% } %>
+                <div class="term-file-meta">
+                  <span class="size"><%= formatFileSize(file.file_size) %></span>
+                  <span class="term-sep">|</span>
+                  <span class="count"><%= formatNumber(file.download_count) %> dl</span>
+                </div>
+              </a>
+            <% } %>
+          </div>
+        <% } %>
+      <% } %>
+
+      <div class="term-status" style="margin-top: 24px;">
+        <span class="ok">●</span> ready
+      </div>
+    </main>
+  </div>
+
+  <footer class="term-footer">
+    <%= siteInfo.footer_text %>
+  </footer>
+
+</body>
+</html>

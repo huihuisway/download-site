@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/themes/mirror.css">
+</head>
+<body>
+
+  <header class="mirror-header">
+    <div class="mirror-header-inner">
+      <span class="mirror-title"><a href="/">Index of /<%= siteInfo.site_name %></a></span>
+      <span class="mirror-nav"><a href="/admin">admin</a></span>
+    </div>
+  </header>
+
+  <div class="mirror-content">
+    <div class="mirror-path">
+      <a href="/">downloads</a> / <a href="/category/<%= encodeURIComponent(category) %>"><%= category %></a>
+      <span style="float: right; color: #999999;"><%= stats.file_count || 0 %> files · <%= formatFileSize(stats.total_size || 0) %></span>
+    </div>
+
+    <div class="mirror-cat-list" style="margin-bottom: 12px; padding: 6px 8px; background: #F8F8F8; border: 1px solid #EEEEEE;">
+      <span style="font-size: 12px; color: #666666;">Categories: </span>
+      <% for (let i = 0; i < allCategories.length; i++) { %>
+        <% const cat = allCategories[i]; %><%
+          %><a href="/category/<%= encodeURIComponent(cat) %>" style="<%= cat === category ? 'font-weight: 500; color: #333333;' : '' %>"><%= cat %>/</a><%
+          %><span style="color: #CCCCCC; font-size: 11px;">(<%= categoryCounts[cat] || 0 %>)</span><%
+          %><% if (i < allCategories.length - 1) { %><span style="color: #DDDDDD; margin: 0 4px;">|</span><% } %>
+      <% } %>
+    </div>
+
+    <% if (files.length === 0) { %>
+      <div class="mirror-empty">No files in this category.</div>
+    <% } else { %>
+      <table class="mirror-table">
+        <thead>
+          <tr>
+            <th style="width: 45%;">Name</th>
+            <th style="text-align: right;">Size</th>
+            <th style="text-align: right;">Downloads</th>
+            <th>SHA256</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const file of files) { %>
+          <tr>
+            <td class="mirror-filename"><a href="/download/<%= file.id %>"><%= file.file_name %></a></td>
+            <td class="mirror-size"><%= formatFileSize(file.file_size) %></td>
+            <td class="mirror-size"><%= formatNumber(file.download_count) %></td>
+            <td>
+              <% if (file.sha256) { %>
+                <span class="mono" style="font-size: 11px; color: #999999;"><%= file.sha256.substring(0, 16) %></span>
+              <% } else { %>
+                <span style="color: #CCCCCC;">—</span>
+              <% } %>
+            </td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <footer class="mirror-footer">
+    <span><a href="/">&larr; parent directory</a></span>
+    <span>download-site/1.0</span>
+  </footer>
+
+</body>
+</html>

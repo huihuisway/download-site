@@ -1,0 +1,220 @@
+/* ===== Mirror / Tech Theme (镜像站/技术风) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+
+body {
+  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #FFFFFF;
+  color: #333333;
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mono {
+  font-family: "JetBrains Mono", "SF Mono", "Fira Mono", monospace;
+}
+
+/* Header */
+.mirror-header {
+  background: #F8F8F8;
+  border-bottom: 1px solid #DDDDDD;
+  padding: 8px 20px;
+}
+
+.mirror-header-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.mirror-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.mirror-title a {
+  color: #333333;
+  text-decoration: none;
+}
+
+.mirror-title a:hover {
+  text-decoration: underline;
+}
+
+.mirror-nav {
+  font-size: 12px;
+  color: #888888;
+}
+
+.mirror-nav a {
+  color: #0066CC;
+  text-decoration: none;
+}
+
+.mirror-nav a:hover {
+  text-decoration: underline;
+}
+
+/* Content */
+.mirror-content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px 20px;
+}
+
+/* Breadcrumb / path */
+.mirror-path {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: #666666;
+  margin-bottom: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #EEEEEE;
+}
+
+.mirror-path a {
+  color: #0066CC;
+  text-decoration: none;
+}
+
+.mirror-path a:hover {
+  text-decoration: underline;
+}
+
+/* Table */
+.mirror-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.mirror-table th {
+  text-align: left;
+  padding: 4px 8px;
+  font-weight: 500;
+  color: #666666;
+  border-bottom: 1px solid #DDDDDD;
+  font-size: 12px;
+}
+
+.mirror-table td {
+  padding: 3px 8px;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.mirror-table tr:hover td {
+  background: #F8F8F8;
+}
+
+.mirror-table a {
+  color: #0066CC;
+  text-decoration: none;
+}
+
+.mirror-table a:hover {
+  text-decoration: underline;
+}
+
+.mirror-filename {
+  font-family: "JetBrains Mono", monospace;
+}
+
+.mirror-size, .mirror-date {
+  font-family: "JetBrains Mono", monospace;
+  color: #666666;
+  text-align: right;
+  font-size: 12px;
+}
+
+.mirror-desc {
+  color: #999999;
+  font-size: 12px;
+  padding-left: 8px;
+}
+
+/* Section header */
+.mirror-section {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333333;
+  margin: 16px 0 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid #EEEEEE;
+}
+
+/* Category list */
+.mirror-cat-list {
+  margin: 12px 0;
+}
+
+.mirror-cat-item {
+  display: block;
+  padding: 2px 8px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+}
+
+.mirror-cat-item a {
+  color: #0066CC;
+  text-decoration: none;
+}
+
+.mirror-cat-item a:hover {
+  text-decoration: underline;
+}
+
+/* Footer */
+.mirror-footer {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  border-top: 1px solid #DDDDDD;
+  font-size: 11px;
+  color: #AAAAAA;
+  display: flex;
+  justify-content: space-between;
+}
+
+.mirror-footer a {
+  color: #888888;
+  text-decoration: none;
+}
+
+/* Empty */
+.mirror-empty {
+  padding: 40px;
+  text-align: center;
+  color: #AAAAAA;
+  font-size: 13px;
+}
+
+/* Error */
+.mirror-error {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.mirror-error h2 {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.mirror-error p {
+  color: #888888;
+  font-size: 13px;
+}
+
+.mirror-error a {
+  color: #0066CC;
+  text-decoration: none;
+  font-size: 13px;
+}

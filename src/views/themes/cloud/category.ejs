@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/themes/cloud.css">
+</head>
+<body>
+
+  <header class="cloud-header">
+    <div class="cloud-header-inner">
+      <span class="cloud-logo"><a href="/" style="color: inherit; text-decoration: none;"><%= siteInfo.site_name %></a></span>
+      <span class="cloud-stats"><%= stats.file_count || 0 %> 个文件 · <%= formatFileSize(stats.total_size || 0) %></span>
+    </div>
+  </header>
+
+  <div class="cloud-tabs">
+    <a href="/" class="cloud-tab">全部</a>
+    <% for (const cat of allCategories) { %>
+      <a href="/category/<%= encodeURIComponent(cat) %>" class="cloud-tab<%= cat === category ? ' active' : '' %>"><%= cat %><span class="tab-count"><%= categoryCounts[cat] || 0 %></span></a>
+    <% } %>
+  </div>
+
+  <div class="cloud-content">
+    <% if (files.length === 0) { %>
+      <div class="cloud-empty">此分类下暂无文件</div>
+    <% } else { %>
+      <div class="cloud-card">
+        <table class="cloud-table">
+          <thead>
+            <tr>
+              <th>文件名</th>
+              <th style="width: 100px; text-align: right;">大小</th>
+              <th style="width: 80px; text-align: right;">下载</th>
+              <th style="width: 140px;">SHA256</th>
+              <th style="width: 80px; text-align: right;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (const file of files) { %>
+            <tr>
+              <td>
+                <div class="cloud-filename">
+                  <div class="cloud-file-icon cloud-icon-<%= getFileIconClass(file.file_name) %>"><%= getFileExt(file.file_name) %></div>
+                  <div>
+                    <div class="cloud-file-name"><%= file.file_name %></div>
+                    <% if (file.description) { %><div class="cloud-file-desc"><%= file.description %></div><% } %>
+                  </div>
+                </div>
+              </td>
+              <td class="cloud-muted" style="text-align: right;"><%= formatFileSize(file.file_size) %></td>
+              <td class="cloud-muted" style="text-align: right;"><%= formatNumber(file.download_count) %></td>
+              <td>
+                <% if (file.sha256) { %>
+                  <span class="mono" style="font-size: 0.7rem; color: #86909C;"><%= file.sha256.substring(0, 12) %>...</span>
+                <% } else { %>
+                  <span style="font-size: 0.75rem; color: #C9CDD4;">—</span>
+                <% } %>
+              </td>
+              <td style="text-align: right;">
+                <a href="/download/<%= file.id %>" class="cloud-dl-btn">下载</a>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+
+  <footer class="cloud-footer"><%= siteInfo.footer_text %></footer>
+
+</body>
+</html>

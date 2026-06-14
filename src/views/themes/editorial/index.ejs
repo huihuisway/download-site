@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/themes/editorial.css">
+</head>
+<body>
+
+<div style="display: flex; min-height: 100vh; max-width: 1100px; margin: 0 auto;">
+
+  <!-- Sidebar -->
+  <aside style="width: 200px; flex-shrink: 0; border-right: 1px solid #E5E5E5; padding: 48px 24px 48px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto;">
+    <!-- Logo / Title -->
+    <h1 class="page-title" style="font-size: 1.1rem; margin-bottom: 6px;">Downloads</h1>
+    <p class="muted" style="font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 32px;">
+      <%= formatNumber(totalFiles) %> files · <%= formatNumber(totalDownloads) %> downloads
+    </p>
+
+    <!-- Category Nav -->
+    <nav>
+      <a href="/" class="nav-item active" style="margin-bottom: 2px;">
+        全部
+        <span class="nav-count"><%= totalFiles %></span>
+      </a>
+      <% for (const category of categories) { %>
+        <% const count = (filesByCategory[category] || []).length; %>
+        <a href="/category/<%= encodeURIComponent(category) %>" class="nav-item" style="margin-bottom: 2px;">
+          <%= category %>
+          <span class="nav-count"><%= count %></span>
+        </a>
+      <% } %>
+    </nav>
+
+    <!-- Bottom -->
+    <div style="position: absolute; bottom: 24px; left: 32px;">
+      <a href="/admin" class="back-link">管理后台 →</a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main style="flex: 1; padding: 48px 40px; min-width: 0;">
+    <% if (categories.length === 0) { %>
+      <p class="empty-text" style="padding: 80px 0; text-align: center;">暂无文件。管理员可通过后台上传。</p>
+    <% } else { %>
+      <% for (const category of categories) { %>
+        <% const files = filesByCategory[category] || []; %>
+        <% if (files.length === 0) continue; %>
+
+        <!-- Category Section -->
+        <section class="fade-in" style="margin-bottom: 48px;">
+          <p class="category-label" style="margin-bottom: 4px;"><%= category %></p>
+          <hr class="rule-thick" style="margin-bottom: 0;">
+
+          <% for (const file of files) { %>
+            <a href="/download/<%= file.id %>" class="file-entry">
+              <div class="file-name"><%= file.file_name %></div>
+              <% if (file.description) { %>
+                <div class="file-desc"><%= file.description %></div>
+              <% } %>
+              <div class="file-meta">
+                <%= formatFileSize(file.file_size) %>
+                <span style="margin: 0 6px; color: #DDDDDD;">·</span>
+                <%= formatNumber(file.download_count) %> downloads
+                <% if (file.last_download_at) { %>
+                  <span style="margin: 0 6px; color: #DDDDDD;">·</span>
+                  last <%= formatDate(file.last_download_at) %>
+                <% } %>
+              </div>
+            </a>
+          <% } %>
+        </section>
+      <% } %>
+    <% } %>
+  </main>
+</div>
+
+<!-- Footer -->
+<footer style="max-width: 1100px; margin: 0 auto; padding: 24px 40px; border-top: 1px solid #E5E5E5;">
+  <p class="footer-text"><%= siteInfo.footer_text %></p>
+</footer>
+
+</body>
+</html>

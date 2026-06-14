@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/themes/editorial.css">
+</head>
+<body>
+
+<div style="display: flex; min-height: 100vh; max-width: 1100px; margin: 0 auto;">
+
+  <!-- Sidebar -->
+  <aside style="width: 200px; flex-shrink: 0; border-right: 1px solid #E5E5E5; padding: 48px 24px 48px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto;">
+    <h1 class="page-title" style="font-size: 1.1rem; margin-bottom: 6px;">Downloads</h1>
+    <p class="muted" style="font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 32px;">
+      <%= stats.file_count || 0 %> files · <%= formatNumber(stats.total_downloads || 0) %> downloads
+    </p>
+
+    <nav>
+      <a href="/" class="nav-item" style="margin-bottom: 2px;">
+        全部
+      </a>
+      <% for (const cat of allCategories) { %>
+        <a href="/category/<%= encodeURIComponent(cat) %>" class="nav-item<%= cat === category ? ' active' : '' %>" style="margin-bottom: 2px;">
+          <%= cat %>
+          <span class="nav-count"><%= categoryCounts[cat] || 0 %></span>
+        </a>
+      <% } %>
+    </nav>
+
+    <div style="position: absolute; bottom: 24px; left: 32px;">
+      <a href="/" class="back-link">← 返回首页</a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main style="flex: 1; padding: 48px 40px; min-width: 0;">
+
+    <!-- Category Header -->
+    <div class="fade-in" style="margin-bottom: 32px;">
+      <p class="category-label"><%= category %></p>
+      <hr class="rule-thick" style="margin: 4px 0 16px 0;">
+      <p class="muted" style="font-size: 0.8rem;">
+        <%= formatFileSize(stats.total_size || 0) %>
+        <span style="margin: 0 8px; color: #DDDDDD;">·</span>
+        <%= formatNumber(stats.total_downloads || 0) %> downloads
+      </p>
+    </div>
+
+    <% if (files.length === 0) { %>
+      <p class="empty-text" style="padding: 80px 0; text-align: center;">此分类下暂无文件</p>
+    <% } else { %>
+      <% for (const file of files) { %>
+        <a href="/download/<%= file.id %>" class="file-entry fade-in">
+          <div class="file-name"><%= file.file_name %></div>
+          <% if (file.description) { %>
+            <div class="file-desc"><%= file.description %></div>
+          <% } %>
+          <div class="file-meta">
+            <%= formatFileSize(file.file_size) %>
+            <span style="margin: 0 6px; color: #DDDDDD;">·</span>
+            <%= formatNumber(file.download_count) %> downloads
+            <% if (file.sha256) { %>
+              <span style="margin: 0 6px; color: #DDDDDD;">·</span>
+              <span class="sha-code"><%= file.sha256.substring(0, 16) %></span>
+            <% } %>
+          </div>
+        </a>
+      <% } %>
+    <% } %>
+  </main>
+</div>
+
+<footer style="max-width: 1100px; margin: 0 auto; padding: 24px 40px; border-top: 1px solid #E5E5E5;">
+  <p class="footer-text"><%= siteInfo.footer_text %></p>
+</footer>
+
+</body>
+</html>
