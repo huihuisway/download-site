@@ -1,24 +1,29 @@
 const { db } = require('../db');
 const { config } = require('../config');
 const { SYNC_BATCH_SIZE, CHECKSUM_BATCH_SIZE } = require('../config/constants');
+const fs = require('fs');
+const fsp = require('fs').promises;
+const path = require('path');
 
-const getAllPhysicalFiles = () => {
+const getAllPhysicalFiles = async () => {
   const files = [];
-  const fs = require('fs');
-  const path = require('path');
 
-  const scanDir = (dir, relativeBase = '') => {
-    if (!fs.existsSync(dir)) return;
+  const scanDir = async (dir, relativeBase = '') => {
+    let entries;
+    try {
+      entries = await fsp.readdir(dir, { withFileTypes: true });
+    } catch {
+      return; // 目录不存在或无权限
+    }
 
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       const relativePath = relativeBase ? path.join(relativeBase, entry.name) : entry.name;
 
       if (entry.isDirectory()) {
-        scanDir(fullPath, relativePath);
+        await scanDir(fullPath, relativePath);
       } else if (entry.isFile()) {
-        const stat = fs.statSync(fullPath);
+        const stat = await fsp.stat(fullPath);
         files.push({
           file_name: entry.name,
           file_path: relativePath.replace(/\\/g, '/'),
@@ -31,7 +36,7 @@ const getAllPhysicalFiles = () => {
     }
   };
 
-  scanDir(config.downloadDir);
+  await scanDir(config.downloadDir);
   return files;
 };
 
@@ -39,8 +44,8 @@ const getAllDbRecords = () => {
   return db.prepare('SELECT * FROM download_logs').all();
 };
 
-const syncDirectory = () => {
-  const physicalFiles = getAllPhysicalFiles();
+const syncDirectory = async () => {
+  const physicalFiles = await getAllPhysicalFiles();
   const dbRecords = getAllDbRecords();
 
   const dbPathMap = new Map();
@@ -131,7 +136,7 @@ const syncDirectory = () => {
 };
 
 const scheduleChecksumComputation = (filePaths) => {
-  const { computeChecksum } = require('./checksum.service');
+  const { computeChecksumSync } = require('./checksum.service');
 
   const processBatch = (batch) => {
     const updateStmt = db.prepare('UPDATE download_logs SET sha256 = ?, updated_at = CURRENT_TIMESTAMP WHERE file_path = ?');
@@ -140,7 +145,7 @@ const scheduleChecksumComputation = (filePaths) => {
       for (const filePath of batch) {
         try {
           const fullPath = require('path').join(config.downloadDir, filePath);
-          const hash = computeChecksum(fullPath);
+          const hash = computeChecksumSync(fullPath);
           updateStmt.run(hash, filePath);
         } catch (err) {
           console.error(`[sync] SHA256 计算失败: ${filePath}`, err.message);

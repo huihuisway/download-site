@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const router = express.Router();
 const { db } = require('../db');
 const { config } = require('../config');
@@ -52,7 +53,6 @@ router.get('/', (req, res) => {
   const categories = [...new Set(rawCategories)].sort();
 
   // 补充物理目录
-  const fs = require('fs');
   if (fs.existsSync(config.downloadDir)) {
     const dirs = fs.readdirSync(config.downloadDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
@@ -130,6 +130,28 @@ router.get('/download/:id', (req, res, next) => {
     return res.status(404).render(`themes/${themeService.getTheme()}/error`, {
       title: '文件不存在',
       message: '请求的文件不存在或已被删除。',
+      errorType: 'not_found',
+      fileName: null,
+    });
+  }
+
+  // 审核状态拦截
+  if (file.approval_status === 'pending') {
+    return res.status(403).render(`themes/${themeService.getTheme()}/error`, {
+      title: '文件暂不可下载',
+      message: '此文件正在等待论坛审核，审核通过后将开放下载。请耐心等待，如有疑问请联系论坛管理组。',
+      errorType: 'pending',
+      fileName: file.file_name,
+    });
+  }
+  if (file.approval_status === 'rejected') {
+    return res.status(403).render(`themes/${themeService.getTheme()}/error`, {
+      title: '文件已被拒绝',
+      message: file.reject_reason
+        ? `此文件未通过论坛审核。拒绝原因：${file.reject_reason}`
+        : '此文件未通过论坛审核，无法下载。如有疑问请联系论坛管理组。',
+      errorType: 'rejected',
+      fileName: file.file_name,
     });
   }
 
@@ -144,7 +166,6 @@ router.get('/download/:id', (req, res, next) => {
     });
   }
 
-  const fs = require('fs');
   if (!fs.existsSync(fullPath)) {
     return res.status(404).render(`themes/${themeService.getTheme()}/error`, {
       title: '文件不存在',

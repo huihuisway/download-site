@@ -1,35 +1,7 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import {
-  FolderTree,
-  Plus,
-  Trash2,
-  Files,
-  Download,
-  HardDrive,
-  RefreshCw,
-} from 'lucide-react';
+import { FolderTree, Plus, Trash2, Files, Download, HardDrive, RefreshCw } from 'lucide-react';
 import api from '../api/client';
-import { ShineButton } from '../components/ui/shine-button';
-import { AnimatedCard } from '../components/ui/animated-card';
-import { GradientText } from '../components/ui/gradient-text';
-
-function formatSize(bytes) {
-  if (!bytes) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const k = 1024;
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${units[i]}`;
-}
-
-const categoryColors = [
-  'from-blue-500 to-blue-600',
-  'from-emerald-500 to-emerald-600',
-  'from-violet-500 to-violet-600',
-  'from-amber-500 to-orange-500',
-  'from-pink-500 to-rose-500',
-  'from-cyan-500 to-teal-500',
-];
+import { formatSize } from '../lib/utils';
 
 function Categories() {
   const [categories, setCategories] = useState([]);
@@ -39,14 +11,9 @@ function Categories() {
 
   const loadCategories = async () => {
     setLoading(true);
-    try {
-      const result = await api.getCategories();
-      setCategories(result.categories);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    try { setCategories((await api.getCategories()).categories); }
+    catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { loadCategories(); }, []);
@@ -54,15 +21,9 @@ function Categories() {
   const handleCreate = async () => {
     if (!newName.trim()) return;
     setCreating(true);
-    try {
-      await api.createCategory(newName.trim());
-      setNewName('');
-      await loadCategories();
-    } catch (err) {
-      alert(`创建失败: ${err.message}`);
-    } finally {
-      setCreating(false);
-    }
+    try { await api.createCategory(newName.trim()); setNewName(''); await loadCategories(); }
+    catch (err) { alert(`创建失败: ${err.message}`); }
+    finally { setCreating(false); }
   };
 
   const handleDelete = async (name) => {
@@ -73,99 +34,67 @@ function Categories() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold"><GradientText>目录管理</GradientText></h2>
-        <p className="text-sm text-gray-400 mt-1">管理文件分类目录</p>
+        <h2 className="page-title">目录管理</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>管理文件分类目录</p>
       </div>
 
-      {/* Create */}
-      <AnimatedCard delay={0.1} className="!p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">创建新分类</h3>
+      <div className="card !p-5">
+        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>创建新分类</h3>
         <div className="flex gap-3">
-          <input
-            type="text"
-            className="input-field flex-1"
-            placeholder="输入分类名称（如: software, documents）"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-          />
-          <ShineButton onClick={handleCreate} disabled={creating || !newName.trim()}>
-            <Plus className="w-4 h-4 mr-1.5" />
-            {creating ? '创建中...' : '创建'}
-          </ShineButton>
+          <input type="text" className="input-field flex-1" placeholder="输入分类名称（如: software, documents）"
+            value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreate()} />
+          <button className="btn-primary" onClick={handleCreate} disabled={creating || !newName.trim()}>
+            <Plus className="w-4 h-4 mr-1.5" />{creating ? '创建中...' : '创建'}
+          </button>
         </div>
-      </AnimatedCard>
+      </div>
 
-      {/* Category Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-gray-300">
+        <div className="flex items-center justify-center py-16" style={{ color: 'var(--text-muted)' }}>
           <RefreshCw className="w-5 h-5 animate-spin mr-2" /> 加载中...
         </div>
       ) : categories.length === 0 ? (
-        <AnimatedCard className="text-center py-16">
-          <FolderTree className="w-12 h-12 mx-auto mb-3 text-gray-200" />
-          <p className="text-gray-400">暂无分类</p>
-        </AnimatedCard>
+        <div className="card text-center py-16">
+          <FolderTree className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+          <p style={{ color: 'var(--text-muted)' }}>暂无分类</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((cat, i) => {
-            const colorClass = categoryColors[i % categoryColors.length];
+          {categories.map((cat) => {
             const isEmpty = cat.file_count === 0;
-
             return (
-              <motion.div
-                key={cat.category}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + i * 0.05 }}
-                className="group relative rounded-2xl border border-gray-200/80 bg-white hover:border-primary-200 hover:shadow-lg transition-all duration-300 overflow-hidden"
-              >
-                {/* Top gradient bar */}
-                <div className={`h-1 bg-gradient-to-r ${colorClass}`} />
-
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colorClass} flex items-center justify-center shadow-lg`}>
-                        <FolderTree className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900">{cat.category}</h4>
-                        <p className="text-xs text-gray-400">{isEmpty ? '空分类' : `${cat.file_count} 个文件`}</p>
-                      </div>
+              <div key={cat.category} className="card !p-5 group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 flex items-center justify-center" style={{ background: 'var(--muted)' }}>
+                      <FolderTree className="w-5 h-5" style={{ color: 'var(--primary)' }} />
                     </div>
-                    <button
-                      onClick={() => handleDelete(cat.category)}
-                      disabled={!isEmpty}
-                      className="btn-ghost !p-1.5 opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-all"
-                      title={isEmpty ? '删除' : '请先清空文件'}
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                    </button>
-                  </div>
-
-                  {/* Stats row */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-gray-50 rounded-xl p-2.5 text-center">
-                      <Files className="w-3.5 h-3.5 mx-auto mb-1 text-gray-400" />
-                      <p className="text-sm font-bold text-gray-900 tabular-nums">{cat.file_count}</p>
-                      <p className="text-[10px] text-gray-400">文件</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-2.5 text-center">
-                      <Download className="w-3.5 h-3.5 mx-auto mb-1 text-gray-400" />
-                      <p className="text-sm font-bold text-gray-900 tabular-nums">{cat.total_downloads}</p>
-                      <p className="text-[10px] text-gray-400">下载</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-2.5 text-center">
-                      <HardDrive className="w-3.5 h-3.5 mx-auto mb-1 text-gray-400" />
-                      <p className="text-sm font-bold text-gray-900 truncate">{formatSize(cat.total_size)}</p>
-                      <p className="text-[10px] text-gray-400">大小</p>
+                    <div>
+                      <h4 className="font-semibold" style={{ color: 'var(--text)' }}>{cat.category}</h4>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{isEmpty ? '空分类' : `${cat.file_count} 个文件`}</p>
                     </div>
                   </div>
+                  <button onClick={() => handleDelete(cat.category)} disabled={!isEmpty}
+                    className="btn-ghost !p-1.5 opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity"
+                    title={isEmpty ? '删除' : '请先清空文件'}>
+                    <Trash2 className="w-3.5 h-3.5" style={{ color: 'var(--error)' }} />
+                  </button>
                 </div>
-              </motion.div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { icon: Files, value: cat.file_count, label: '文件' },
+                    { icon: Download, value: cat.total_downloads, label: '下载' },
+                    { icon: HardDrive, value: formatSize(cat.total_size), label: '大小' },
+                  ].map(({ icon: Icon, value, label }) => (
+                    <div key={label} className="p-2.5 text-center" style={{ background: 'var(--muted)' }}>
+                      <Icon className="w-3.5 h-3.5 mx-auto mb-1" style={{ color: 'var(--text-muted)' }} />
+                      <p className="text-sm font-bold tabular-nums truncate" style={{ color: 'var(--text)' }}>{value}</p>
+                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             );
           })}
         </div>

@@ -4,7 +4,7 @@ const multer = require('multer');
 const { config } = require('../config');
 const { MAX_FILE_SIZE } = require('../config/constants');
 const { db } = require('../db');
-const { sanitizeFilename, isAllowedExtension, ensureInSandbox, getCategoryFromPath } = require('../utils/filename');
+const { sanitizeFilename, isAllowedExtension, ensureInSandbox } = require('../utils/filename');
 const { guessMimeType } = require('./sync.service');
 
 // multer 存储配置
@@ -51,7 +51,7 @@ const upload = multer({
   },
 });
 
-const uploadFiles = (req, res, next) => {
+const uploadFiles = (req, res, extraFields = {}) => {
   upload.array('files', 20)(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -69,9 +69,9 @@ const uploadFiles = (req, res, next) => {
 
     const insertStmt = db.prepare(`
       INSERT OR REPLACE INTO download_logs
-        (file_name, file_path, category, file_size, mime_type, file_mtime, uploaded_by)
+        (file_name, file_path, category, file_size, mime_type, file_mtime, uploaded_by, approval_status, approval_source, approval_resource_id)
       VALUES
-        (@file_name, @file_path, @category, @file_size, @mime_type, @file_mtime, @uploaded_by)
+        (@file_name, @file_path, @category, @file_size, @mime_type, @file_mtime, @uploaded_by, @approval_status, @approval_source, @approval_resource_id)
     `);
 
     const results = [];
@@ -82,7 +82,7 @@ const uploadFiles = (req, res, next) => {
         const stat = fs.statSync(file.path);
         const mime = guessMimeType(file.originalname);
 
-        insertStmt.run({
+        const insertResult = insertStmt.run({
           file_name: file.filename,
           file_path: relativePath,
           category,
@@ -90,9 +90,13 @@ const uploadFiles = (req, res, next) => {
           mime_type: mime,
           file_mtime: stat.mtime.toISOString(),
           uploaded_by: uploadedBy,
+          approval_status: extraFields.approval_status || null,
+          approval_source: extraFields.approval_source || null,
+          approval_resource_id: extraFields.approval_resource_id || null,
         });
 
         results.push({
+          id: insertResult.lastInsertRowid,
           file_name: file.filename,
           file_path: relativePath,
           file_size: stat.size,

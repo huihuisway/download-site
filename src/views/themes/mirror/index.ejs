@@ -1,63 +1,34 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %></title>
-  <link rel="stylesheet" href="/css/themes/mirror.css">
-</head>
-<body>
-
-  <header class="mirror-header">
-    <div class="mirror-header-inner">
-      <span class="mirror-title"><a href="/">Index of /<%= siteInfo.site_name %></a></span>
-      <span class="mirror-nav"><%= formatNumber(totalFiles) %> files · <a href="/admin">admin</a></span>
+<%- include('../../partials/head', { title, currentTheme, siteInfo }) %>
+<div class="mi-header">
+  <div class="page-wrap">
+    <div class="mi-header-inner">
+      <a href="/" class="mi-title"><%= siteInfo.site_name %></a>
+      <a href="/admin" class="mi-nav-link">管理后台</a>
     </div>
-  </header>
-
-  <div class="mirror-content">
-    <% if (categories.length === 0) { %>
-      <div class="mirror-empty">No files available.</div>
-    <% } else { %>
-      <% for (const category of categories) { %>
-        <% const files = filesByCategory[category] || []; %>
-        <% if (files.length === 0) continue; %>
-
-        <div class="mirror-section"><a href="/category/<%= encodeURIComponent(category) %>"><%= category %>/</a></div>
-        <table class="mirror-table">
-          <thead>
-            <tr>
-              <th style="width: 50%;">Name</th>
-              <th style="text-align: right;">Size</th>
-              <th style="text-align: right;">Downloads</th>
-              <th>Description</th>
-            </tr>
-          </thead>
+  </div>
+</div>
+<div class="mi-content page-wrap">
+  <div class="mi-stats"><strong><%= totalFiles %></strong> 个文件 · <strong><%= formatNumber(totalDownloads) %></strong> 次下载</div>
+  <% if (categories.length === 0) { %>
+    <div class="mi-empty">暂无文件</div>
+  <% } else { %>
+    <% categories.forEach(function(cat) { %>
+      <% var files = filesByCategory[cat] || []; %>
+      <% if (files.length > 0) { %>
+        <h2 class="mi-section"><%= cat %>/</h2>
+        <table class="mi-table">
           <tbody>
-            <% for (const file of files) { %>
-            <tr>
-              <td class="mirror-filename"><a href="/download/<%= file.id %>"><%= file.file_name %></a></td>
-              <td class="mirror-size"><%= formatFileSize(file.file_size) %></td>
-              <td class="mirror-size"><%= formatNumber(file.download_count) %></td>
-              <td class="mirror-desc"><%= file.description || '' %></td>
-            </tr>
-            <% } %>
+            <% files.forEach(function(file) { %>
+              <tr>
+                <td style="width:40%"><a href="/download/<%= file.id %>" class="mi-filename"><%= file.file_name %></a></td>
+                <td class="mi-size mi-right" style="width:15%"><%= formatFileSize(file.file_size) %></td>
+                <td class="mi-desc"><%= file.description || '' %></td>
+              </tr>
+            <% }); %>
           </tbody>
         </table>
       <% } %>
-    <% } %>
-  </div>
-
-  <footer class="mirror-footer">
-    <span><%= siteInfo.footer_text %></span>
-    <% if (siteInfo.footer_links && siteInfo.footer_links.length) { %>
-      <span>
-        <% for (const link of siteInfo.footer_links) { %>
-          <a href="<%= link.url %>"><%= link.label %></a>
-        <% } %>
-      </span>
-    <% } %>
-  </footer>
-
-</body>
-</html>
+    <% }); %>
+  <% } %>
+</div>
+<%- include('../../partials/footer') %>

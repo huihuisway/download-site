@@ -39,17 +39,17 @@ describe('sync service', () => {
     db._save();
   });
 
-  it('应该能扫描物理文件', () => {
+  it('应该能扫描物理文件', async () => {
     const { getAllPhysicalFiles } = require('../src/services/sync.service');
-    const files = getAllPhysicalFiles();
+    const files = await getAllPhysicalFiles();
     assert.ok(files.length >= 2);
     assert.ok(files.some((f) => f.file_name === 'readme.txt'));
     assert.ok(files.some((f) => f.file_name === 'app.zip'));
   });
 
-  it('应该能执行同步', () => {
+  it('应该能执行同步', async () => {
     const { syncDirectory } = require('../src/services/sync.service');
-    const result = syncDirectory();
+    const result = await syncDirectory();
     assert.ok(result.inserted >= 2, `Expected >=2 inserted, got ${result.inserted}`);
     assert.strictEqual(result.deleted, 0);
   });
@@ -60,14 +60,14 @@ describe('sync service', () => {
     assert.ok(count >= 2);
   });
 
-  it('应该检测到删除的文件并清理记录', () => {
+  it('应该检测到删除的文件并清理记录', async () => {
     const { syncDirectory } = require('../src/services/sync.service');
     const { db } = require('../src/db');
 
     // 删除一个物理文件
     fs.unlinkSync(path.join(testDir, 'documents', 'readme.txt'));
 
-    const result = syncDirectory();
+    const result = await syncDirectory();
     assert.ok(result.deleted >= 1, `Expected >=1 deleted, got ${result.deleted}`);
 
     // 验证 DB 记录已被清理

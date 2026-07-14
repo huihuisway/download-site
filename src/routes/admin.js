@@ -72,19 +72,7 @@ router.get('/files/:id', (req, res) => {
   }
 });
 
-router.post('/files/upload', (req, res, next) => {
-  try {
-    fileService.uploadFiles(req, res, (err) => {
-      if (err) {
-        console.error('[upload] multer error:', err.message);
-        return res.status(400).json({ error: err.message });
-      }
-    });
-  } catch (err) {
-    console.error('[upload] error:', err.message);
-    return res.status(500).json({ error: err.message });
-  }
-});
+router.post('/files/upload', fileService.uploadFiles);
 
 router.delete('/files/:id', (req, res) => {
   try {
@@ -146,9 +134,9 @@ router.put('/files/:id/move', (req, res) => {
 });
 
 // ===== 同步 =====
-router.post('/sync', (req, res) => {
+router.post('/sync', async (req, res) => {
   try {
-    const result = syncDirectory();
+    const result = await syncDirectory();
     res.json({
       message: '同步完成',
       ...result,
@@ -231,6 +219,38 @@ router.put('/settings', (req, res) => {
   try {
     const result = themeService.updateSiteInfo(req.body);
     res.json({ siteInfo: result, message: '站点信息已更新' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ===== API Key 管理 =====
+const apiKeyService = require('../services/api-key.service');
+
+router.get('/api-keys', (req, res) => {
+  try {
+    const keys = apiKeyService.listKeys();
+    res.json({ keys });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/api-keys', (req, res) => {
+  try {
+    const { name, permission } = req.body;
+    const key = apiKeyService.generateKey(name, permission);
+    // 创建时返回完整 Key（仅此一次）
+    res.json({ key });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/api-keys/:id', (req, res) => {
+  try {
+    const result = apiKeyService.revokeKey(parseInt(req.params.id, 10));
+    res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

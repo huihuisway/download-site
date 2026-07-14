@@ -6,16 +6,25 @@ const getDashboardStats = () => {
   const totalSize = db.prepare('SELECT COALESCE(SUM(file_size), 0) as total FROM download_logs').get().total;
   const totalCategories = db.prepare('SELECT COUNT(DISTINCT category) as count FROM download_logs').get().count;
 
-  // 近 7 天下载趋势
-  const recentDownloads = db.prepare(`
-    SELECT
-      DATE(last_download_at) as date,
-      SUM(download_count) as count
+  // 近 7 天下载趋势（在 JS 层面计算，因 JSON DB 不支持 DATE 函数）
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const recentDownloadsRaw = db.prepare(`
+    SELECT id, last_download_at, download_count
     FROM download_logs
-    WHERE last_download_at >= DATE('now', '-7 days')
-    GROUP BY DATE(last_download_at)
-    ORDER BY date
+    WHERE last_download_at IS NOT NULL
   `).all();
+
+  // 按日期分组
+  const dailyMap = {};
+  for (const record of recentDownloadsRaw) {
+    if (record.last_download_at >= sevenDaysAgo) {
+      const date = record.last_download_at.slice(0, 10); // 'YYYY-MM-DD'
+      dailyMap[date] = (dailyMap[date] || 0) + (Number(record.download_count) || 0);
+    }
+  }
+  const recentDownloads = Object.entries(dailyMap)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   // 最近下载的文件
   const recentFiles = db.prepare(`
@@ -108,20 +117,17 @@ const getFileById = (fileId) => {
 };
 
 const recordDownload = (fileId) => {
-  const file = db.prepare('SELECT * FROM download_logs WHERE id = ?').get(fileId);
-  if (file) {
-    db.prepare(`
-      UPDATE download_logs
-      SET download_count = @count,
-          last_download_at = @ts,
-          updated_at = @ts
-      WHERE id = @id
-    `).run({
-      count: (file.download_count || 0) + 1,
-      ts: new Date().toISOString(),
-      id: fileId,
-    });
-  }
+  // 原子递增，避免竞态条件
+  db.prepare(`
+    UPDATE download_logs
+    SET download_count = download_count + 1,
+        last_download_at = @ts,
+        updated_at = @ts
+    WHERE id = @id
+  `).run({
+    ts: new Date().toISOString(),
+    id: fileId,
+  });
 };
 
 module.exports = {

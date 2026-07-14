@@ -1,0 +1,109 @@
+const { describe, it, before, after } = require('node:test');
+const assert = require('node:assert');
+const path = require('path');
+const fs = require('fs');
+
+process.env.NODE_ENV = 'test';
+process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-stats.db');
+process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-stats-test');
+
+describe('stats service', () => {
+  const testDir = process.env.DOWNLOAD_DIR;
+
+  before(() => {
+    fs.mkdirSync(path.join(testDir, 'docs'), { recursive: true });
+    fs.mkdirSync(path.join(__dirname, '..', 'data'), { recursive: true });
+    fs.writeFileSync(path.join(testDir, 'docs', 'a.txt'), 'hello');
+
+    const { db } = require('../src/db');
+    db.data.download_logs = [];
+    db.data._nextId = 1;
+    db._save();
+  });
+
+  after(() => {
+    try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
+  });
+
+  describe('recordDownload', () => {
+    it('应该原子递增下载计数', () => {
+      const { db } = require('../src/db');
+      const statsService = require('../src/services/stats.service');
+
+      db.prepare(
+        'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count) VALUES (?, ?, ?, ?, ?)'
+      ).run('a.txt', 'docs/a.txt', 'docs', 5, 0);
+
+      statsService.recordDownload(1);
+      let record = db.prepare('SELECT * FROM download_logs WHERE id = ?').get(1);
+      assert.strictEqual(record.download_count, 1);
+      assert.ok(record.last_download_at);
+
+      statsService.recordDownload(1);
+      record = db.prepare('SELECT * FROM download_logs WHERE id = ?').get(1);
+      assert.strictEqual(record.download_count, 2);
+    });
+
+    it('多次递增应保持正确', () => {
+      const statsService = require('../src/services/stats.service');
+      const { db } = require('../src/db');
+
+      for (let i = 0; i < 10; i++) {
+        statsService.recordDownload(1);
+      }
+
+      const record = db.prepare('SELECT * FROM download_logs WHERE id = ?').get(1);
+      assert.strictEqual(record.download_count, 12); // 2 + 10
+    });
+  });
+
+  describe('getDashboardStats', () => {
+    it('应该返回正确的统计数据', () => {
+      const { db } = require('../src/db');
+      const statsService = require('../src/services/stats.service');
+
+      // 添加更多文件
+      db.prepare(
+        'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count) VALUES (?, ?, ?, ?, ?)'
+      ).run('b.zip', 'software/b.zip', 'software', 1024, 5);
+
+      const stats = statsService.getDashboardStats();
+      assert.strictEqual(stats.totalFiles, 2);
+      assert.ok(stats.totalDownloads >= 12);
+      assert.strictEqual(stats.totalSize, 1024 + 5); // file_size of a.txt (5 bytes) + b.zip (1024)
+    });
+
+    it('分类数应使用 COUNT(DISTINCT)', () => {
+      const statsService = require('../src/services/stats.service');
+      const stats = statsService.getDashboardStats();
+      assert.strictEqual(stats.totalCategories, 2); // docs, software
+    });
+  });
+
+  describe('getAllFiles', () => {
+    it('应该支持分页', () => {
+      const statsService = require('../src/services/stats.service');
+      const result = statsService.getAllFiles({ page: 1, pageSize: 1 });
+      assert.strictEqual(result.files.length, 1);
+      assert.strictEqual(result.pagination.totalPages, 2);
+    });
+
+    it('应该支持分类过滤', () => {
+      const statsService = require('../src/services/stats.service');
+      const result = statsService.getAllFiles({ category: 'docs' });
+      assert.ok(result.files.every((f) => f.category === 'docs'));
+    });
+  });
+
+  describe('getCategoryStats', () => {
+    it('应按分类聚合统计', () => {
+      const statsService = require('../src/services/stats.service');
+      const stats = statsService.getCategoryStats();
+      assert.ok(stats.length >= 2);
+      const docsStat = stats.find((s) => s.category === 'docs');
+      assert.ok(docsStat);
+      assert.strictEqual(docsStat.file_count, 1);
+    });
+  });
+});

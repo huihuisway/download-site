@@ -52,11 +52,26 @@ const validateConfig = () => {
     }
   }
 
+  // 检查 session secret 安全性
+  const sessionSecretWarnings = [];
+  if (config.session.secret === 'dev-secret-change-me') {
+    sessionSecretWarnings.push('SESSION_SECRET 使用默认值，请设置安全的随机字符串');
+  }
+  if (config.session.secret && config.session.secret.length < 32) {
+    sessionSecretWarnings.push('SESSION_SECRET 长度不足 32 字符，建议使用更长的随机字符串');
+  }
+
   if (missing.length > 0 && config.isProduction) {
     console.warn(`[config] 警告: 以下 OAuth 配置项未正确设置: ${missing.join(', ')}`);
   }
 
-  return missing.length === 0;
+  if (sessionSecretWarnings.length > 0 && config.isProduction) {
+    for (const warning of sessionSecretWarnings) {
+      console.error(`[config] 严重警告: ${warning}`);
+    }
+  }
+
+  return missing.length === 0 && sessionSecretWarnings.length === 0;
 };
 
 module.exports = { config, validateConfig };

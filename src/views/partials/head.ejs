@@ -1,22 +1,31 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN"<% if (currentTheme === 'terminal') { %> data-theme="dark"<% } %>>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>下载站 - 管理后台</title>
+  <meta name="description" content="<%= siteInfo.site_description %>">
+  <title><%= title %></title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <% if (currentTheme === 'terminal') { %>
+  <script>
+    (function(){
+      var t = localStorage.getItem('theme');
+      if (t !== 'light') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+  <% } else { %>
   <script>
     (function(){
       var t = localStorage.getItem('theme');
       if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     })();
   </script>
+  <% } %>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/clean-blue-tokens.css">
+  <link rel="stylesheet" href="/css/clean-blue-base.css">
+  <link rel="stylesheet" href="/css/themes/<%= currentTheme %>.css">
 </head>
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
-</html>

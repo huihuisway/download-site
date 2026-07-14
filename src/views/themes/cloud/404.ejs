@@ -1,16 +1,9 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>404 - 页面未找到</title>
-  <link rel="stylesheet" href="/css/themes/cloud.css">
-</head>
-<body>
-  <div class="cloud-empty" style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-    <p style="font-size: 3rem; font-weight: 700; color: #E5E6EB; margin-bottom: 8px;">404</p>
-    <p style="font-size: 1rem; color: #86909C; margin-bottom: 20px;">页面未找到</p>
-    <a href="/" class="cloud-dl-btn" style="background: #1D2129;">返回首页</a>
+<%- include('../../partials/head', { title, currentTheme, siteInfo }) %>
+<div class="page-wrap">
+  <div class="cl-error" style="max-width:480px;margin:15vh auto;text-align:center;">
+    <h1 style="font-size:1.5rem;font-weight:700;color:var(--text);margin-bottom:var(--space-3);">404</h1>
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-5);">页面未找到</p>
+    <a href="/" class="cl-dl-btn">返回首页</a>
   </div>
-</body>
-</html>
+</div>
+<%- include('../../partials/footer') %>

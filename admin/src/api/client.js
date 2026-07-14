@@ -148,6 +148,26 @@ export const api = {
     });
     return handleResponse(res);
   },
+
+  // API Key 管理
+  async getApiKeys() {
+    const res = await fetch(`${API_BASE}/api-keys`);
+    return handleResponse(res);
+  },
+
+  async createApiKey(name, permission) {
+    const res = await fetch(`${API_BASE}/api-keys`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, permission }),
+    });
+    return handleResponse(res);
+  },
+
+  async revokeApiKey(id) {
+    const res = await fetch(`${API_BASE}/api-keys/${id}`, { method: 'DELETE' });
+    return handleResponse(res);
+  },
 };
 
 export default api;

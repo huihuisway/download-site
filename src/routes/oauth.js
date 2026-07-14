@@ -1,13 +1,27 @@
 const crypto = require('crypto');
 const { config } = require('../config');
 
+/**
+ * 检查 URL 是否为安全的本地重定向地址
+ * 防止开放重定向攻击
+ */
+const isSafeReturnUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  // 允许以 / 开头的绝对路径
+  if (url.startsWith('/')) return true;
+  // 允许不含协议的相对路径
+  if (!url.includes('://')) return true;
+  // 不允许外部 URL
+  return false;
+};
+
 const startOAuthFlow = (req, res) => {
   // 生成 state 参数防 CSRF
   const state = crypto.randomBytes(16).toString('hex');
   req.session.oauthState = state;
 
-  // 保存返回地址
-  const returnUrl = req.query.returnUrl || '/admin';
+  // 保存返回地址（验证安全性）
+  const returnUrl = isSafeReturnUrl(req.query.returnUrl) ? req.query.returnUrl : '/admin';
   req.session.oauthReturnUrl = returnUrl;
 
   const params = new URLSearchParams({
@@ -90,8 +104,8 @@ const handleCallback = async (req, res) => {
         email: userData.email,
       };
 
-      // 跳转回原始页面
-      const returnUrl = req.session.oauthReturnUrl || '/admin';
+      // 跳转回原始页面（验证安全性）
+      const returnUrl = isSafeReturnUrl(req.session.oauthReturnUrl) ? req.session.oauthReturnUrl : '/admin';
       delete req.session.oauthReturnUrl;
 
       return res.redirect(returnUrl);

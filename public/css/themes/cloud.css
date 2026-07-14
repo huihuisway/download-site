@@ -1,214 +1,66 @@
-/* ===== Cloud Drive Theme (经典网盘风) ===== */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+/* ===== Cloud 主题 — Clean Blue =====
+   水平标签栏，卡片文件展示，文件类型图标 */
 
-body {
-  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #F5F7FA;
-  color: #1D2129;
-  -webkit-font-smoothing: antialiased;
+.page-wrap { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-4); }
+
+.cl-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 var(--space-4); }
+.cl-header-inner { display: flex; align-items: center; justify-content: space-between; height: var(--header-height); }
+.cl-site-name { font-size: 1.125rem; font-weight: 700; color: var(--text); }
+.cl-stats { font-size: 0.75rem; color: var(--text-muted); }
+
+.cl-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--card); overflow-x: auto; }
+.cl-tab {
+  padding: var(--space-3) var(--space-4); font-size: 0.875rem; color: var(--text-secondary);
+  border-bottom: 2px solid transparent; transition: all var(--transition-fast); text-decoration: none; white-space: nowrap;
 }
-
-/* Header */
-.cloud-header {
-  background: #FFFFFF;
-  border-bottom: 1px solid #E5E6EB;
-  padding: 0 24px;
+.cl-tab:hover { color: var(--text); background: var(--bg-hover); }
+.cl-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+.cl-tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 18px; padding: 0 5px; margin-left: 6px;
+  font-size: 11px; border: 1px solid var(--border); color: var(--text-muted);
 }
+.cl-tab.active .cl-tab-count { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-.cloud-header-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
+.cl-content { padding: var(--space-5) 0; }
+
+.cl-section-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: var(--space-3); }
+
+.cl-card { background: var(--card); border: 1px solid var(--border); padding: 0; margin-bottom: var(--space-4); }
+.cl-table { width: 100%; border-collapse: collapse; }
+.cl-table th { padding: var(--space-2) var(--space-3); font-size: 12px; font-weight: 600; color: var(--text-secondary); text-align: left; text-transform: uppercase; letter-spacing: 0.04em; background: var(--muted); border-bottom: 1px solid var(--border); }
+.cl-table td { padding: var(--space-3); border-bottom: 1px solid var(--border-light); font-size: 0.875rem; }
+.cl-table tr:hover td { background: var(--bg-hover); }
+
+.cl-file-name-cell { display: flex; align-items: center; gap: var(--space-3); }
+.cl-file-icon {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; flex-shrink: 0;
 }
+.cl-icon-doc { background: rgba(33,150,243,0.12); color: #2196f3; }
+.cl-icon-zip { background: rgba(255,193,7,0.12); color: #f57c00; }
+.cl-icon-img { background: rgba(76,175,80,0.12); color: #4caf50; }
+.cl-icon-iso { background: rgba(156,39,176,0.12); color: #9c27b0; }
+.cl-icon-default { background: var(--muted); color: var(--text-muted); }
 
-.cloud-logo {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1D2129;
+.cl-file-name { font-weight: 500; color: var(--text); }
+.cl-file-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.cl-muted { font-size: 0.8125rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.cl-dl-btn {
+  display: inline-flex; align-items: center; padding: 4px 14px;
+  font-size: 0.8125rem; font-weight: 500; color: #fff; background: var(--primary);
+  transition: background var(--transition-fast); text-decoration: none;
 }
+.cl-dl-btn:hover { background: var(--primary-dark); }
 
-.cloud-stats {
-  font-size: 0.8rem;
-  color: #86909C;
+.cl-empty { padding: var(--space-8); text-align: center; color: var(--text-muted); }
+
+.cl-breadcrumb { font-size: 0.8125rem; color: var(--text-muted); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-light); margin-bottom: var(--space-4); }
+.cl-breadcrumb a { color: var(--primary); }
+
+.cl-error { max-width: 480px; margin: 15vh auto; text-align: center; }
+
+@media (max-width: 768px) {
+  .cl-table th:nth-child(3), .cl-table td:nth-child(3),
+  .cl-table th:nth-child(5), .cl-table td:nth-child(5) { display: none; }
 }
-
-/* Tabs */
-.cloud-tabs {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px 24px 0;
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid #E5E6EB;
-}
-
-.cloud-tab {
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  color: #86909C;
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s;
-  font-weight: 500;
-}
-
-.cloud-tab:hover {
-  color: #1D2129;
-}
-
-.cloud-tab.active {
-  color: #165DFF;
-  border-bottom-color: #165DFF;
-}
-
-.cloud-tab .tab-count {
-  font-size: 0.7rem;
-  background: #F2F3F5;
-  color: #86909C;
-  padding: 1px 6px;
-  border-radius: 10px;
-  margin-left: 6px;
-}
-
-.cloud-tab.active .tab-count {
-  background: #E8F3FF;
-  color: #165DFF;
-}
-
-/* Content */
-.cloud-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px 24px;
-}
-
-/* File table card */
-.cloud-card {
-  background: #FFFFFF;
-  border-radius: 12px;
-  border: 1px solid #E5E6EB;
-  overflow: hidden;
-}
-
-.cloud-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.cloud-table th {
-  background: #F7F8FA;
-  padding: 10px 16px;
-  text-align: left;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #86909C;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid #E5E6EB;
-}
-
-.cloud-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #F2F3F5;
-}
-
-.cloud-table tr:last-child td {
-  border-bottom: none;
-}
-
-.cloud-table tr:hover td {
-  background: #F7F8FA;
-}
-
-.cloud-filename {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cloud-file-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.cloud-icon-doc { background: #E8F3FF; color: #165DFF; }
-.cloud-icon-zip { background: #FFF3E0; color: #FF7D00; }
-.cloud-icon-img { background: #E8FFEA; color: #00B42A; }
-.cloud-icon-iso { background: #F5E8FF; color: #722ED1; }
-.cloud-icon-default { background: #F2F3F5; color: #86909C; }
-
-.cloud-file-name {
-  font-weight: 500;
-  color: #1D2129;
-}
-
-.cloud-file-desc {
-  font-size: 0.75rem;
-  color: #86909C;
-  margin-top: 2px;
-}
-
-.cloud-muted {
-  color: #86909C;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Download button */
-.cloud-dl-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 14px;
-  border-radius: 6px;
-  background: #165DFF;
-  color: #FFFFFF;
-  text-decoration: none;
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-
-.cloud-dl-btn:hover {
-  background: #0E42D2;
-}
-
-/* Section title */
-.cloud-section-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1D2129;
-  margin-bottom: 12px;
-  padding-left: 4px;
-}
-
-/* Empty */
-.cloud-empty {
-  text-align: center;
-  padding: 60px 0;
-  color: #C9CDD4;
-  font-size: 0.875rem;
-}
-
-/* Footer */
-.cloud-footer {
-  text-align: center;
-  padding: 20px;
-  font-size: 0.7rem;
-  color: #C9CDD4;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #E5E6EB; border-radius: 3px; }

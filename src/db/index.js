@@ -39,6 +39,12 @@ class JsonDatabase {
     if (!this.data.settings) {
       this.data.settings = [{ key: 'theme', value: 'editorial', updated_at: new Date().toISOString() }];
     }
+    if (!this.data.api_keys) {
+      this.data.api_keys = [];
+    }
+    if (!this.data._nextApiKeyId) {
+      this.data._nextApiKeyId = 1;
+    }
     if (!this.data._nextId) {
       this.data._nextId = this.data.download_logs.length > 0
         ? Math.max(...this.data.download_logs.map((r) => r.id)) + 1
@@ -48,7 +54,10 @@ class JsonDatabase {
   }
 
   _save() {
-    fs.writeFileSync(this.dbPath, JSON.stringify(this.data, null, 2), 'utf-8');
+    // 原子写入：先写临时文件，再重命名覆盖，避免崩溃时损坏数据库
+    const tmp = this.dbPath + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(this.data, null, 2), 'utf-8');
+    fs.renameSync(tmp, this.dbPath);
   }
 
   pragma(_stmt) {
@@ -193,8 +202,8 @@ class Statement {
     for (const record of this.db.data[table]) {
       if (this._matchesWhere(record, whereClause)) {
         for (const [key, value] of Object.entries(setValues)) {
-          if (key === 'download_count' && typeof value === 'string' && value.includes('download_count + 1')) {
-            record.download_count = (record.download_count || 0) + 1;
+          if (value && typeof value === 'object' && value._increment) {
+            record[key] = (record[key] || 0) + value._increment;
           } else {
             record[key] = value;
           }
@@ -270,10 +279,17 @@ class Statement {
     }
 
     // Handle aggregate functions
+    // COUNT(DISTINCT field)
+    const distinctMatch = sql.match(/COUNT\(DISTINCT\s+(\w+)\)/i);
+    if (distinctMatch && !groupBy) {
+      const field = distinctMatch[1];
+      const unique = new Set(results.map((r) => r[field]).filter((v) => v != null));
+      return [{ count: unique.size }];
+    }
     if (sql.includes('COUNT(*)') && !groupBy) {
       return [{ count: results.length }];
     }
-    if (sql.includes('SUM(')) {
+    if (sql.includes('SUM(') && !groupBy) {
       const sumMatch = sql.match(/SUM\((\w+)\)/i);
       if (sumMatch) {
         const field = sumMatch[1];
@@ -284,7 +300,7 @@ class Statement {
         return results.length > 0 ? [{ [field]: total }] : [{ total: 0 }];
       }
     }
-    if (sql.includes('MAX(')) {
+    if (sql.includes('MAX(') && !groupBy) {
       const maxMatch = sql.match(/MAX\((\w+)\)/i);
       if (maxMatch) {
         const field = maxMatch[1];
@@ -310,17 +326,28 @@ class Statement {
     if (typeof params === 'object' && !Array.isArray(params)) {
       return { ...params };
     }
-    // Map positional params from SQL
-    const paramNames = [];
-    const nameMatches = this.sql.matchAll(/@(\w+)/g);
-    for (const m of nameMatches) {
-      if (!paramNames.includes(m[1])) paramNames.push(m[1]);
-    }
 
     const result = {};
+
     if (Array.isArray(params)) {
+      // 优先尝试从 INSERT 语句的列名映射位置参数
+      const colMatch = this.sql.match(/INSERT\s+(?:OR\s+REPLACE\s+)?INTO\s+\w+\s*\(([^)]+)\)/i);
+      if (colMatch) {
+        const columns = colMatch[1].split(',').map((c) => c.trim());
+        columns.forEach((name, i) => {
+          if (i < params.length) result[name] = params[i];
+        });
+        return result;
+      }
+
+      // 回退：从 @name 参数映射
+      const paramNames = [];
+      const nameMatches = this.sql.matchAll(/@(\w+)/g);
+      for (const m of nameMatches) {
+        if (!paramNames.includes(m[1])) paramNames.push(m[1]);
+      }
       paramNames.forEach((name, i) => {
-        result[name] = params[i];
+        if (i < params.length) result[name] = params[i];
       });
     }
     return result;
@@ -387,7 +414,7 @@ class Statement {
 
     // Handle download_count = download_count + 1
     if (setStr.includes('download_count = download_count + 1')) {
-      sets._incrementDownloadCount = true;
+      sets.download_count = { _increment: 1 };
     }
 
     return sets;
@@ -396,8 +423,18 @@ class Statement {
   _matchesWhere(record, conditions) {
     if (!conditions || Object.keys(conditions).length === 0) return true;
     return Object.entries(conditions).every(([key, value]) => {
-      if (value === undefined || value === null) return record[key] === value;
-      return record[key] == value; // loose equality for string/number comparison
+      const recordVal = record[key];
+      if (value === undefined || value === null) return recordVal === value;
+      // 严格相等，但对字符串/数字做智能转换（兼容 URL 参数传入的字符串 ID）
+      // 排除布尔值、空字符串等意外转换
+      const isNumericPair = (
+        (typeof recordVal === 'number' && typeof value === 'string' && value !== '') ||
+        (typeof recordVal === 'string' && typeof value === 'number')
+      );
+      if (isNumericPair) {
+        return Number(recordVal) === Number(value);
+      }
+      return recordVal === value;
     });
   }
 

@@ -1,0 +1,145 @@
+/* ============================================================
+   Clean Blue Design Tokens
+   MindProject 统一设计变量 — 浅色 + 暗色模式
+   ============================================================ */
+
+/* ===== 浅色主题（默认） ===== */
+:root {
+  /* 品牌色 */
+  --primary: #2f80ed;
+  --primary-dark: #2563eb;
+  --primary-light: #5ba0ff;
+
+  /* 背景 */
+  --background: #f5f9ff;
+  --bg: #f5f9ff;
+  --card: #ffffff;
+  --bg-card: #ffffff;
+  --muted: #eef4fb;
+  --bg-elevated: #eef4fb;
+  --bg-hover: #eaf2ff;
+
+  /* 文字 */
+  --foreground: #0f172a;
+  --text: #0f172a;
+  --text-secondary: #667085;
+  --muted-foreground: #667085;
+  --text-muted: #64748b;
+
+  /* 边框 */
+  --border: #d8e2f0;
+  --border-light: #e8eef6;
+
+  /* 功能色 — 实色 */
+  --success: #4caf50;
+  --warning: #ffc107;
+  --error: #f44336;
+  --info: #2196f3;
+
+  /* 功能色 — 背景 */
+  --success-bg: rgba(34,197,94,0.12);
+  --warning-bg: rgba(255,193,7,0.12);
+  --error-bg: rgba(239,68,68,0.12);
+  --info-bg: rgba(33,150,243,0.12);
+
+  /* 功能色 — 边框 */
+  --success-border: rgba(34,197,94,0.25);
+  --warning-border: rgba(255,193,7,0.25);
+  --error-border: rgba(239,68,68,0.25);
+  --info-border: rgba(33,150,243,0.25);
+
+  /* 间距（4px 基础） */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+
+  /* 圆角 — 全站零圆角 */
+  --radius: 0px;
+  --radius-sm: 0px;
+  --radius-lg: 0px;
+
+  /* 阴影 */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.10);
+  --shadow-modal: 0 8px 24px rgba(0,0,0,0.12);
+
+  /* 字体 */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', 'Consolas', monospace;
+
+  /* 布局 */
+  --content-max-width: 640px;
+  --page-max-width: 1280px;
+  --header-height: 56px;
+  --sidebar-width: 200px;
+  --sidebar-collapsed: 60px;
+
+  /* 过渡 */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}
+
+/* ===== 暗色主题 ===== */
+[data-theme="dark"] {
+  /* 品牌色（更亮） */
+  --primary: #74a9ff;
+  --primary-dark: #5b93e6;
+  --primary-light: #9ec5ff;
+
+  /* 背景（深蓝调，非纯黑） */
+  --background: #0b1220;
+  --bg: #0b1220;
+  --card: #101a2d;
+  --bg-card: #101a2d;
+  --muted: #13233c;
+  --bg-elevated: #13233c;
+  --bg-hover: #173153;
+
+  /* 文字（浅蓝白） */
+  --foreground: #e5eefc;
+  --text: #e5eefc;
+  --text-secondary: #9fb0ca;
+  --muted-foreground: #9fb0ca;
+  --text-muted: #7c8ca6;
+
+  /* 边框（半透明） */
+  --border: rgba(148,163,184,0.18);
+  --border-light: rgba(148,163,184,0.10);
+
+  /* 功能色 — 背景（暗色模式调整） */
+  --success-bg: rgba(34,197,94,0.15);
+  --warning-bg: rgba(255,193,7,0.15);
+  --error-bg: rgba(239,68,68,0.15);
+  --info-bg: rgba(33,150,243,0.15);
+
+  /* 阴影（更深） */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.24);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.30);
+  --shadow-modal: 0 8px 24px rgba(0,0,0,0.40);
+}
+
+/* ===== 全局颜色过渡（主题切换时） ===== */
+.theme-transitioning,
+.theme-transitioning * {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+/* 主题切换闪光效果 */
+.theme-flash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--flash-x, 50%) var(--flash-y, 50%), var(--primary), transparent 70%);
+  opacity: 0;
+  animation: theme-flash 0.5s ease-out forwards;
+}
+
+@keyframes theme-flash {
+  0% { opacity: 0.3; }
+  100% { opacity: 0; }
+}

@@ -1,220 +1,48 @@
-/* ===== Mirror / Tech Theme (镜像站/技术风) ===== */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ===== Mirror 主题 — Clean Blue =====
+   紧凑表格，等宽数字，面包屑导航 */
 
-body {
-  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #FFFFFF;
-  color: #333333;
-  -webkit-font-smoothing: antialiased;
-  font-size: 14px;
-  line-height: 1.5;
+.page-wrap { max-width: 960px; margin: 0 auto; padding: 0 var(--space-4); }
+
+.mi-header { background: var(--muted); border-bottom: 1px solid var(--border); }
+.mi-header-inner { display: flex; align-items: center; justify-content: space-between; height: 40px; font-size: 0.8125rem; }
+.mi-title { font-weight: 600; color: var(--text); text-decoration: none; }
+.mi-title:hover { color: var(--primary); }
+.mi-nav-link { color: var(--primary); font-size: 0.75rem; }
+
+.mi-breadcrumb {
+  padding: var(--space-2) 0; font-size: 0.8125rem; font-family: var(--font-mono);
+  color: var(--text-secondary); border-bottom: 1px solid var(--border-light);
 }
+.mi-breadcrumb a { color: var(--primary); }
 
-.mono {
-  font-family: "JetBrains Mono", "SF Mono", "Fira Mono", monospace;
-}
+.mi-content { padding: var(--space-4) 0; }
 
-/* Header */
-.mirror-header {
-  background: #F8F8F8;
-  border-bottom: 1px solid #DDDDDD;
-  padding: 8px 20px;
-}
+.mi-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mi-table th { padding: 4px var(--space-2); font-size: 12px; font-weight: 600; color: var(--text-secondary); text-align: left; border-bottom: 1px solid var(--border); }
+.mi-table td { padding: 3px var(--space-2); border-bottom: 1px solid var(--border-light); }
+.mi-table tr:hover td { background: var(--bg-hover); }
+.mi-table .mi-mono { font-family: var(--font-mono); }
+.mi-table .mi-right { text-align: right; }
 
-.mirror-header-inner {
-  max-width: 960px;
-  margin: 0 auto;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
+.mi-filename { font-family: var(--font-mono); color: var(--primary); text-decoration: none; }
+.mi-filename:hover { text-decoration: underline; }
+.mi-size, .mi-date { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.mi-desc { font-size: 12px; color: var(--text-muted); }
 
-.mirror-title {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 14px;
-  font-weight: 500;
-  color: #333333;
-}
+.mi-section { font-size: 0.875rem; font-weight: 600; color: var(--text); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); margin-top: var(--space-4); }
 
-.mirror-title a {
-  color: #333333;
-  text-decoration: none;
-}
+.mi-cat-list { display: flex; flex-wrap: wrap; gap: var(--space-2); font-size: 0.8125rem; padding: var(--space-2) 0; }
+.mi-cat-item a { color: var(--primary); }
+.mi-cat-item .mi-count { color: var(--text-muted); font-size: 11px; }
+.mi-cat-sep { color: var(--border); }
 
-.mirror-title a:hover {
-  text-decoration: underline;
-}
+.mi-empty { padding: var(--space-6); text-align: center; color: var(--text-muted); font-size: 0.8125rem; }
 
-.mirror-nav {
-  font-size: 12px;
-  color: #888888;
-}
+.mi-stats { display: flex; gap: var(--space-4); font-size: 0.8125rem; color: var(--text-muted); margin-bottom: var(--space-3); }
+.mi-stats strong { color: var(--text); }
 
-.mirror-nav a {
-  color: #0066CC;
-  text-decoration: none;
-}
+.mi-error { max-width: 960px; margin: 10vh auto; text-align: center; font-family: var(--font-mono); }
 
-.mirror-nav a:hover {
-  text-decoration: underline;
-}
-
-/* Content */
-.mirror-content {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 16px 20px;
-}
-
-/* Breadcrumb / path */
-.mirror-path {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 13px;
-  color: #666666;
-  margin-bottom: 12px;
-  padding: 6px 0;
-  border-bottom: 1px solid #EEEEEE;
-}
-
-.mirror-path a {
-  color: #0066CC;
-  text-decoration: none;
-}
-
-.mirror-path a:hover {
-  text-decoration: underline;
-}
-
-/* Table */
-.mirror-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.mirror-table th {
-  text-align: left;
-  padding: 4px 8px;
-  font-weight: 500;
-  color: #666666;
-  border-bottom: 1px solid #DDDDDD;
-  font-size: 12px;
-}
-
-.mirror-table td {
-  padding: 3px 8px;
-  border-bottom: 1px solid #F0F0F0;
-}
-
-.mirror-table tr:hover td {
-  background: #F8F8F8;
-}
-
-.mirror-table a {
-  color: #0066CC;
-  text-decoration: none;
-}
-
-.mirror-table a:hover {
-  text-decoration: underline;
-}
-
-.mirror-filename {
-  font-family: "JetBrains Mono", monospace;
-}
-
-.mirror-size, .mirror-date {
-  font-family: "JetBrains Mono", monospace;
-  color: #666666;
-  text-align: right;
-  font-size: 12px;
-}
-
-.mirror-desc {
-  color: #999999;
-  font-size: 12px;
-  padding-left: 8px;
-}
-
-/* Section header */
-.mirror-section {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 13px;
-  font-weight: 500;
-  color: #333333;
-  margin: 16px 0 6px;
-  padding: 4px 0;
-  border-bottom: 1px solid #EEEEEE;
-}
-
-/* Category list */
-.mirror-cat-list {
-  margin: 12px 0;
-}
-
-.mirror-cat-item {
-  display: block;
-  padding: 2px 8px;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 13px;
-}
-
-.mirror-cat-item a {
-  color: #0066CC;
-  text-decoration: none;
-}
-
-.mirror-cat-item a:hover {
-  text-decoration: underline;
-}
-
-/* Footer */
-.mirror-footer {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 12px 20px;
-  border-top: 1px solid #DDDDDD;
-  font-size: 11px;
-  color: #AAAAAA;
-  display: flex;
-  justify-content: space-between;
-}
-
-.mirror-footer a {
-  color: #888888;
-  text-decoration: none;
-}
-
-/* Empty */
-.mirror-empty {
-  padding: 40px;
-  text-align: center;
-  color: #AAAAAA;
-  font-size: 13px;
-}
-
-/* Error */
-.mirror-error {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 60px 20px;
-  text-align: center;
-}
-
-.mirror-error h2 {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-
-.mirror-error p {
-  color: #888888;
-  font-size: 13px;
-}
-
-.mirror-error a {
-  color: #0066CC;
-  text-decoration: none;
-  font-size: 13px;
+@media (max-width: 768px) {
+  .mi-table th:nth-child(4), .mi-table td:nth-child(4) { display: none; }
 }

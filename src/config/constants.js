@@ -1,4 +1,4 @@
-// 默认允许的文件扩展名
+// 默认允许的文件扩展名（文档用途，实际白名单由 config.allowedExtensions 控制）
 const DEFAULT_ALLOWED_EXTENSIONS = [
   '.zip', '.iso', '.pdf', '.txt', '.png', '.jpg', '.jpeg',
   '.gz', '.tar', '.7z', '.doc', '.docx', '.xlsx', '.md',
@@ -29,9 +29,6 @@ const CHECKSUM_BATCH_SIZE = 10;
 // 同步批次大小
 const SYNC_BATCH_SIZE = 500;
 
-// Session 存储表名
-const SESSION_TABLE = 'sessions';
-
 module.exports = {
   DEFAULT_ALLOWED_EXTENSIONS,
   BLOCKED_EXTENSIONS,
@@ -41,5 +38,4 @@ module.exports = {
   MAX_PAGE_SIZE,
   CHECKSUM_BATCH_SIZE,
   SYNC_BATCH_SIZE,
-  SESSION_TABLE,
 };

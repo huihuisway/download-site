@@ -16,6 +16,7 @@ const { runMigrations } = require('./db/migrations');
 const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
 const oauthController = require('./routes/oauth');
+const apiV1Routes = require('./routes/api-v1');
 
 // 中间件
 const { attachUser } = require('./middleware/auth');
@@ -73,7 +74,6 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
 app.get('/admin/*', (req, res) => {
   const adminIndex = path.join(__dirname, '..', 'public', 'admin', 'index.html');
-  const fs = require('fs');
   if (fs.existsSync(adminIndex)) {
     return res.sendFile(adminIndex);
   }
@@ -98,6 +98,9 @@ app.use('/auth', oauthRouter);
 // ===== 后台 API =====
 app.use('/api/admin', adminRoutes);
 
+// ===== 第三方公开 API =====
+app.use('/api/v1', apiV1Routes);
+
 // ===== 前台路由 =====
 app.use('/', publicRoutes);
 
@@ -106,14 +109,14 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // ===== 启动服务 =====
-const startServer = () => {
+const startServer = async () => {
   // 运行数据库迁移
   runMigrations();
 
   // 启动时自动同步目录
   console.log('[init] 正在同步文件目录...');
   try {
-    const result = syncDirectory();
+    const result = await syncDirectory();
     console.log(`[init] 同步完成: 新增 ${result.inserted}, 更新 ${result.updated}, 删除 ${result.deleted}`);
   } catch (err) {
     console.error('[init] 同步失败:', err.message);
@@ -130,6 +133,9 @@ const startServer = () => {
   });
 };
 
-startServer();
+// 仅在直接运行时启动服务（允许测试安全导入）
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;

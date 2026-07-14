@@ -16,6 +16,14 @@ const DEFAULT_SITE_INFO = {
   footer_links: JSON.stringify([
     { label: '管理后台', url: '/admin' },
   ]),
+  icp_number: '',
+  police_number: '',
+};
+
+// 验证 URL 是否为安全的 http/https 协议
+const isSafeUrl = (url) => {
+  if (typeof url !== 'string') return false;
+  return /^https?:\/\//i.test(url);
 };
 
 // 直接操作 JSON 数据库的 settings 数组
@@ -110,6 +118,8 @@ const getSiteInfo = () => {
     site_description: all.site_description || DEFAULT_SITE_INFO.site_description,
     footer_text: all.footer_text || DEFAULT_SITE_INFO.footer_text,
     footer_links: footerLinks,
+    icp_number: all.icp_number || '',
+    police_number: all.police_number || '',
   };
 };
 
@@ -118,8 +128,14 @@ const updateSiteInfo = (info) => {
   if (info.site_name !== undefined) updates.site_name = info.site_name;
   if (info.site_description !== undefined) updates.site_description = info.site_description;
   if (info.footer_text !== undefined) updates.footer_text = info.footer_text;
+  if (info.icp_number !== undefined) updates.icp_number = info.icp_number;
+  if (info.police_number !== undefined) updates.police_number = info.police_number;
   if (info.footer_links !== undefined) {
-    updates.footer_links = JSON.stringify(info.footer_links);
+    // 过滤不安全的 URL（只允许 http/https）
+    const safeLinks = Array.isArray(info.footer_links)
+      ? info.footer_links.filter((link) => link && isSafeUrl(link.url))
+      : [];
+    updates.footer_links = JSON.stringify(safeLinks);
   }
   updateSettings(updates);
   return getSiteInfo();

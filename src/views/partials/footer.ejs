@@ -1,0 +1,74 @@
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span class="footer-text"><%= siteInfo.footer_text %></span>
+      <% if (siteInfo.footer_links && siteInfo.footer_links.length) { %>
+        <span class="footer-links">
+          <% for (let i = 0; i < siteInfo.footer_links.length; i++) { %>
+            <% const link = siteInfo.footer_links[i]; %>
+            <a href="<%= link.url %>"><%= link.label %></a>
+            <% if (i < siteInfo.footer_links.length - 1) { %>
+              <span class="footer-sep">·</span>
+            <% } %>
+          <% } %>
+        </span>
+      <% } %>
+      <% if (siteInfo.icp_number || siteInfo.police_number) { %>
+        <span class="footer-beian">
+          <% if (siteInfo.icp_number) { %>
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener"><%= siteInfo.icp_number %></a>
+          <% } %>
+          <% if (siteInfo.icp_number && siteInfo.police_number) { %>
+            <span class="footer-sep">·</span>
+          <% } %>
+          <% if (siteInfo.police_number) { %>
+            <a href="https://beian.mps.gov.cn/" target="_blank" rel="noopener"><%= siteInfo.police_number %></a>
+          <% } %>
+        </span>
+      <% } %>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </footer>
+  <script>
+    function toggleTheme() {
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme');
+      var next = current === 'dark' ? 'light' : 'dark';
+
+      // 添加过渡动画
+      html.classList.add('theme-transitioning');
+
+      // 闪光效果
+      var flash = document.createElement('div');
+      flash.className = 'theme-flash-overlay';
+      document.body.appendChild(flash);
+      setTimeout(function() { flash.remove(); }, 500);
+
+      if (next === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+      } else {
+        html.removeAttribute('data-theme');
+      }
+      localStorage.setItem('theme', next);
+
+      setTimeout(function() {
+        html.classList.remove('theme-transitioning');
+      }, 400);
+    }
+  </script>
+</body>
+</html>

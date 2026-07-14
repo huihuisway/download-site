@@ -1,81 +1,53 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %></title>
-  <link rel="stylesheet" href="/css/themes/cloud.css">
-</head>
-<body>
-
-  <!-- Header -->
-  <header class="cloud-header">
-    <div class="cloud-header-inner">
-      <span class="cloud-logo"><%= siteInfo.site_name %></span>
-      <span class="cloud-stats"><%= formatNumber(totalFiles) %> 个文件 · <%= formatNumber(totalDownloads) %> 次下载</span>
+<%- include('../../partials/head', { title, currentTheme, siteInfo }) %>
+<div class="cl-header">
+  <div class="page-wrap">
+    <div class="cl-header-inner">
+      <span class="cl-site-name"><%= siteInfo.site_name %></span>
+      <span class="cl-stats"><%= totalFiles %> 个文件 · <%= formatNumber(totalDownloads) %> 次下载</span>
     </div>
-  </header>
-
-  <!-- Tabs -->
-  <div class="cloud-tabs">
-    <a href="/" class="cloud-tab active">全部<span class="tab-count"><%= totalFiles %></span></a>
-    <% for (const category of categories) { %>
-      <% const count = (filesByCategory[category] || []).length; %>
-      <a href="/category/<%= encodeURIComponent(category) %>" class="cloud-tab"><%= category %><span class="tab-count"><%= count %></span></a>
-    <% } %>
   </div>
-
-  <!-- Content -->
-  <div class="cloud-content">
-    <% if (categories.length === 0) { %>
-      <div class="cloud-empty">暂无文件</div>
-    <% } else { %>
-      <% for (const category of categories) { %>
-        <% const files = filesByCategory[category] || []; %>
-        <% if (files.length === 0) continue; %>
-
-        <div style="margin-bottom: 24px;">
-          <p class="cloud-section-title"><%= category %></p>
-          <div class="cloud-card">
-            <table class="cloud-table">
-              <thead>
-                <tr>
-                  <th>文件名</th>
-                  <th style="width: 100px; text-align: right;">大小</th>
-                  <th style="width: 80px; text-align: right;">下载</th>
-                  <th style="width: 80px; text-align: right;">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% for (const file of files) { %>
+</div>
+<nav class="cl-tabs">
+  <div class="page-wrap" style="display:flex;gap:0;">
+    <a href="/" class="cl-tab active">全部<span class="cl-tab-count"><%= totalFiles %></span></a>
+    <% categories.forEach(function(cat) { %>
+      <a href="/category/<%= cat %>" class="cl-tab"><%= cat %><span class="cl-tab-count"><%= filesByCategory[cat] ? filesByCategory[cat].length : 0 %></span></a>
+    <% }); %>
+  </div>
+</nav>
+<div class="cl-content page-wrap">
+  <% if (categories.length === 0) { %>
+    <div class="cl-empty">暂无文件</div>
+  <% } else { %>
+    <% categories.forEach(function(cat) { %>
+      <% var files = filesByCategory[cat] || []; %>
+      <% if (files.length > 0) { %>
+        <h2 class="cl-section-title"><%= cat %></h2>
+        <div class="cl-card">
+          <table class="cl-table">
+            <thead><tr><th>文件名</th><th style="width:100px">大小</th><th style="width:80px">下载</th><th style="width:100px">操作</th></tr></thead>
+            <tbody>
+              <% files.forEach(function(file) { %>
                 <tr>
                   <td>
-                    <div class="cloud-filename">
-                      <div class="cloud-file-icon cloud-icon-<%= getFileIconClass(file.file_name) %>"><%= getFileExt(file.file_name) %></div>
+                    <div class="cl-file-name-cell">
+                      <span class="cl-file-icon cl-icon-<%= getFileIconClass(file.file_name) %>"><%= getFileExt(file.file_name) %></span>
                       <div>
-                        <div class="cloud-file-name"><%= file.file_name %></div>
-                        <% if (file.description) { %><div class="cloud-file-desc"><%= file.description %></div><% } %>
+                        <div class="cl-file-name"><%= file.file_name %></div>
+                        <% if (file.description) { %><div class="cl-file-desc"><%= file.description %></div><% } %>
                       </div>
                     </div>
                   </td>
-                  <td class="cloud-muted" style="text-align: right;"><%= formatFileSize(file.file_size) %></td>
-                  <td class="cloud-muted" style="text-align: right;"><%= formatNumber(file.download_count) %></td>
-                  <td style="text-align: right;">
-                    <a href="/download/<%= file.id %>" class="cloud-dl-btn">下载</a>
-                  </td>
+                  <td class="cl-muted"><%= formatFileSize(file.file_size) %></td>
+                  <td class="cl-muted"><%= formatNumber(file.download_count) %></td>
+                  <td><a href="/download/<%= file.id %>" class="cl-dl-btn">下载</a></td>
                 </tr>
-                <% } %>
-              </tbody>
-            </table>
-          </div>
+              <% }); %>
+            </tbody>
+          </table>
         </div>
       <% } %>
-    <% } %>
-  </div>
-
-  <footer class="cloud-footer">
-    <%= siteInfo.footer_text %><% if (siteInfo.footer_links && siteInfo.footer_links.length) { %> · <% for (let i = 0; i < siteInfo.footer_links.length; i++) { %><% const link = siteInfo.footer_links[i]; %><a href="<%= link.url %>" style="color: #C9CDD4;"><%= link.label %></a><% if (i < siteInfo.footer_links.length - 1) { %> · <% } %><% } %><% } %>
-  </footer>
-
-</body>
-</html>
+    <% }); %>
+  <% } %>
+</div>
+<%- include('../../partials/footer') %>

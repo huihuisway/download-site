@@ -6,6 +6,7 @@ import FileManager from './pages/FileManager';
 import Categories from './pages/Categories';
 import ThemeSettings from './pages/ThemeSettings';
 import SiteSettings from './pages/SiteSettings';
+import ApiKeys from './pages/ApiKeys';
 import Login from './pages/Login';
 
 function App() {
@@ -13,8 +14,8 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">加载中...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div style={{ color: 'var(--text-muted)' }}>加载中...</div>
       </div>
     );
   }
@@ -31,6 +32,7 @@ function App() {
         <Route path="/categories" element={<Categories />} />
         <Route path="/theme" element={<ThemeSettings />} />
         <Route path="/settings" element={<SiteSettings />} />
+        <Route path="/api-keys" element={<ApiKeys />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

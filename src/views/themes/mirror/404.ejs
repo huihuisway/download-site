@@ -1,16 +1,8 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>404 - Not Found</title>
-  <link rel="stylesheet" href="/css/themes/mirror.css">
-</head>
-<body>
-  <div class="mirror-error">
-    <h2>404 Not Found</h2>
-    <p>The requested URL was not found on this server.</p>
-    <p style="margin-top: 16px;"><a href="/">&larr; Index of /downloads</a></p>
+<%- include('../../partials/head', { title, currentTheme, siteInfo }) %>
+<div class="page-wrap">
+  <div class="mi-error">
+    <h2>404 — 页面未找到</h2>
+    <p style="margin-top:var(--space-4);"><a href="/" style="color:var(--primary);">← Index of /downloads</a></p>
   </div>
-</body>
-</html>
+</div>
+<%- include('../../partials/footer') %>
