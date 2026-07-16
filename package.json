@@ -12,18 +12,22 @@
     "lint": "eslint src/",
     "format": "prettier --write src/"
   },
-  "keywords": ["download", "file-server", "debian-style"],
+  "keywords": [
+    "download",
+    "file-server",
+    "debian-style"
+  ],
   "license": "MIT",
   "dependencies": {
-    "express": "^4.21.0",
-    "ejs": "^3.1.10",
-    "express-session": "^1.18.1",
-    "session-file-store": "^1.5.0",
-    "multer": "^1.4.5-lts.1",
-    "sanitize-filename": "^1.6.3",
     "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.0",
+    "express-session": "^1.18.1",
     "helmet": "^8.0.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "sanitize-filename": "^1.6.3",
+    "session-file-store": "^1.5.0"
   },
   "devDependencies": {
     "eslint": "^9.15.0",
