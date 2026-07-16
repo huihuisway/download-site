@@ -29,7 +29,7 @@
       <% } else { %>
         <% files.forEach(function(file) { %>
           <div class="ed-file-entry">
-            <a href="/download/<%= file.id %>" class="ed-file-name" style="color: var(--primary);"><%= file.file_name %></a>
+            <a href="<%= buildFilePageUrl(file.file_path) %>" class="ed-file-name" style="color: var(--primary);"><%= file.file_name %></a>
             <% if (file.description) { %>
               <div class="ed-file-desc"><%= file.description %></div>
             <% } %>

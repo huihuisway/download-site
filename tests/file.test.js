@@ -9,6 +9,7 @@ process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-stats.db');
 process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-test');
 
 const { sanitizeFilename, isAllowedExtension, ensureInSandbox, getCategoryFromPath } = require('../src/utils/filename');
+const { normalizePublicFilePath, buildFilePageUrl, buildFileDownloadUrl } = require('../src/utils/public-paths');
 
 describe('filename utils', () => {
   before(() => {
@@ -75,6 +76,21 @@ describe('filename utils', () => {
 
     it('应该处理根目录文件', () => {
       assert.strictEqual(getCategoryFromPath('file.txt'), 'root');
+    });
+  });
+
+  describe('public path helpers', () => {
+    it('应该标准化公开文件路径', () => {
+      assert.strictEqual(normalizePublicFilePath('/docs/readme.txt'), 'docs/readme.txt');
+      assert.strictEqual(normalizePublicFilePath('docs\\nested\\file.zip'), 'docs/nested/file.zip');
+    });
+
+    it('应该构建文件页面 URL', () => {
+      assert.strictEqual(buildFilePageUrl('docs/readme.txt'), '/docs/readme.txt');
+    });
+
+    it('应该构建真实下载 URL', () => {
+      assert.strictEqual(buildFileDownloadUrl('docs/readme.txt'), '/d/docs/readme.txt');
     });
   });
 });

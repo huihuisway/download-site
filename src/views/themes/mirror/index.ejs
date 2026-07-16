@@ -20,7 +20,7 @@
           <tbody>
             <% files.forEach(function(file) { %>
               <tr>
-                <td style="width:40%"><a href="/download/<%= file.id %>" class="mi-filename"><%= file.file_name %></a></td>
+                <td style="width:40%"><a href="<%= buildFilePageUrl(file.file_path) %>" class="mi-filename"><%= file.file_name %></a></td>
                 <td class="mi-size mi-right" style="width:15%"><%= formatFileSize(file.file_size) %></td>
                 <td class="mi-desc"><%= file.description || '' %></td>
               </tr>

@@ -1,0 +1,39 @@
+<%- include('../../partials/head', { title, currentTheme, siteInfo }) %>
+<div class="page-wrap">
+  <header class="ed-header">
+    <div class="ed-header-inner">
+      <div>
+        <div class="ed-site-name"><%= siteInfo.site_name %></div>
+        <div class="ed-site-desc"><%= siteInfo.site_description %></div>
+      </div>
+      <div class="ed-stats">
+        <span><strong><%= formatNumber(file.download_count) %></strong> 次下载</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="ed-layout">
+    <aside class="ed-sidebar">
+      <a href="/" class="ed-nav-item"><span>全部文件</span></a>
+      <% if (file.category) { %>
+        <a href="/category/<%= file.category %>" class="ed-nav-item active"><span><%= file.category %></span></a>
+      <% } %>
+    </aside>
+
+    <main class="ed-main">
+      <h1 class="ed-page-title"><%= file.file_name %></h1>
+      <% if (file.description) { %>
+        <div class="ed-file-desc" style="margin-bottom: 16px;"><%= file.description %></div>
+      <% } %>
+      <div class="ed-file-meta" style="display: grid; gap: 8px; margin-bottom: 20px;">
+        <div>路径：<code><%= publicFilePath %></code></div>
+        <div>大小：<%= formatFileSize(file.file_size) %></div>
+        <div>下载：<%= formatNumber(file.download_count) %> 次</div>
+        <% if (file.last_download_at) { %><div>最后下载：<%= formatDate(file.last_download_at) %></div><% } %>
+        <% if (file.sha256) { %><div>SHA256：<span class="ed-file-sha"><%= file.sha256 %></span></div><% } %>
+      </div>
+      <a href="<%= downloadUrl %>" class="ed-file-name" style="color: var(--primary);">下载文件</a>
+    </main>
+  </div>
+</div>
+<%- include('../../partials/footer') %>
