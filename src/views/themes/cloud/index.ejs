@@ -33,14 +33,14 @@
                     <div class="cl-file-name-cell">
                       <span class="cl-file-icon cl-icon-<%= getFileIconClass(file.file_name) %>"><%= getFileExt(file.file_name) %></span>
                       <div>
-                        <div class="cl-file-name"><%= file.file_name %></div>
+                        <div class="cl-file-name"><a href="<%= buildFilePageUrl(file.file_path) %>" style="color: inherit; text-decoration: none;"><%= file.file_name %></a></div>
                         <% if (file.description) { %><div class="cl-file-desc"><%= file.description %></div><% } %>
                       </div>
                     </div>
                   </td>
                   <td class="cl-muted"><%= formatFileSize(file.file_size) %></td>
                   <td class="cl-muted"><%= formatNumber(file.download_count) %></td>
-                  <td><a href="/download/<%= file.id %>" class="cl-dl-btn">下载</a></td>
+                  <td><a href="<%= buildFilePageUrl(file.file_path) %>" class="cl-dl-btn">查看</a></td>
                 </tr>
               <% }); %>
             </tbody>

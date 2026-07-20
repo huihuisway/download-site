@@ -1,0 +1,43 @@
+<%- include('../../partials/head', { title, currentTheme, siteInfo }) %>
+<div class="page-wrap">
+  <header class="term-header">
+    <div class="term-header-inner">
+      <div class="term-logo"><span class="prompt">$</span> <span class="path">~/downloads/<%= publicFilePath %></span></div>
+      <div class="term-stats"><%= formatNumber(file.download_count) %> downloads</div>
+    </div>
+  </header>
+
+  <div class="term-layout">
+    <aside class="term-sidebar">
+      <a href="/" class="term-nav-item">$ cd ..</a>
+      <% if (file.category) { %>
+        <a href="/category/<%= file.category %>" class="term-nav-item active"><%= file.category %></a>
+      <% } %>
+    </aside>
+
+    <main class="term-main">
+      <div class="term-section">
+        <div class="term-section-header">
+          <span class="label">$ stat <%= file.file_name %></span>
+        </div>
+        <div class="term-file" style="cursor: default;">
+          <div class="term-file-name"><%= file.file_name %></div>
+          <% if (file.description) { %><div class="term-file-desc">// <%= file.description %></div><% } %>
+          <div class="term-file-meta" style="display: grid; gap: 8px;">
+            <span>path: <code><%= publicFilePath %></code></span>
+            <span>size: <%= formatFileSize(file.file_size) %></span>
+            <span>downloads: <%= formatNumber(file.download_count) %></span>
+            <% if (file.last_download_at) { %><span>last: <%= formatDate(file.last_download_at) %></span><% } %>
+            <% if (file.sha256) { %><span>sha256: <span class="term-sha"><%= file.sha256 %></span></span><% } %>
+          </div>
+        </div>
+      </div>
+
+      <a href="<%= downloadUrl %>" class="term-file">
+        <div class="term-file-name">./download</div>
+        <div class="term-file-desc">// start attachment download</div>
+      </a>
+    </main>
+  </div>
+</div>
+<%- include('../../partials/footer') %>

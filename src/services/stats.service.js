@@ -116,6 +116,10 @@ const getFileById = (fileId) => {
   return db.prepare('SELECT * FROM download_logs WHERE id = ?').get(fileId);
 };
 
+const getFileByPath = (filePath) => {
+  return db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get(filePath);
+};
+
 const recordDownload = (fileId) => {
   // 原子递增，避免竞态条件
   db.prepare(`
@@ -137,5 +141,6 @@ module.exports = {
   getFilesByCategory,
   getAllFiles,
   getFileById,
+  getFileByPath,
   recordDownload,
 };

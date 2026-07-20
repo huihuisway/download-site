@@ -96,6 +96,21 @@ describe('stats service', () => {
     });
   });
 
+  describe('getFileByPath', () => {
+    it('应该按 file_path 精确查找文件', () => {
+      const statsService = require('../src/services/stats.service');
+      const file = statsService.getFileByPath('docs/a.txt');
+      assert.ok(file);
+      assert.strictEqual(file.file_name, 'a.txt');
+      assert.strictEqual(file.category, 'docs');
+    });
+
+    it('查不到路径时应返回空值', () => {
+      const statsService = require('../src/services/stats.service');
+      assert.strictEqual(statsService.getFileByPath('docs/missing.txt'), undefined);
+    });
+  });
+
   describe('getCategoryStats', () => {
     it('应按分类聚合统计', () => {
       const statsService = require('../src/services/stats.service');

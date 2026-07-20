@@ -1,0 +1,41 @@
+<%- include('../../partials/head', { title, currentTheme, siteInfo }) %>
+<div class="mi-header">
+  <div class="page-wrap">
+    <div class="mi-header-inner">
+      <a href="/" class="mi-title"><%= siteInfo.site_name %></a>
+      <a href="/admin" class="mi-nav-link">管理后台</a>
+    </div>
+  </div>
+</div>
+<div class="page-wrap">
+  <div class="mi-breadcrumb">
+    <a href="/">downloads</a>
+    <% if (file.category) { %>
+      / <a href="/category/<%= file.category %>"><%= file.category %></a>
+    <% } %>
+    / <%= file.file_name %>
+  </div>
+</div>
+<div class="mi-content page-wrap">
+  <div class="mi-stats">
+    <strong><%= formatFileSize(file.file_size) %></strong> ·
+    <strong><%= formatNumber(file.download_count) %></strong> 次下载
+  </div>
+
+  <table class="mi-table">
+    <tbody>
+      <tr><td style="width: 160px;">文件名</td><td><%= file.file_name %></td></tr>
+      <tr><td>路径</td><td><code><%= publicFilePath %></code></td></tr>
+      <tr><td>分类</td><td><%= file.category %></td></tr>
+      <tr><td>大小</td><td><%= formatFileSize(file.file_size) %></td></tr>
+      <% if (file.last_download_at) { %><tr><td>最后下载</td><td><%= formatDate(file.last_download_at) %></td></tr><% } %>
+      <% if (file.description) { %><tr><td>描述</td><td><%= file.description %></td></tr><% } %>
+      <% if (file.sha256) { %><tr><td>SHA256</td><td><code><%= file.sha256 %></code></td></tr><% } %>
+    </tbody>
+  </table>
+
+  <div style="margin-top: 16px;">
+    <a href="<%= downloadUrl %>" class="mi-filename">下载文件</a>
+  </div>
+</div>
+<%- include('../../partials/footer') %>

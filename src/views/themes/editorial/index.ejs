@@ -15,7 +15,7 @@
 
   <div class="ed-layout">
     <aside class="ed-sidebar">
-      <a href="/" class="ed-nav-item<%= !category ? ' active' : '' %>">
+      <a href="/" class="ed-nav-item active">
         <span>全部文件</span>
         <span class="ed-nav-count"><%= totalFiles %></span>
       </a>
@@ -40,7 +40,7 @@
           <% } else { %>
             <% files.forEach(function(file) { %>
               <div class="ed-file-entry">
-                <div class="ed-file-name"><%= file.file_name %></div>
+                <div class="ed-file-name"><a href="<%= buildFilePageUrl(file.file_path) %>" style="color: inherit; text-decoration: none;"><%= file.file_name %></a></div>
                 <% if (file.description) { %>
                   <div class="ed-file-desc"><%= file.description %></div>
                 <% } %>

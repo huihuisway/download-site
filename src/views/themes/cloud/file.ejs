@@ -1,0 +1,40 @@
+<%- include('../../partials/head', { title, currentTheme, siteInfo }) %>
+<div class="cl-header">
+  <div class="page-wrap">
+    <div class="cl-header-inner">
+      <span class="cl-site-name"><%= siteInfo.site_name %></span>
+      <span class="cl-stats"><%= formatNumber(file.download_count) %> 次下载</span>
+    </div>
+  </div>
+</div>
+<div class="cl-content page-wrap">
+  <div class="cl-breadcrumb" style="margin-bottom: 16px;">
+    <a href="/">全部文件</a>
+    <% if (file.category) { %>
+      / <a href="/category/<%= file.category %>"><%= file.category %></a>
+    <% } %>
+    / <span><%= file.file_name %></span>
+  </div>
+
+  <div class="cl-card" style="padding: 24px;">
+    <div class="cl-file-name-cell" style="margin-bottom: 20px; align-items: flex-start;">
+      <span class="cl-file-icon cl-icon-<%= getFileIconClass(file.file_name) %>"><%= getFileExt(file.file_name) %></span>
+      <div>
+        <div class="cl-file-name" style="font-size: 24px;"><%= file.file_name %></div>
+        <% if (file.description) { %><div class="cl-file-desc"><%= file.description %></div><% } %>
+      </div>
+    </div>
+
+    <div class="cl-muted" style="display: grid; gap: 8px; margin-bottom: 20px;">
+      <div>路径：<code><%= publicFilePath %></code></div>
+      <div>分类：<%= file.category %></div>
+      <div>大小：<%= formatFileSize(file.file_size) %></div>
+      <div>下载：<%= formatNumber(file.download_count) %></div>
+      <% if (file.last_download_at) { %><div>最后下载：<%= formatDate(file.last_download_at) %></div><% } %>
+      <% if (file.sha256) { %><div>SHA256：<code><%= file.sha256 %></code></div><% } %>
+    </div>
+
+    <a href="<%= downloadUrl %>" class="cl-dl-btn">立即下载</a>
+  </div>
+</div>
+<%- include('../../partials/footer') %>

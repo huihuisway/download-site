@@ -21,7 +21,7 @@
         <div class="term-empty">// empty directory</div>
       <% } else { %>
         <% files.forEach(function(file) { %>
-          <a href="/download/<%= file.id %>" class="term-file">
+          <a href="<%= buildFilePageUrl(file.file_path) %>" class="term-file">
             <div class="term-file-name"><%= file.file_name %></div>
             <% if (file.description) { %><div class="term-file-desc">// <%= file.description %></div><% } %>
             <div class="term-file-meta">
