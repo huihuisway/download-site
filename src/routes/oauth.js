@@ -28,6 +28,7 @@ const startOAuthFlow = (req, res) => {
     client_id: config.oauth.clientId,
     redirect_uri: config.oauth.callbackUrl,
     response_type: 'code',
+    scope: 'openid profile email',
     state,
   });
 
@@ -82,14 +83,13 @@ const handleCallback = async (req, res) => {
     try {
       tokenResponse = await fetch(config.oauth.tokenUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           grant_type: 'authorization_code',
           code,
           client_id: config.oauth.clientId,
           client_secret: config.oauth.clientSecret,
-          redirect_uri: config.oauth.callbackUrl,
-        }).toString(),
+        }),
         signal: tokenController.signal,
       });
     } finally {
@@ -142,9 +142,9 @@ const handleCallback = async (req, res) => {
 
     const userData = await userResponse.json();
 
-    // 写入用户信息到 Session
+    // 写入用户信息到 Session（适配 MindAuth userinfo 返回字段）
     req.session.user = {
-      id: userData.id || userData.user_id,
+      id: userData.id || userData.sub || userData.user_id,
       username: userData.username || userData.name,
       email: userData.email,
     };

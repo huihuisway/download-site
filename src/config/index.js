@@ -53,7 +53,7 @@ const validateConfig = () => {
     for (const part of parts) {
       value = value?.[part];
     }
-    if (!value || value.startsWith('your_') || value === 'https://forum.example.com') {
+    if (!value || value.startsWith('your_') || value.includes('example.com')) {
       missing.push(key);
     }
   }
