@@ -14,12 +14,12 @@ const config = {
 
   // OAuth 2.0（MindAuth）
   oauth: {
-    authorizeUrl: process.env.OAUTH_AUTHORIZE_URL || 'https://auth.mdtbbs.cn/api/authorize',
-    tokenUrl: process.env.OAUTH_TOKEN_URL || 'https://auth.mdtbbs.cn/api/token',
-    userinfoUrl: process.env.OAUTH_USERINFO_URL || 'https://auth.mdtbbs.cn/api/userinfo',
+    authorizeUrl: process.env.OAUTH_AUTHORIZE_URL,
+    tokenUrl: process.env.OAUTH_TOKEN_URL,
+    userinfoUrl: process.env.OAUTH_USERINFO_URL,
     clientId: process.env.OAUTH_CLIENT_ID,
     clientSecret: process.env.OAUTH_CLIENT_SECRET,
-    callbackUrl: process.env.OAUTH_CALLBACK_URL || 'https://file.mdtbbs.cn/auth/callback',
+    callbackUrl: process.env.OAUTH_CALLBACK_URL,
   },
 
   // 本地管理员（论坛未上线时的临时方案）
