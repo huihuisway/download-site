@@ -1,5 +1,12 @@
 const crypto = require('crypto');
 const { config } = require('../config');
+const themeService = require('../services/theme.service');
+
+/** 渲染主题化错误页面 */
+const renderError = (res, status, title, message) => {
+  const theme = themeService.getTheme();
+  return res.status(status).render(`themes/${theme}/error`, { title, message });
+};
 
 /**
  * 检查 URL 是否为安全的本地重定向地址
@@ -42,20 +49,14 @@ const handleCallback = async (req, res) => {
   // 校验 state
   if (!state || state !== req.session.oauthState) {
     console.error('[oauth] state 不匹配，可能存在 CSRF 攻击');
-    return res.status(403).render('error', {
-      title: '安全校验失败',
-      message: 'OAuth 回调状态验证失败，请重新登录。',
-    });
+    return renderError(res, 403, '安全校验失败', 'OAuth 回调状态验证失败，请重新登录。');
   }
 
   // 清除 state
   delete req.session.oauthState;
 
   if (!code) {
-    return res.status(400).render('error', {
-      title: '授权失败',
-      message: '未收到授权码，请重试。',
-    });
+    return renderError(res, 400, '授权失败', '未收到授权码，请重试。');
   }
 
   // 前置校验 OAuth 配置完整性
@@ -68,10 +69,7 @@ const handleCallback = async (req, res) => {
 
   if (missingConfig.length > 0) {
     console.error('[oauth] OAuth 配置缺失:', missingConfig.join(', '));
-    return res.status(500).render('error', {
-      title: '登录失败',
-      message: '服务器 OAuth 配置不完整，请联系管理员。',
-    });
+    return renderError(res, 500, '登录失败', '服务器 OAuth 配置不完整，请联系管理员。');
   }
 
   try {
@@ -169,10 +167,7 @@ const handleCallback = async (req, res) => {
     } else {
       console.error('[oauth] 认证流程错误:', err.message, err.stack);
     }
-    return res.status(500).render('error', {
-      title: '登录失败',
-      message: 'OAuth 认证过程出错，请稍后重试。',
-    });
+    return renderError(res, 500, '登录失败', 'OAuth 认证过程出错，请稍后重试。');
   }
 };
 

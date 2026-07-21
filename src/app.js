@@ -66,7 +66,7 @@ app.use(session({
   cookie: {
     maxAge: config.session.maxAge,
     httpOnly: true,
-    secure: config.isProduction,
+    secure: false,  // CDN 回源用 HTTP，Secure 标志会阻止 cookie 下发
     sameSite: 'strict',
   },
 }));
@@ -75,6 +75,7 @@ app.use(session({
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // 后台 React SPA
+const themeService = require('./services/theme.service');
 app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
 app.get('/admin/*', (req, res) => {
   const adminIndex = path.join(__dirname, '..', 'public', 'admin', 'index.html');
@@ -82,7 +83,8 @@ app.get('/admin/*', (req, res) => {
     return res.sendFile(adminIndex);
   }
   // 如果 React 未构建，返回提示
-  return res.status(404).render('error', {
+  const theme = themeService.getTheme();
+  return res.status(404).render(`themes/${theme}/error`, {
     title: '后台未构建',
     message: '请先运行 npm run build:admin 构建后台前端。',
   });
