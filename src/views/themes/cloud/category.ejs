@@ -9,19 +9,54 @@
 </div>
 <div class="page-wrap">
   <div class="cl-breadcrumb">
-    <a href="/">全部文件</a> / <%= category %>
+    <a href="/">首页</a>
+    <% if (breadcrumbs.length > 0) { %>
+      <% breadcrumbs.forEach(function(crumb, i) { %>
+        <span> / </span>
+        <% if (i === breadcrumbs.length - 1) { %>
+          <span><%= crumb.name %></span>
+        <% } else { %>
+          <a href="<%= crumb.path === 'root' ? '/' : '/category/' + crumb.path %>"><%= crumb.name %></a>
+        <% } %>
+      <% }); %>
+    <% } %>
   </div>
 </div>
-<nav class="cl-tabs">
-  <div class="page-wrap" style="display:flex;gap:0;">
-    <a href="/" class="cl-tab">全部</a>
-    <% allCategories.forEach(function(cat) { %>
-      <a href="/category/<%= cat %>" class="cl-tab<%= cat === category ? ' active' : '' %>"><%= cat %><span class="cl-tab-count"><%= categoryCounts[cat] || 0 %></span></a>
-    <% }); %>
-  </div>
-</nav>
 <div class="cl-content page-wrap">
-  <% if (files.length === 0) { %>
+  <% if (parentPath) { %>
+    <div style="margin-bottom: 0.75rem;">
+      <a href="<%= parentPath === 'root' ? '/' : '/category/' + parentPath %>">← 返回上一级</a>
+    </div>
+  <% } %>
+
+  <h2 style="margin-bottom: 1rem;"><%= currentPath === 'root' ? '根目录' : currentPath %></h2>
+
+  <% if (directories.length > 0) { %>
+    <div class="cl-card" style="margin-bottom: 1rem;">
+      <table class="cl-table">
+        <tbody>
+          <% directories.forEach(function(dir) { %>
+            <tr>
+              <td>
+                <div class="cl-file-name-cell">
+                  <span class="cl-file-icon cl-icon-default">📁</span>
+                  <div>
+                    <div class="cl-file-name"><a href="/category/<%= dir.path %>" style="color: inherit; text-decoration: none;"><%= dir.name %></a></div>
+                    <% if (dir.isEmpty) { %><div class="cl-file-desc" style="color: var(--text-muted);">(空)</div><% } %>
+                  </div>
+                </div>
+              </td>
+              <td class="cl-muted" style="text-align:right"><a href="/category/<%= dir.path %>" class="cl-dl-btn">进入</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <% if (isEmpty) { %>
+    <div class="cl-empty">此目录为空</div>
+  <% } else if (files.length === 0) { %>
     <div class="cl-empty">暂无文件</div>
   <% } else { %>
     <div class="cl-card">

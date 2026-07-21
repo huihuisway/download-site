@@ -9,7 +9,13 @@
 </div>
 <div class="page-wrap">
   <div class="mi-breadcrumb">
-    <a href="/">downloads</a> / <a href="/"><%= category %></a>
+    <a href="/">downloads</a>
+    <% if (breadcrumbs.length > 0) { %>
+      <% breadcrumbs.forEach(function(crumb) { %>
+        <span> / </span>
+        <a href="<%= crumb.path === 'root' ? '/' : '/category/' + crumb.path %>"><%= crumb.name %></a>
+      <% }); %>
+    <% } %>
   </div>
 </div>
 <div class="mi-content page-wrap">
@@ -18,13 +24,26 @@
     <strong><%= formatNumber(stats.total_downloads) %></strong> 次下载 ·
     <strong><%= formatFileSize(stats.total_size) %></strong>
   </div>
-  <div class="mi-cat-list">
-    <% allCategories.forEach(function(cat, i) { %>
-      <span class="mi-cat-item"><a href="/category/<%= cat %>"><%= cat %></a> <span class="mi-count">(<%= categoryCounts[cat] || 0 %>)</span></span>
-      <% if (i < allCategories.length - 1) { %><span class="mi-cat-sep">|</span><% } %>
-    <% }); %>
-  </div>
-  <% if (files.length === 0) { %>
+
+  <% if (parentPath) { %>
+    <div style="margin-bottom: 0.75rem;">
+      <a href="<%= parentPath === 'root' ? '/' : '/category/' + parentPath %>">← 返回上一级</a>
+    </div>
+  <% } %>
+
+  <h2 style="margin-bottom: 1rem;"><%= currentPath === 'root' ? '根目录' : currentPath %></h2>
+
+  <% if (directories.length > 0) { %>
+    <div class="mi-cat-list" style="margin-bottom: 1rem;">
+      <% directories.forEach(function(dir) { %>
+        <span class="mi-cat-item"><a href="/category/<%= dir.path %>"><%= dir.name %></a> <% if (dir.isEmpty) { %><span class="mi-count">(空)</span><% } %></span>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <% if (isEmpty) { %>
+    <div class="mi-empty">此目录为空</div>
+  <% } else if (files.length === 0) { %>
     <div class="mi-empty">暂无文件</div>
   <% } else { %>
     <table class="mi-table">

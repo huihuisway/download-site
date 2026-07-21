@@ -2,23 +2,38 @@
 <div class="page-wrap">
   <header class="term-header">
     <div class="term-header-inner">
-      <div class="term-logo"><span class="prompt">$</span> <span class="path">~/downloads/<%= category %></span></div>
+      <div class="term-logo"><span class="prompt">$</span> <span class="path">~/downloads<%= currentPath === 'root' ? '' : '/' + currentPath %></span></div>
       <div class="term-stats"><%= stats.file_count %> files · <%= formatFileSize(stats.total_size) %></div>
     </div>
   </header>
 
   <div class="term-layout">
     <aside class="term-sidebar">
-      <a href="/" class="term-nav-item">$ cd ..</a>
-      <a href="/" class="term-nav-item">all</a>
-      <% allCategories.forEach(function(cat) { %>
-        <a href="/category/<%= cat %>" class="term-nav-item<%= cat === category ? ' active' : '' %>"><%= cat %> <span class="term-nav-count">(<%= categoryCounts[cat] || 0 %>)</span></a>
-      <% }); %>
+      <a href="/" class="term-nav-item">$ cd /</a>
+      <% if (parentPath) { %>
+        <a href="<%= parentPath === 'root' ? '/' : '/category/' + parentPath %>" class="term-nav-item">$ cd ..</a>
+      <% } %>
+      <% if (breadcrumbs.length > 0) { %>
+        <% breadcrumbs.forEach(function(crumb) { %>
+          <a href="<%= crumb.path === 'root' ? '/' : '/category/' + crumb.path %>" class="term-nav-item"><%= crumb.name %></a>
+        <% }); %>
+      <% } %>
     </aside>
 
     <main class="term-main">
-      <% if (files.length === 0) { %>
+      <% if (directories.length > 0) { %>
+        <% directories.forEach(function(dir) { %>
+          <a href="/category/<%= dir.path %>" class="term-file">
+            <div class="term-file-name">📁 <%= dir.name %></div>
+            <% if (dir.isEmpty) { %><div class="term-file-desc">// empty</div><% } %>
+          </a>
+        <% }); %>
+      <% } %>
+
+      <% if (isEmpty) { %>
         <div class="term-empty">// empty directory</div>
+      <% } else if (files.length === 0) { %>
+        <div class="term-empty">// no files here</div>
       <% } else { %>
         <% files.forEach(function(file) { %>
           <a href="<%= buildFilePageUrl(file.file_path) %>" class="term-file">
@@ -31,10 +46,6 @@
               <% if (file.last_download_at) { %>
                 <span class="term-sep">|</span>
                 <span>last: <%= formatDate(file.last_download_at) %></span>
-              <% } %>
-              <% if (file.sha256) { %>
-                <span class="term-sep">|</span>
-                <span class="term-sha"><%= file.sha256.substring(0, 16) %></span>
               <% } %>
             </div>
           </a>

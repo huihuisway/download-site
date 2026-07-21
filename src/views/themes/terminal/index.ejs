@@ -10,41 +10,18 @@
   <div class="term-layout">
     <aside class="term-sidebar">
       <a href="/" class="term-nav-item active">all <span class="term-nav-count">(<%= totalFiles %>)</span></a>
-      <% categories.forEach(function(cat) { %>
-        <a href="/category/<%= cat %>" class="term-nav-item"><%= cat %> <span class="term-nav-count">(<%= filesByCategory[cat] ? filesByCategory[cat].length : 0 %>)</span></a>
-      <% }); %>
       <a href="/admin" class="term-nav-item" style="margin-top:var(--space-4);border-top:1px solid var(--border);padding-top:var(--space-2);">sudo admin</a>
     </aside>
 
     <main class="term-main">
-      <% if (categories.length === 0) { %>
+      <% if (directories.length === 0) { %>
         <div class="term-empty">// empty directory</div>
       <% } else { %>
-        <% categories.forEach(function(cat) { %>
-          <% var files = filesByCategory[cat] || []; %>
-          <% if (files.length > 0) { %>
-            <div class="term-section">
-              <div class="term-section-header">
-                <span class="label">$ cd ./<%= cat %></span>
-                <span class="count">(<%= files.length %> files)</span>
-              </div>
-              <% files.forEach(function(file) { %>
-                <a href="<%= buildFilePageUrl(file.file_path) %>" class="term-file">
-                  <div class="term-file-name"><%= file.file_name %></div>
-                  <% if (file.description) { %><div class="term-file-desc">// <%= file.description %></div><% } %>
-                  <div class="term-file-meta">
-                    <span class="size"><%= formatFileSize(file.file_size) %></span>
-                    <span class="term-sep">|</span>
-                    <span class="count"><%= formatNumber(file.download_count) %> dl</span>
-                    <% if (file.sha256) { %>
-                      <span class="term-sep">|</span>
-                      <span class="term-sha"><%= file.sha256.substring(0, 16) %></span>
-                    <% } %>
-                  </div>
-                </a>
-              <% }); %>
-            </div>
-          <% } %>
+        <% directories.forEach(function(dir) { %>
+          <a href="/category/<%= dir.path %>" class="term-file">
+            <div class="term-file-name">📁 <%= dir.name %></div>
+            <% if (dir.isEmpty) { %><div class="term-file-desc">// empty</div><% } %>
+          </a>
         <% }); %>
       <% } %>
     </main>

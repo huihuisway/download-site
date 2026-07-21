@@ -13,18 +13,37 @@
 
   <div class="ed-layout">
     <aside class="ed-sidebar">
-      <a href="/" class="ed-nav-item"><span>全部文件</span></a>
-      <% allCategories.forEach(function(cat) { %>
-        <a href="/category/<%= cat %>" class="ed-nav-item<%= cat === category ? ' active' : '' %>">
-          <span><%= cat %></span>
-          <span class="ed-nav-count"><%= categoryCounts[cat] || 0 %></span>
-        </a>
-      <% }); %>
+      <a href="/" class="ed-nav-item"><span>首页</span></a>
+      <% if (breadcrumbs.length > 0) { %>
+        <% breadcrumbs.forEach(function(crumb) { %>
+          <a href="<%= crumb.path === 'root' ? '/' : '/category/' + crumb.path %>" class="ed-nav-item">
+            <span><%= crumb.name %></span>
+          </a>
+        <% }); %>
+      <% } %>
     </aside>
 
     <main class="ed-main">
-      <h1 class="ed-page-title"><%= category %></h1>
-      <% if (files.length === 0) { %>
+      <% if (parentPath) { %>
+        <a href="<%= parentPath === 'root' ? '/' : '/category/' + parentPath %>" class="ed-nav-item" style="margin-bottom: 1rem; display: inline-block;">← 返回上一级</a>
+      <% } %>
+
+      <h1 class="ed-page-title"><%= currentPath === 'root' ? '根目录' : currentPath %></h1>
+
+      <% if (directories.length > 0) { %>
+        <div class="ed-folders">
+          <% directories.forEach(function(dir) { %>
+            <a href="/category/<%= dir.path %>" class="ed-folder-link">
+              📁 <%= dir.name %>
+              <% if (dir.isEmpty) { %><span class="ed-folder-empty">(空)</span><% } %>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <% if (isEmpty) { %>
+        <div class="ed-empty">此目录为空</div>
+      <% } else if (files.length === 0) { %>
         <div class="ed-empty">暂无文件</div>
       <% } else { %>
         <% files.forEach(function(file) { %>
@@ -39,10 +58,6 @@
               <%= formatNumber(file.download_count) %> 次下载
               <% if (file.last_download_at) { %>
                 <span> · </span>最后下载 <%= formatDate(file.last_download_at) %>
-              <% } %>
-              <% if (file.sha256) { %>
-                <span> · </span>
-                <span class="ed-file-sha"><%= file.sha256.substring(0, 16) %></span>
               <% } %>
             </div>
           </div>

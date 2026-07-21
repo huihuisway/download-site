@@ -6,6 +6,7 @@ const { db } = require('../db');
 const { config } = require('../config');
 const statsService = require('../services/stats.service');
 const themeService = require('../services/theme.service');
+const folderTreeService = require('../services/folder-tree.service');
 const { formatFileSize, formatDate } = require('../utils/format');
 const { createFileStream } = require('../utils/stream');
 const { ensureInSandbox } = require('../utils/filename');
@@ -159,62 +160,51 @@ router.use((req, res, next) => {
   next();
 });
 
-// 首页 - 所有分类的文件列表
+// 首页 - 顶层目录浏览
 router.get('/', (req, res) => {
   const siteInfo = themeService.getSiteInfo();
-  const categories = getCategoriesWithDirectories();
-
-  const filesByCategory = {};
-  for (const cat of categories) {
-    filesByCategory[cat] = db.prepare(`
-      SELECT * FROM download_logs
-      WHERE category = ?
-      ORDER BY file_name ASC
-    `).all(cat);
-  }
+  const allFiles = db.prepare('SELECT * FROM download_logs ORDER BY file_path ASC').all();
+  const physicalFolders = folderTreeService.listPhysicalFolders(config.downloadDir);
+  const directory = folderTreeService.listFolderEntries({ currentPath: 'root', files: allFiles, physicalFolders });
 
   const totalFiles = db.prepare('SELECT COUNT(*) as count FROM download_logs').get().count;
   const totalDownloads = db.prepare('SELECT COALESCE(SUM(download_count), 0) as total FROM download_logs').get().total;
 
   renderTheme(res, 'index', {
     title: siteInfo.site_name,
-    categories,
-    filesByCategory,
+    currentPath: 'root',
+    breadcrumbs: [],
+    directories: directory.directories,
+    files: [],
     totalFiles,
     totalDownloads,
+    isEmpty: false,
   });
 });
 
-// 分类页
-router.get('/category/:category', (req, res) => {
+// 分类页 - 支持多层路径浏览
+router.get(['/category', '/category/*'], (req, res) => {
   const siteInfo = themeService.getSiteInfo();
-  const { category } = req.params;
-  const allCategories = getTrackedCategories();
-
-  const categoryCounts = {};
-  for (const cat of allCategories) {
-    categoryCounts[cat] = db.prepare('SELECT COUNT(*) as count FROM download_logs WHERE category = ?').get(cat).count;
-  }
-
-  const files = db.prepare(`
-    SELECT * FROM download_logs
-    WHERE category = ?
-    ORDER BY file_name ASC
-  `).all(category);
+  const currentPath = folderTreeService.normalizeFolderPath(req.params[0] || 'root');
+  const allFiles = db.prepare('SELECT * FROM download_logs ORDER BY file_path ASC').all();
+  const physicalFolders = folderTreeService.listPhysicalFolders(config.downloadDir);
+  const directory = folderTreeService.listFolderEntries({ currentPath, files: allFiles, physicalFolders });
 
   const categoryStats = {
-    file_count: files.length,
-    total_downloads: files.reduce((sum, f) => sum + (Number(f.download_count) || 0), 0),
-    total_size: files.reduce((sum, f) => sum + (Number(f.file_size) || 0), 0),
+    file_count: directory.files.length,
+    total_downloads: directory.files.reduce((sum, f) => sum + (Number(f.download_count) || 0), 0),
+    total_size: directory.files.reduce((sum, f) => sum + (Number(f.file_size) || 0), 0),
   };
 
   renderTheme(res, 'category', {
-    title: `${category} - ${siteInfo.site_name}`,
-    category,
-    files,
+    title: `${directory.currentPath === 'root' ? '目录' : directory.currentPath} - ${siteInfo.site_name}`,
+    currentPath: directory.currentPath,
+    parentPath: directory.parentPath,
+    breadcrumbs: directory.breadcrumbs,
+    directories: directory.directories,
+    files: directory.files,
     stats: categoryStats,
-    allCategories,
-    categoryCounts,
+    isEmpty: directory.isEmpty,
   });
 });
 

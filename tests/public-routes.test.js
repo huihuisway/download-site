@@ -46,6 +46,10 @@ describe('public routes', () => {
     fs.mkdirSync(dataDir, { recursive: true });
     fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, 'docs'), { recursive: true });
     fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'a.txt'), 'hello public route');
+    // Nested folder structure for folder browsing tests
+    fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'guides', 'v1'), { recursive: true });
+    fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'guides', 'v1', 'banner.png'), 'fake image');
+    fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'empty'), { recursive: true });
     sessionDir = path.join(__dirname, '..', 'data', 'sessions');
 
     const { db } = require('../src/db');
@@ -56,6 +60,10 @@ describe('public routes', () => {
     db.prepare(
       'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).run('a.txt', 'docs/a.txt', 'docs', 18, 0, 'route test file', 'text/plain');
+
+    db.prepare(
+      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run('banner.png', 'docs/guides/v1/banner.png', 'docs', 10, 0, 'nested file', 'image/png');
 
     const app = require('../src/app');
     server = await new Promise((resolve) => {
@@ -107,7 +115,7 @@ describe('public routes', () => {
     const category = await request(server, '/category/docs');
 
     assert.doesNotMatch(home.body, /\/download\/1/);
-    assert.match(home.body, /\/docs\/a\.txt/);
+    assert.match(home.body, /docs/);
 
     assert.doesNotMatch(category.body, /\/download\/1/);
     assert.match(category.body, /\/docs\/a\.txt/);
@@ -160,5 +168,18 @@ describe('public routes', () => {
 
     assert.strictEqual(response.statusCode, 403);
     assert.match(response.body, /无后台权限/);
+  });
+
+  it('GET /category/docs/guides 应只显示直接子目录', async () => {
+    const response = await request(server, '/category/docs/guides');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.body, /docs\/guides\/v1/);
+    assert.doesNotMatch(response.body, /banner\.png/);
+  });
+
+  it('GET /category/docs/empty 应显示空目录页', async () => {
+    const response = await request(server, '/category/docs/empty');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.body, /此目录为空/);
   });
 });

@@ -7,47 +7,31 @@
     </div>
   </div>
 </div>
-<nav class="cl-tabs">
-  <div class="page-wrap" style="display:flex;gap:0;">
-    <a href="/" class="cl-tab active">全部<span class="cl-tab-count"><%= totalFiles %></span></a>
-    <% categories.forEach(function(cat) { %>
-      <a href="/category/<%= cat %>" class="cl-tab"><%= cat %><span class="cl-tab-count"><%= filesByCategory[cat] ? filesByCategory[cat].length : 0 %></span></a>
-    <% }); %>
-  </div>
-</nav>
 <div class="cl-content page-wrap">
-  <% if (categories.length === 0) { %>
+  <% if (directories.length === 0) { %>
     <div class="cl-empty">暂无文件</div>
   <% } else { %>
-    <% categories.forEach(function(cat) { %>
-      <% var files = filesByCategory[cat] || []; %>
-      <% if (files.length > 0) { %>
-        <h2 class="cl-section-title"><%= cat %></h2>
-        <div class="cl-card">
-          <table class="cl-table">
-            <thead><tr><th>文件名</th><th style="width:100px">大小</th><th style="width:80px">下载</th><th style="width:100px">操作</th></tr></thead>
-            <tbody>
-              <% files.forEach(function(file) { %>
-                <tr>
-                  <td>
-                    <div class="cl-file-name-cell">
-                      <span class="cl-file-icon cl-icon-<%= getFileIconClass(file.file_name) %>"><%= getFileExt(file.file_name) %></span>
-                      <div>
-                        <div class="cl-file-name"><a href="<%= buildFilePageUrl(file.file_path) %>" style="color: inherit; text-decoration: none;"><%= file.file_name %></a></div>
-                        <% if (file.description) { %><div class="cl-file-desc"><%= file.description %></div><% } %>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="cl-muted"><%= formatFileSize(file.file_size) %></td>
-                  <td class="cl-muted"><%= formatNumber(file.download_count) %></td>
-                  <td><a href="<%= buildFilePageUrl(file.file_path) %>" class="cl-dl-btn">查看</a></td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div>
-      <% } %>
-    <% }); %>
+    <div class="cl-card">
+      <table class="cl-table">
+        <thead><tr><th>文件夹</th><th style="width:100px">操作</th></tr></thead>
+        <tbody>
+          <% directories.forEach(function(dir) { %>
+            <tr>
+              <td>
+                <div class="cl-file-name-cell">
+                  <span class="cl-file-icon cl-icon-default">📁</span>
+                  <div>
+                    <div class="cl-file-name"><a href="/category/<%= dir.path %>" style="color: inherit; text-decoration: none;"><%= dir.name %></a></div>
+                    <% if (dir.isEmpty) { %><div class="cl-file-desc" style="color: var(--text-muted);">(空)</div><% } %>
+                  </div>
+                </div>
+              </td>
+              <td><a href="/category/<%= dir.path %>" class="cl-dl-btn">进入</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
   <% } %>
 </div>
 <%- include('../../partials/footer') %>
