@@ -84,11 +84,11 @@ export const api = {
     return handleResponse(res);
   },
 
-  async moveFile(id, category) {
+  async moveFile(id, folderPath) {
     const res = await fetch(`${API_BASE}/files/${id}/move`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category }),
+      body: JSON.stringify({ folderPath }),
     });
     return handleResponse(res);
   },
@@ -116,6 +116,34 @@ export const api = {
 
   async deleteCategory(name) {
     const res = await fetch(`${API_BASE}/categories/${name}`, { method: 'DELETE' });
+    return handleResponse(res);
+  },
+
+  // 目录管理
+  async createFolder(folderPath) {
+    const res = await fetch(`${API_BASE}/folders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: folderPath }),
+    });
+    return handleResponse(res);
+  },
+
+  async renameFolder(folderPath, newName) {
+    const res = await fetch(`${API_BASE}/folders/rename`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: folderPath, newName }),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteFolder(folderPath, recursive = false) {
+    const res = await fetch(`${API_BASE}/folders/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: folderPath, recursive }),
+    });
     return handleResponse(res);
   },
 

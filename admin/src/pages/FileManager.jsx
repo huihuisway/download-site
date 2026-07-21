@@ -22,9 +22,7 @@ function FileIcon({ name, className = 'w-4 h-4' }) {
 
 function UploadModal({ categories, onClose, onUploaded }) {
   const [files, setFiles] = useState([]);
-  const [category, setCategory] = useState(categories[0] || '');
-  const [newCategory, setNewCategory] = useState('');
-  const [useNewCategory, setUseNewCategory] = useState(false);
+  const [folderPath, setFolderPath] = useState('');
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
 
@@ -32,9 +30,7 @@ function UploadModal({ categories, onClose, onUploaded }) {
     if (files.length === 0) return;
     setUploading(true);
     try {
-      const targetCategory = useNewCategory ? newCategory : category;
-      if (!targetCategory) return alert('请选择或输入分类');
-      await api.uploadFiles(files, targetCategory);
+      await api.uploadFiles(files, folderPath);
       onUploaded();
       onClose();
     } catch (err) {
@@ -60,26 +56,18 @@ function UploadModal({ categories, onClose, onUploaded }) {
 
         <div className="p-6 space-y-5">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>目标分类</label>
-            <div className="flex gap-2 mb-3">
-              <button onClick={() => setUseNewCategory(false)}
-                className="px-3 py-1.5 text-xs font-medium transition-colors"
-                style={{ background: !useNewCategory ? 'var(--primary)' : 'var(--muted)', color: !useNewCategory ? '#fff' : 'var(--text-secondary)' }}>
-                已有分类
-              </button>
-              <button onClick={() => setUseNewCategory(true)}
-                className="px-3 py-1.5 text-xs font-medium transition-colors"
-                style={{ background: useNewCategory ? 'var(--primary)' : 'var(--muted)', color: useNewCategory ? '#fff' : 'var(--text-secondary)' }}>
-                新建分类
-              </button>
-            </div>
-            {useNewCategory ? (
-              <input type="text" className="input-field" placeholder="输入新分类名（如: software）" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} autoFocus />
-            ) : (
-              <select className="input-field" value={category} onChange={(e) => setCategory(e.target.value)}>
-                {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-            )}
+            <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>目标目录</label>
+            <select className="input-field" value={folderPath} onChange={(e) => setFolderPath(e.target.value)}>
+              <option value="">根目录</option>
+              {categories.map((cat) => (
+                <option key={cat.category} value={cat.category}>
+                  {' '.repeat(cat.category.split('/').length - 1)}{cat.category}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+              如需创建新目录，请先在"目录管理"页面创建
+            </p>
           </div>
 
           <div>
@@ -154,7 +142,7 @@ function FileManager() {
   }, [page, filterCategory]);
 
   const loadCategories = async () => {
-    try { const r = await api.getCategories(); setCategories(r.categories.map((c) => c.category)); }
+    try { const r = await api.getCategories(); setCategories(r.categories); }
     catch (err) { console.error(err); }
   };
 
@@ -214,7 +202,7 @@ function FileManager() {
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
             <select className="input-field !pl-10 !w-44" value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}>
               <option value="">全部分类</option>
-              {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+              {categories.map((cat) => <option key={cat.category} value={cat.category}>{cat.category}</option>)}
             </select>
           </div>
         </div>

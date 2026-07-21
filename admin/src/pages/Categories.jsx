@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FolderTree, Plus, Trash2, Files, Download, HardDrive, RefreshCw } from 'lucide-react';
+import { FolderTree, Plus, Trash2, Edit3, RefreshCw, ChevronRight, ChevronDown, Check, X, Files, Download, HardDrive } from 'lucide-react';
 import api from '../api/client';
 import { formatSize } from '../lib/utils';
 
@@ -8,10 +8,26 @@ function Categories() {
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [expandedPaths, setExpandedPaths] = useState(new Set());
+  const [renamingPath, setRenamingPath] = useState(null);
+  const [newRenameValue, setNewRenameValue] = useState('');
 
   const loadCategories = async () => {
     setLoading(true);
-    try { setCategories((await api.getCategories()).categories); }
+    try {
+      const result = await api.getCategories();
+      setCategories(result.categories);
+
+      // Auto-expand first-level folders
+      const topLevel = new Set();
+      result.categories.forEach(cat => {
+        const parts = cat.category.split('/');
+        if (parts.length > 0) {
+          topLevel.add(parts[0]);
+        }
+      });
+      setExpandedPaths(topLevel);
+    }
     catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -21,29 +37,180 @@ function Categories() {
   const handleCreate = async () => {
     if (!newName.trim()) return;
     setCreating(true);
-    try { await api.createCategory(newName.trim()); setNewName(''); await loadCategories(); }
+    try {
+      await api.createFolder(newName.trim());
+      setNewName('');
+      await loadCategories();
+    }
     catch (err) { alert(`创建失败: ${err.message}`); }
     finally { setCreating(false); }
   };
 
-  const handleDelete = async (name) => {
-    if (!confirm(`确认删除分类 "${name}"？仅在分类为空时成功。`)) return;
-    try { await api.deleteCategory(name); await loadCategories(); }
+  const handleRename = async (folderPath) => {
+    if (!newRenameValue.trim()) return;
+    try {
+      await api.renameFolder(folderPath, newRenameValue.trim());
+      setRenamingPath(null);
+      setNewRenameValue('');
+      await loadCategories();
+    }
+    catch (err) { alert(`重命名失败: ${err.message}`); }
+  };
+
+  const handleDelete = async (folderPath, recursive = false) => {
+    if (recursive) {
+      if (!confirm(`确认递归删除目录 "${folderPath}" 及其全部子目录和文件？此操作不可恢复！`)) return;
+    } else {
+      if (!confirm(`确认删除空目录 "${folderPath}"？`)) return;
+    }
+    try {
+      await api.deleteFolder(folderPath, recursive);
+      await loadCategories();
+    }
     catch (err) { alert(`删除失败: ${err.message}`); }
   };
+
+  const toggleExpand = (path) => {
+    const newExpanded = new Set(expandedPaths);
+    if (newExpanded.has(path)) {
+      newExpanded.delete(path);
+    } else {
+      newExpanded.add(path);
+    }
+    setExpandedPaths(newExpanded);
+  };
+
+  const getFoldersByParent = (parentPath) => {
+    return categories.filter(cat => {
+      const parts = cat.category.split('/');
+      const parentParts = parentPath ? parentPath.split('/') : [];
+
+      if (parentPath === '') {
+        // Top level folders
+        return parts.length === 1;
+      } else {
+        // Direct children of parentPath
+        return parts.length === parentParts.length + 1 &&
+               parts.slice(0, -1).join('/') === parentPath;
+      }
+    });
+  };
+
+  const FolderNode = ({ category, depth = 0 }) => {
+    const hasChildren = categories.some(c => c.category.startsWith(category.category + '/'));
+    const isExpanded = expandedPaths.has(category.category);
+    const isEmpty = category.file_count === 0 && !hasChildren;
+
+    return (
+      <div style={{ marginLeft: `${depth * 1.5}rem` }}>
+        <div className="card !p-4 mb-2 group" style={{ borderLeft: '3px solid var(--primary)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1">
+              {hasChildren && (
+                <button onClick={() => toggleExpand(category.category)} className="btn-ghost !p-1">
+                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+              )}
+              {!hasChildren && <div className="w-6" />}
+
+              {renamingPath === category.category ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="text"
+                    className="input-field !py-1 !text-sm flex-1"
+                    value={newRenameValue}
+                    onChange={(e) => setNewRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRename(category.category);
+                      if (e.key === 'Escape') setRenamingPath(null);
+                    }}
+                    autoFocus
+                  />
+                  <button onClick={() => handleRename(category.category)} className="btn-ghost !p-1.5" style={{ color: 'var(--primary)' }}>
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setRenamingPath(null)} className="btn-ghost !p-1.5">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <FolderTree className="w-5 h-5" style={{ color: 'var(--primary)' }} />
+                  <span className="font-semibold" style={{ color: 'var(--text)' }}>{category.category.split('/').pop()}</span>
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {isEmpty ? '空' : `${category.file_count} 个文件`}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {renamingPath !== category.category && (
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => {
+                    setRenamingPath(category.category);
+                    setNewRenameValue(category.category.split('/').pop());
+                  }}
+                  className="btn-ghost !p-1.5"
+                  title="重命名"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+                {isEmpty ? (
+                  <button
+                    onClick={() => handleDelete(category.category, false)}
+                    className="btn-ghost !p-1.5"
+                    style={{ color: 'var(--error)' }}
+                    title="删除空目录"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleDelete(category.category, true)}
+                    className="btn-ghost !p-1.5"
+                    style={{ color: 'var(--error)' }}
+                    title="递归删除"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {isExpanded && hasChildren && (
+            <div className="mt-3">
+              {getFoldersByParent(category.category).map(child => (
+                <FolderNode key={child.category} category={child} depth={depth + 1} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const topLevelFolders = getFoldersByParent('');
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="page-title">目录管理</h2>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>管理文件分类目录</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>管理文件目录结构</p>
       </div>
 
       <div className="card !p-5">
-        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>创建新分类</h3>
+        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>创建新目录</h3>
         <div className="flex gap-3">
-          <input type="text" className="input-field flex-1" placeholder="输入分类名称（如: software, documents）"
-            value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreate()} />
+          <input
+            type="text"
+            className="input-field flex-1"
+            placeholder="输入目录路径（如: docs/guides/v1）"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+          />
           <button className="btn-primary" onClick={handleCreate} disabled={creating || !newName.trim()}>
             <Plus className="w-4 h-4 mr-1.5" />{creating ? '创建中...' : '创建'}
           </button>
@@ -57,46 +224,13 @@ function Categories() {
       ) : categories.length === 0 ? (
         <div className="card text-center py-16">
           <FolderTree className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
-          <p style={{ color: 'var(--text-muted)' }}>暂无分类</p>
+          <p style={{ color: 'var(--text-muted)' }}>暂无目录</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((cat) => {
-            const isEmpty = cat.file_count === 0;
-            return (
-              <div key={cat.category} className="card !p-5 group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 flex items-center justify-center" style={{ background: 'var(--muted)' }}>
-                      <FolderTree className="w-5 h-5" style={{ color: 'var(--primary)' }} />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold" style={{ color: 'var(--text)' }}>{cat.category}</h4>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{isEmpty ? '空分类' : `${cat.file_count} 个文件`}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => handleDelete(cat.category)} disabled={!isEmpty}
-                    className="btn-ghost !p-1.5 opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity"
-                    title={isEmpty ? '删除' : '请先清空文件'}>
-                    <Trash2 className="w-3.5 h-3.5" style={{ color: 'var(--error)' }} />
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { icon: Files, value: cat.file_count, label: '文件' },
-                    { icon: Download, value: cat.total_downloads, label: '下载' },
-                    { icon: HardDrive, value: formatSize(cat.total_size), label: '大小' },
-                  ].map(({ icon: Icon, value, label }) => (
-                    <div key={label} className="p-2.5 text-center" style={{ background: 'var(--muted)' }}>
-                      <Icon className="w-3.5 h-3.5 mx-auto mb-1" style={{ color: 'var(--text-muted)' }} />
-                      <p className="text-sm font-bold tabular-nums truncate" style={{ color: 'var(--text)' }}>{value}</p>
-                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <div>
+          {topLevelFolders.map(cat => (
+            <FolderNode key={cat.category} category={cat} />
+          ))}
         </div>
       )}
     </div>
