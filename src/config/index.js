@@ -22,6 +22,12 @@ const config = {
     callbackUrl: process.env.OAUTH_CALLBACK_URL,
   },
 
+  // 本地管理员（论坛未上线时的临时方案）
+  admin: {
+    username: process.env.ADMIN_USERNAME || '',
+    password: process.env.ADMIN_PASSWORD || '',
+  },
+
   // Session
   session: {
     secret: process.env.SESSION_SECRET || 'dev-secret-change-me',

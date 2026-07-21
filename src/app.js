@@ -93,6 +93,8 @@ oauthRouter.get('/login', oauthController.startOAuthFlow);
 oauthRouter.get('/callback', oauthController.handleCallback);
 oauthRouter.get('/logout', oauthController.logout);
 oauthRouter.get('/me', oauthController.getMe);
+oauthRouter.get('/config', oauthController.getAuthConfig);
+oauthRouter.post('/local-login', oauthController.localLogin);
 app.use('/auth', oauthRouter);
 
 // ===== 后台 API =====
