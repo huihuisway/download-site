@@ -81,7 +81,7 @@ GET /api/v1/files
 | `pageSize` | number | 50 | 每页数量（最大 200） |
 | `sortBy` | string | `file_name` | 排序字段：`file_name` / `file_size` / `download_count` / `file_mtime` / `created_at` |
 | `sortOrder` | string | `ASC` | 排序方向：`ASC` / `DESC` |
-| `category` | string | — | 按分类过滤 |
+| `category` | string | — | 按文件夹路径过滤（如 `docs/guides/v1`） |
 | `search` | string | — | 按文件名搜索 |
 
 **示例：**
@@ -100,7 +100,7 @@ curl -H "Authorization: Bearer dk_xxx" \
         "id": 1,
         "file_name": "readme.zip",
         "file_path": "software/readme.zip",
-        "category": "software",
+        "category": "documents",
         "file_size": 1024,
         "download_count": 5,
         "mime_type": "application/zip",
@@ -179,7 +179,7 @@ POST /api/v1/files/upload
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `files` | File[] | 是 | 上传的文件（最多 20 个） |
-| `category` | string | 否 | 目标分类（通过 query 参数传递） |
+| `category` | string | 否 | 目标文件夹路径（通过 query 参数传递，如 `docs/guides`） |
 
 **示例：**
 ```bash
@@ -319,9 +319,9 @@ curl -X POST \
 
 ---
 
-## 四、分类接口
+## 四、目录接口
 
-### 4.1 获取分类列表
+### 4.1 获取文件夹列表
 
 ```
 GET /api/v1/categories
@@ -346,10 +346,10 @@ curl -H "Authorization: Bearer dk_xxx" \
         "total_downloads": 45
       },
       {
-        "category": "software",
+        "category": "documents/guides",
         "file_count": 5,
-        "total_size": 51200000,
-        "total_downloads": 120
+        "total_size": 512000,
+        "total_downloads": 12
       }
     ]
   }
@@ -358,7 +358,7 @@ curl -H "Authorization: Bearer dk_xxx" \
 
 ---
 
-### 4.2 创建分类
+### 4.2 创建目录
 
 > 权限：**write**
 
@@ -370,14 +370,14 @@ POST /api/v1/categories
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `name` | string | 是 | 分类名称 |
+| `name` | string | 是 | 目录路径（支持多级，如 `docs/guides/v2`） |
 
 **示例：**
 ```bash
 curl -X POST \
   -H "Authorization: Bearer dk_xxx" \
   -H "Content-Type: application/json" \
-  -d '{"name":"images"}' \
+  -d '{"name":"docs/guides/v2"}' \
   http://localhost:8888/api/v1/categories
 ```
 
@@ -386,15 +386,15 @@ curl -X POST \
 {
   "success": true,
   "data": {
-    "category": "images",
-    "path": "/path/to/downloads/images"
+    "category": "docs/guides/v2",
+    "path": "/path/to/downloads/docs/guides/v2"
   }
 }
 ```
 
 ---
 
-### 4.3 删除分类
+### 4.3 删除目录
 
 > 权限：**write**
 
@@ -402,7 +402,7 @@ curl -X POST \
 DELETE /api/v1/categories/:name
 ```
 
-仅在分类为空（无文件）时可删除。
+仅在目录为空（无文件）时可删除。如需删除非空目录，请使用递归删除接口。
 
 **示例：**
 ```bash

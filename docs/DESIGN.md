@@ -67,7 +67,7 @@
 │  │   └── guide.txt          │ + file_size, mime_type    │   │
 │  ├── software/              │ + sha256, uploaded_by     │   │
 │  │   ├── app-v1.0.zip       │ + description             │   │
-│  │   └── app-v1.1.zip       │ + category (子目录名)     │   │
+│  │   └── app-v1.1.zip       │ + category (完整父目录路径) │   │
 │  └── images/                └───────────────────────────┘   │
 │      └── banner.png                                         │
 └─────────────────────────────────────────────────────────────┘
@@ -78,7 +78,7 @@
 | 决策项 | 结论 | 说明 |
 |---|---|---|
 | 前台下载权限 | 完全开放 | 知道链接即可下载，不做身份检查 |
-| 目录结构 | 物理子目录 | `downloads/category/file.zip`，分类从子目录路径自动推断 |
+| 目录结构 | 多级物理子目录 | `downloads/docs/guides/v1/file.zip`，分类为完整父目录路径 |
 | 上传安全 | 扩展名白名单 | 限定允许的文件扩展名 |
 | OAuth CSRF | 使用 state 参数 | 标准 OAuth 2.0 安全实践 |
 | Session 存储 | SQLite 持久化 | 进程重启不丢失管理员登录态 |
@@ -122,13 +122,13 @@
 
 | 功能 | 说明 |
 |---|---|
-| 文件上传 | 支持单文件 / 多文件 / 批量上传，上传时选择目标分类（子目录） |
+| 文件上传 | 支持单文件 / 多文件 / 批量上传，上传时选择目标文件夹（已有多级目录） |
 | 文件删除 | 单个 / 批量删除，物理文件 + DB 记录同步清理 |
 | 文件重命名 | 修改显示文件名，同步更新 DB |
 | 文件描述编辑 | 为文件添加 / 修改文字说明 |
 | 下载统计看板 | 总下载量、热门 Top 10、按分类统计、近期下载趋势 |
 | 手动同步按钮 | 触发物理目录 ↔ DB 双向同步 |
-| 目录管理 | 创建 / 删除分类目录（对应物理子目录） |
+| 目录管理 | 创建 / 重命名 / 删除多级目录（支持子树操作和递归删除） |
 
 ### 4.3 自动同步与级联清理机制
 
@@ -234,7 +234,7 @@
 | id | INTEGER | PRIMARY KEY AUTOINCREMENT | 自增主键 |
 | file_name | TEXT | NOT NULL | 清洗后的安全文件名 |
 | file_path | TEXT | NOT NULL, UNIQUE | 文件相对路径（如 `software/app-v1.0.zip`） |
-| category | TEXT | NOT NULL | 分类名（从子目录推断，如 `software`） |
+| category | TEXT | NOT NULL | 完整父目录路径（从文件路径推导，如 `docs/guides/v1`） |
 | file_size | INTEGER | NOT NULL | 文件大小 (bytes) |
 | mime_type | TEXT | | MIME 类型（如 `application/zip`） |
 | sha256 | TEXT | | SHA256 校验值（新文件 / 变更文件计算） |
@@ -559,9 +559,9 @@ LOG_LEVEL=info
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | `/` | 首页，展示所有分类的文件列表 |
-| GET | `/:category` | 分类页，展示指定分类下的文件 |
-| GET | `/download/:id` | 下载文件（触发计数 + 流式返回） |
+| GET | `/` | 首页，展示根目录文件列表 |
+| GET | `/category/*` | 目录页，展示指定多级文件夹下的直接子目录和文件 |
+| GET | `/d/*` | 下载文件（触发计数 + 流式返回） |
 
 ### 10.2 后台 API (需鉴权)
 
@@ -571,13 +571,14 @@ LOG_LEVEL=info
 | POST | `/api/admin/files/upload` | 上传文件（multipart/form-data） |
 | DELETE | `/api/admin/files/:id` | 删除单个文件 |
 | DELETE | `/api/admin/files/batch` | 批量删除文件（body: { ids: [] }） |
-| PUT | `/api/admin/files/:id` | 更新文件信息（重命名 / 描述 / 移动分类） |
+| PUT | `/api/admin/files/:id` | 更新文件信息（重命名 / 描述 / 移动文件夹） |
 | GET | `/api/admin/stats` | 获取统计看板数据 |
 | GET | `/api/admin/stats/top` | 获取热门 Top 10 |
 | POST | `/api/admin/sync` | 手动触发目录同步 |
-| GET | `/api/admin/categories` | 获取分类列表 |
-| POST | `/api/admin/categories` | 创建分类目录 |
-| DELETE | `/api/admin/categories/:name` | 删除分类目录 |
+| GET | `/api/admin/categories` | 获取文件夹树列表 |
+| POST | `/api/admin/categories` | 创建多级目录 |
+| PUT | `/api/admin/folders/rename` | 重命名目录（子树路径同步更新） |
+| POST | `/api/admin/folders/delete` | 删除目录（支持空目录删除和递归删除） |
 
 ### 10.3 OAuth 路由
 
