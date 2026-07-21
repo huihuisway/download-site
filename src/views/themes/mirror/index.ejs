@@ -18,7 +18,12 @@
       <tbody>
         <% directories.forEach(function(dir) { %>
           <tr>
-            <td><a href="/category/<%= dir.path %>" class="mi-filename">📁 <%= dir.name %></a></td>
+            <td>
+              <a href="/category/<%= dir.path %>" class="mi-filename mi-folder-link">
+                <span class="mi-folder-icon" aria-hidden="true"></span>
+                <span><%= dir.name %></span>
+              </a>
+            </td>
             <td class="mi-right"><a href="/category/<%= dir.path %>">进入 →</a></td>
           </tr>
         <% }); %>

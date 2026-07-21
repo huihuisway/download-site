@@ -23,8 +23,8 @@
     <main class="term-main">
       <% if (directories.length > 0) { %>
         <% directories.forEach(function(dir) { %>
-          <a href="/category/<%= dir.path %>" class="term-file">
-            <div class="term-file-name">📁 <%= dir.name %></div>
+          <a href="/category/<%= dir.path %>" class="term-file term-folder-link">
+            <div class="term-file-name"><span class="term-folder-icon" aria-hidden="true"></span><span><%= dir.name %></span></div>
             <% if (dir.isEmpty) { %><div class="term-file-desc">// empty</div><% } %>
           </a>
         <% }); %>

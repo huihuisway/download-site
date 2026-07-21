@@ -28,7 +28,8 @@
         <div class="ed-folders">
           <% directories.forEach(function(dir) { %>
             <a href="/category/<%= dir.path %>" class="ed-folder-link">
-              📁 <%= dir.name %>
+              <span class="ed-folder-icon" aria-hidden="true"></span>
+              <span><%= dir.name %></span>
               <% if (dir.isEmpty) { %><span class="ed-folder-empty">(空)</span><% } %>
             </a>
           <% }); %>

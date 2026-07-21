@@ -26,6 +26,41 @@
 
 .mi-filename { font-family: var(--font-mono); color: var(--primary); text-decoration: none; }
 .mi-filename:hover { text-decoration: underline; }
+.mi-folder-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.mi-folder-icon {
+  position: relative;
+  width: 16px;
+  height: 12px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.mi-folder-icon::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 16px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+.mi-folder-icon::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0;
+  width: 7px;
+  height: 4px;
+  border: 1.5px solid currentColor;
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  box-sizing: border-box;
+}
 .mi-size, .mi-date { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
 .mi-desc { font-size: 12px; color: var(--text-muted); }
 
