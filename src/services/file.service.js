@@ -8,15 +8,20 @@ const { sanitizeFilename, isAllowedExtension, ensureInSandbox } = require('../ut
 const { guessMimeType } = require('./sync.service');
 const folderTreeService = require('./folder-tree.service');
 
+const getUploadFolderPath = (req) => {
+  const rawFolderPath = req.query.category || req.body.category || req.params.category || '';
+  const normalized = folderTreeService.normalizeFolderPath(rawFolderPath);
+  return normalized === 'root' ? '' : normalized;
+};
+
 // multer 存储配置
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // 优先从 query 参数读取分类（解决 multipart 中 text 字段在 files 之后到达的问题）
-    const category = req.query.category || req.body.category || req.params.category || 'uncategorized';
-    const safeCategory = sanitizeFilename(category);
-    const destDir = path.join(config.downloadDir, safeCategory);
+    const folderPath = getUploadFolderPath(req);
+    const destDir = folderPath ? path.join(config.downloadDir, folderPath) : config.downloadDir;
 
     try {
+      ensureInSandbox(destDir);
       fs.mkdirSync(destDir, { recursive: true });
       cb(null, destDir);
     } catch (err) {
@@ -67,7 +72,6 @@ const uploadFiles = (req, res, extraFields = {}) => {
       return res.status(400).json({ error: '未选择文件' });
     }
 
-    const category = req.query.category || req.body.category || 'uncategorized';
     const uploadedBy = req.session?.user?.id || null;
 
     const insertStmt = db.prepare(`
@@ -84,6 +88,7 @@ const uploadFiles = (req, res, extraFields = {}) => {
         const relativePath = path.relative(config.downloadDir, file.path).replace(/\\/g, '/');
         const stat = fs.statSync(file.path);
         const mime = guessMimeType(file.originalname);
+        const category = folderTreeService.getParentFolderPath(relativePath);
 
         const insertResult = insertStmt.run({
           file_name: file.filename,
@@ -391,25 +396,22 @@ const getCategories = () => {
     ORDER BY category
   `).all();
 
-  // 补充没有文件的物理目录
-  if (fs.existsSync(config.downloadDir)) {
-    const dirs = fs.readdirSync(config.downloadDir, { withFileTypes: true })
-      .filter((d) => d.isDirectory())
-      .map((d) => d.name);
+  const categoryMap = new Map(categories.map((category) => [category.category, category]));
 
-    for (const dir of dirs) {
-      if (!categories.find((c) => c.category === dir)) {
-        categories.push({
-          category: dir,
-          file_count: 0,
-          total_size: 0,
-          total_downloads: 0,
-        });
-      }
+  for (const folderPath of folderTreeService.listPhysicalFolders(config.downloadDir)) {
+    if (!categoryMap.has(folderPath)) {
+      const emptyCategory = {
+        category: folderPath,
+        file_count: 0,
+        total_size: 0,
+        total_downloads: 0,
+      };
+      categories.push(emptyCategory);
+      categoryMap.set(folderPath, emptyCategory);
     }
   }
 
-  return categories;
+  return categories.sort((a, b) => a.category.localeCompare(b.category));
 };
 
 module.exports = {
@@ -427,3 +429,4 @@ module.exports = {
   deleteCategory,
   getCategories,
 };
+

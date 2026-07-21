@@ -4,6 +4,7 @@ const { SYNC_BATCH_SIZE, CHECKSUM_BATCH_SIZE } = require('../config/constants');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const path = require('path');
+const folderTreeService = require('./folder-tree.service');
 
 const getAllPhysicalFiles = async () => {
   const files = [];
@@ -12,8 +13,8 @@ const getAllPhysicalFiles = async () => {
     let entries;
     try {
       entries = await fsp.readdir(dir, { withFileTypes: true });
-    } catch {
-      return; // 目录不存在或无权限
+    } catch (err) {
+      throw new Error(`扫描目录失败: ${dir} (${err.message})`);
     }
 
     for (const entry of entries) {
@@ -24,10 +25,11 @@ const getAllPhysicalFiles = async () => {
         await scanDir(fullPath, relativePath);
       } else if (entry.isFile()) {
         const stat = await fsp.stat(fullPath);
+        const normalizedPath = relativePath.replace(/\\/g, '/');
         files.push({
           file_name: entry.name,
-          file_path: relativePath.replace(/\\/g, '/'),
-          category: relativeBase ? relativeBase.split(path.sep)[0].replace(/\\/g, '/') : 'root',
+          file_path: normalizedPath,
+          category: folderTreeService.getParentFolderPath(normalizedPath),
           file_size: stat.size,
           file_mtime: stat.mtime.toISOString(),
           full_path: fullPath,
@@ -71,6 +73,7 @@ const syncDirectory = async () => {
     SET file_size = @file_size,
         file_mtime = @file_mtime,
         sha256 = NULL,
+        category = @category,
         updated_at = CURRENT_TIMESTAMP
     WHERE file_path = @file_path
   `);
@@ -83,13 +86,11 @@ const syncDirectory = async () => {
     let deleted = 0;
     const needsChecksum = [];
 
-    // UPSERT: 处理物理文件
     for (let i = 0; i < physicalFiles.length; i++) {
       const file = physicalFiles[i];
       const existing = dbPathMap.get(file.file_path);
 
       if (!existing) {
-        // 新文件 - 插入
         const mime = guessMimeType(file.file_name);
         upsertStmt.run({
           ...file,
@@ -97,24 +98,21 @@ const syncDirectory = async () => {
         });
         inserted++;
         needsChecksum.push(file.file_path);
-      } else if (existing.file_mtime !== file.file_mtime) {
-        // 文件已修改 - 更新元信息，标记重算 sha256
+      } else if (existing.file_mtime !== file.file_mtime || existing.category !== file.category) {
         updateMtimeStmt.run({
           file_size: file.file_size,
           file_mtime: file.file_mtime,
           file_path: file.file_path,
+          category: file.category,
         });
         updated++;
         needsChecksum.push(file.file_path);
       }
 
-      // 分批提交
       if ((i + 1) % SYNC_BATCH_SIZE === 0) {
-        // 事务内自动处理
       }
     }
 
-    // DELETE: 清理已删除的文件
     for (const record of dbRecords) {
       if (!physicalPathSet.has(record.file_path)) {
         deleteStmt.run(record.file_path);
@@ -127,7 +125,6 @@ const syncDirectory = async () => {
 
   const result = syncTransaction();
 
-  // 异步计算 SHA256（测试模式下跳过）
   if (result.needsChecksum.length > 0 && process.env.NODE_ENV !== 'test') {
     scheduleChecksumComputation(result.needsChecksum);
   }
@@ -156,7 +153,6 @@ const scheduleChecksumComputation = (filePaths) => {
     batchTransaction();
   };
 
-  // 分批处理
   for (let i = 0; i < filePaths.length; i += CHECKSUM_BATCH_SIZE) {
     const batch = filePaths.slice(i, i + CHECKSUM_BATCH_SIZE);
     setImmediate(() => processBatch(batch));
@@ -190,3 +186,4 @@ module.exports = {
   getAllDbRecords,
   guessMimeType,
 };
+
