@@ -6,6 +6,7 @@ const { MAX_FILE_SIZE } = require('../config/constants');
 const { db } = require('../db');
 const { sanitizeFilename, isAllowedExtension, ensureInSandbox } = require('../utils/filename');
 const { guessMimeType } = require('./sync.service');
+const folderTreeService = require('./folder-tree.service');
 
 // multer 存储配置
 const storage = multer.diskStorage({
@@ -197,9 +198,9 @@ const renameFile = (fileId, newName) => {
   const newRelativePath = path.relative(config.downloadDir, newFullPath).replace(/\\/g, '/');
   db.prepare(`
     UPDATE download_logs
-    SET file_name = ?, file_path = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).run(safeName, newRelativePath, fileId);
+    SET file_name = @file_name, file_path = @file_path, updated_at = CURRENT_TIMESTAMP
+    WHERE id = @id
+  `).run({ file_name: safeName, file_path: newRelativePath, id: fileId });
 
   return { old_path: record.file_path, new_path: newRelativePath, new_name: safeName };
 };
@@ -207,9 +208,9 @@ const renameFile = (fileId, newName) => {
 const updateDescription = (fileId, description) => {
   const result = db.prepare(`
     UPDATE download_logs
-    SET description = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).run(description || null, fileId);
+    SET description = @description, updated_at = CURRENT_TIMESTAMP
+    WHERE id = @id
+  `).run({ description: description || null, id: fileId });
 
   if (result.changes === 0) {
     throw new Error('文件记录不存在');
@@ -218,8 +219,8 @@ const updateDescription = (fileId, description) => {
   return { updated: true };
 };
 
-const moveFile = (fileId, newCategory) => {
-  const safeCategory = sanitizeFilename(newCategory);
+const moveFile = (fileId, folderPath) => {
+  const normalized = folderTreeService.normalizeFolderPath(folderPath);
   const record = db.prepare('SELECT * FROM download_logs WHERE id = ?').get(fileId);
   if (!record) {
     throw new Error('文件记录不存在');
@@ -228,53 +229,154 @@ const moveFile = (fileId, newCategory) => {
   const oldFullPath = path.join(config.downloadDir, record.file_path);
   ensureInSandbox(oldFullPath);
 
-  const newDir = path.join(config.downloadDir, safeCategory);
+  const newDir = normalized === 'root' ? config.downloadDir : path.join(config.downloadDir, normalized);
   fs.mkdirSync(newDir, { recursive: true });
 
   const newFullPath = path.join(newDir, record.file_name);
   ensureInSandbox(newFullPath);
 
   if (fs.existsSync(newFullPath)) {
-    throw new Error('目标分类下已存在同名文件');
+    throw new Error('目标目录下已存在同名文件');
   }
 
   fs.renameSync(oldFullPath, newFullPath);
 
   const newRelativePath = path.relative(config.downloadDir, newFullPath).replace(/\\/g, '/');
+  const newCategory = folderTreeService.getParentFolderPath(newRelativePath);
+
   db.prepare(`
     UPDATE download_logs
-    SET file_path = ?, category = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).run(newRelativePath, safeCategory, fileId);
+    SET file_path = @file_path, category = @category, updated_at = CURRENT_TIMESTAMP
+    WHERE id = @id
+  `).run({ file_path: newRelativePath, category: newCategory, id: fileId });
 
-  return { old_path: record.file_path, new_path: newRelativePath, new_category: safeCategory };
+  return { old_path: record.file_path, new_path: newRelativePath, new_category: newCategory };
 };
 
-const createCategory = (categoryName) => {
-  const safeName = sanitizeFilename(categoryName);
-  const dirPath = path.join(config.downloadDir, safeName);
-  ensureInSandbox(dirPath);
-
-  fs.mkdirSync(dirPath, { recursive: true });
-  return { category: safeName, path: dirPath };
+const createFolder = (folderPath) => {
+  const normalized = folderTreeService.normalizeFolderPath(folderPath);
+  if (normalized === 'root') {
+    throw new Error('不能创建根目录');
+  }
+  const fullPath = path.join(config.downloadDir, normalized);
+  ensureInSandbox(fullPath);
+  fs.mkdirSync(fullPath, { recursive: true });
+  return { folder: normalized };
 };
+
+const renameFolder = (folderPath, newName) => {
+  const normalized = folderTreeService.normalizeFolderPath(folderPath);
+  if (normalized === 'root') {
+    throw new Error('不能重命名根目录');
+  }
+
+  const safeNewName = sanitizeFilename(newName);
+  const parentPath = folderTreeService.getParentFolderPath(normalized);
+  const newPath = parentPath === 'root' ? safeNewName : `${parentPath}/${safeNewName}`;
+
+  const oldFullPath = path.join(config.downloadDir, normalized);
+  const newFullPath = path.join(config.downloadDir, newPath);
+
+  ensureInSandbox(oldFullPath);
+  ensureInSandbox(newFullPath);
+
+  if (!fs.existsSync(oldFullPath)) {
+    throw new Error(`目录 "${normalized}" 不存在`);
+  }
+  if (fs.existsSync(newFullPath)) {
+    throw new Error(`目标目录 "${newPath}" 已存在`);
+  }
+
+  fs.renameSync(oldFullPath, newFullPath);
+
+  // Update all files under the renamed folder (filter in JS since JSON DB doesn't support LIKE)
+  const allFiles = db.prepare('SELECT id, file_path FROM download_logs').all();
+  const matchingFiles = allFiles.filter((f) => f.file_path && f.file_path.startsWith(normalized + '/'));
+  let movedFiles = 0;
+
+  const updateStmt = db.prepare('UPDATE download_logs SET file_path = @file_path, category = @category WHERE id = @id');
+  const updateTransaction = db.transaction(() => {
+    for (const file of matchingFiles) {
+      const newFilePath = newPath + file.file_path.slice(normalized.length);
+      const newCategory = folderTreeService.getParentFolderPath(newFilePath);
+      updateStmt.run({ file_path: newFilePath, category: newCategory, id: file.id });
+      movedFiles++;
+    }
+  });
+  updateTransaction();
+
+  return { old_path: normalized, new_path: newPath, moved_files: movedFiles };
+};
+
+const deleteFolder = (folderPath, options = {}) => {
+  const { recursive = false } = options;
+  const normalized = folderTreeService.normalizeFolderPath(folderPath);
+
+  if (normalized === 'root') {
+    throw new Error('不能删除根目录');
+  }
+
+  const fullPath = path.join(config.downloadDir, normalized);
+  ensureInSandbox(fullPath);
+
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`目录 "${normalized}" 不存在`);
+  }
+
+  // Find all files under this folder (filter in JS since JSON DB doesn't support LIKE)
+  const allFiles = db.prepare('SELECT id, file_path FROM download_logs').all();
+  const filesUnderFolder = allFiles.filter((f) => f.file_path && f.file_path.startsWith(normalized + '/'));
+
+  if (filesUnderFolder.length > 0 && !recursive) {
+    throw new Error(`目录 "${normalized}" 下还有 ${filesUnderFolder.length} 个文件，请先删除文件或启用递归删除`);
+  }
+
+  // Check for subfolders
+  const physicalFolders = folderTreeService.listPhysicalFolders(config.downloadDir);
+  const subfolders = physicalFolders.filter((f) => f.startsWith(normalized + '/'));
+
+  if (subfolders.length > 0 && !recursive) {
+    throw new Error(`目录 "${normalized}" 下还有子目录，请启用递归删除`);
+  }
+
+  const deletedFolders = [normalized, ...subfolders];
+  const deletedFiles = [];
+
+  const deleteTransaction = db.transaction(() => {
+    // Delete physical files
+    for (const file of filesUnderFolder) {
+      const filePath = path.join(config.downloadDir, file.file_path);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        deletedFiles.push(file.file_path);
+      }
+      db.prepare('DELETE FROM download_logs WHERE id = ?').run(file.id);
+    }
+
+    // Delete physical folders (deepest first)
+    const sortedFolders = [...deletedFolders].sort((a, b) => b.length - a.length);
+    for (const folder of sortedFolders) {
+      const folderFullPath = path.join(config.downloadDir, folder);
+      if (fs.existsSync(folderFullPath)) {
+        try {
+          fs.rmdirSync(folderFullPath);
+        } catch {
+          // Ignore if already deleted
+        }
+      }
+    }
+  });
+
+  deleteTransaction();
+
+  return { deleted_folders: deletedFolders, deleted_files: deletedFiles };
+};
+
+const createCategory = createFolder;
 
 const deleteCategory = (categoryName) => {
-  const safeName = sanitizeFilename(categoryName);
-  const dirPath = path.join(config.downloadDir, safeName);
-  ensureInSandbox(dirPath);
-
-  // 检查是否有文件
-  const fileCount = db.prepare('SELECT COUNT(*) as count FROM download_logs WHERE category = ?').get(safeName);
-  if (fileCount.count > 0) {
-    throw new Error(`分类 "${safeName}" 下还有 ${fileCount.count} 个文件，请先删除文件`);
-  }
-
-  if (fs.existsSync(dirPath)) {
-    fs.rmdirSync(dirPath);
-  }
-
-  return { deleted: safeName };
+  const normalized = folderTreeService.normalizeFolderPath(categoryName);
+  return deleteFolder(normalized, { recursive: false });
 };
 
 const getCategories = () => {
@@ -318,6 +420,9 @@ module.exports = {
   renameFile,
   updateDescription,
   moveFile,
+  createFolder,
+  deleteFolder,
+  renameFolder,
   createCategory,
   deleteCategory,
   getCategories,

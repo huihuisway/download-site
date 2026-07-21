@@ -122,11 +122,11 @@ router.put('/files/:id/description', (req, res) => {
 
 router.put('/files/:id/move', (req, res) => {
   try {
-    const { category } = req.body;
-    if (!category) {
-      return res.status(400).json({ error: '请提供目标分类' });
+    const { folderPath } = req.body;
+    if (!folderPath) {
+      return res.status(400).json({ error: '请提供目标目录路径' });
     }
-    const result = fileService.moveFile(parseInt(req.params.id, 10), category);
+    const result = fileService.moveFile(parseInt(req.params.id, 10), folderPath);
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -173,6 +173,50 @@ router.post('/categories', (req, res) => {
 router.delete('/categories/:name', (req, res) => {
   try {
     const result = fileService.deleteCategory(req.params.name);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ===== 目录（文件夹）操作 =====
+
+// 创建目录
+router.post('/folders', (req, res) => {
+  try {
+    const { path: folderPath } = req.body;
+    if (!folderPath) {
+      return res.status(400).json({ error: '请提供目录路径' });
+    }
+    const result = fileService.createFolder(folderPath);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 重命名目录
+router.put('/folders/rename', (req, res) => {
+  try {
+    const { path: folderPath, newName } = req.body;
+    if (!folderPath || !newName) {
+      return res.status(400).json({ error: '请提供目录路径和新名称' });
+    }
+    const result = fileService.renameFolder(folderPath, newName);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 删除目录
+router.post('/folders/delete', (req, res) => {
+  try {
+    const { path: folderPath, recursive = false } = req.body;
+    if (!folderPath) {
+      return res.status(400).json({ error: '请提供目录路径' });
+    }
+    const result = fileService.deleteFolder(folderPath, { recursive });
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
