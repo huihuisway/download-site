@@ -12,14 +12,14 @@ const config = {
   dbPath: path.resolve(process.env.DB_PATH || './data/stats.db'),
   maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 100 * 1024 * 1024,
 
-  // OAuth 2.0
+  // OAuth 2.0（MindAuth）
   oauth: {
-    authorizeUrl: process.env.OAUTH_AUTHORIZE_URL,
-    tokenUrl: process.env.OAUTH_TOKEN_URL,
-    userinfoUrl: process.env.OAUTH_USERINFO_URL,
+    authorizeUrl: process.env.OAUTH_AUTHORIZE_URL || 'https://auth.mdtbbs.cn/api/authorize',
+    tokenUrl: process.env.OAUTH_TOKEN_URL || 'https://auth.mdtbbs.cn/api/token',
+    userinfoUrl: process.env.OAUTH_USERINFO_URL || 'https://auth.mdtbbs.cn/api/userinfo',
     clientId: process.env.OAUTH_CLIENT_ID,
     clientSecret: process.env.OAUTH_CLIENT_SECRET,
-    callbackUrl: process.env.OAUTH_CALLBACK_URL,
+    callbackUrl: process.env.OAUTH_CALLBACK_URL || 'https://file.mdtbbs.cn/auth/callback',
   },
 
   // 本地管理员（论坛未上线时的临时方案）
