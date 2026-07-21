@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../api/client';
 import { formatSize, formatDate } from '../lib/utils';
+import FolderPicker from '../components/FolderPicker';
 
 function FileIcon({ name, className = 'w-4 h-4' }) {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -57,14 +58,12 @@ function UploadModal({ categories, onClose, onUploaded }) {
         <div className="p-6 space-y-5">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>目标目录</label>
-            <select className="input-field" value={folderPath} onChange={(e) => setFolderPath(e.target.value)}>
-              <option value="">根目录</option>
-              {categories.map((cat) => (
-                <option key={cat.category} value={cat.category}>
-                  {' '.repeat(cat.category.split('/').length - 1)}{cat.category}
-                </option>
-              ))}
-            </select>
+            <FolderPicker
+              categories={categories}
+              value={folderPath}
+              onChange={setFolderPath}
+              placeholder="选择目标目录"
+            />
             <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
               如需创建新目录，请先在"目录管理"页面创建
             </p>
@@ -199,11 +198,15 @@ function FileManager() {
             <input type="text" className="input-field !pl-10" placeholder="搜索文件名..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-            <select className="input-field !pl-10 !w-44" value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}>
-              <option value="">全部分类</option>
-              {categories.map((cat) => <option key={cat.category} value={cat.category}>{cat.category}</option>)}
-            </select>
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10" style={{ color: 'var(--text-muted)' }} />
+            <div className="pl-10">
+              <FolderPicker
+                categories={categories}
+                value={filterCategory}
+                onChange={(value) => { setFilterCategory(value); setPage(1); }}
+                placeholder="全部目录"
+              />
+            </div>
           </div>
         </div>
       </div>
