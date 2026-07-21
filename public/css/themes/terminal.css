@@ -2,7 +2,9 @@
    全等宽字体，终端隐喻，默认深色 */
 
 .page-wrap { max-width: 960px; margin: 0 auto; padding: 0 var(--space-4); }
-body, .term-header, .term-main, .term-sidebar, .term-footer { font-family: var(--font-mono); }
+body, .term-header, .term-main, .term-sidebar, .term-footer {
+  font-family: 'Geist Mono', 'JetBrains Mono', 'Consolas', 'Monaco', 'Courier New', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', monospace;
+}
 
 .term-header { border-bottom: 1px solid var(--border); padding: var(--space-3) 0; }
 .term-header-inner { display: flex; align-items: center; justify-content: space-between; }
@@ -40,7 +42,7 @@ body, .term-header, .term-main, .term-sidebar, .term-footer { font-family: var(-
 .term-file-meta .count { color: var(--warning, #ffc107); }
 .term-sep { color: var(--text-muted); margin: 0 6px; }
 
-.term-sha { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+.term-sha { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', 'JetBrains Mono', 'Consolas', monospace; }
 
 .term-status { font-size: 11px; color: var(--text-muted); }
 .term-status .ok { color: var(--success, #4caf50); }
