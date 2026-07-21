@@ -8,14 +8,18 @@ process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
 process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-public-routes.db');
 process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-public-routes-test');
+process.env.ADMIN_USERNAME = 'testadmin';
+process.env.ADMIN_PASSWORD = 'testpass123';
+process.env.ADMIN_ALLOWED_EMAILS = 'allowed@example.com';
 
-const request = (server, targetPath) => new Promise((resolve, reject) => {
+const request = (server, targetPath, options = {}) => new Promise((resolve, reject) => {
   const address = server.address();
   const req = http.request({
     hostname: '127.0.0.1',
     port: address.port,
     path: targetPath,
-    method: 'GET',
+    method: options.method || 'GET',
+    headers: options.headers || {},
   }, (res) => {
     const chunks = [];
     res.on('data', (chunk) => chunks.push(chunk));
@@ -29,17 +33,20 @@ const request = (server, targetPath) => new Promise((resolve, reject) => {
   });
 
   req.on('error', reject);
+  if (options.body) req.write(options.body);
   req.end();
 });
 
 describe('public routes', () => {
   let server;
+  let sessionDir;
 
   before(async () => {
     const dataDir = path.join(__dirname, '..', 'data');
     fs.mkdirSync(dataDir, { recursive: true });
     fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, 'docs'), { recursive: true });
     fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'a.txt'), 'hello public route');
+    sessionDir = path.join(__dirname, '..', 'data', 'sessions');
 
     const { db } = require('../src/db');
     db.data.download_logs = [];
@@ -119,5 +126,39 @@ describe('public routes', () => {
 
     assert.match(css.headers['content-type'], /text\/css/);
     assert.match(favicon.headers['content-type'], /image\/svg\+xml/);
+  });
+
+  it('已登录但邮箱不在白名单时访问 /admin 应返回 403', async () => {
+    const body = JSON.stringify({ username: 'testadmin', password: 'testpass123' });
+    const loginRes = await request(server, '/auth/local-login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'X-Forwarded-Proto': 'https',
+      },
+      body,
+    });
+    assert.strictEqual(loginRes.statusCode, 200);
+
+    const rawCookie = loginRes.headers['set-cookie'][0].split(';')[0];
+    const signedSessionId = decodeURIComponent(rawCookie.split('=')[1]);
+    const sessionId = signedSessionId.replace(/^s:/, '').split('.')[0];
+    const sessionPath = path.join(sessionDir, `${sessionId}.json`);
+    const sessionData = JSON.parse(fs.readFileSync(sessionPath, 'utf8'));
+    sessionData.user = {
+      id: 2,
+      username: 'oauth-user',
+      email: 'other@example.com',
+      authProvider: 'oauth',
+    };
+    fs.writeFileSync(sessionPath, JSON.stringify(sessionData), 'utf8');
+
+    const response = await request(server, '/admin', {
+      headers: { Cookie: rawCookie },
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    assert.match(response.body, /无后台权限/);
   });
 });

@@ -145,12 +145,16 @@ const handleCallback = async (req, res) => {
     }
 
     const userData = await userResponse.json();
+    const email = typeof userData.email === 'string'
+      ? userData.email.trim().toLowerCase()
+      : '';
 
     // 写入用户信息到 Session（适配 MindAuth userinfo 返回字段）
     req.session.user = {
       id: userData.id || userData.sub || userData.user_id,
       username: userData.username || userData.name,
-      email: userData.email,
+      email,
+      authProvider: 'oauth',
     };
 
     // 跳转回原始页面（验证安全性）
@@ -244,6 +248,8 @@ const localLogin = (req, res) => {
     id: 1,
     username: config.admin.username,
     email: '',
+    authProvider: 'local',
+    isLocalAdmin: true,
   };
 
   // 显式保存 session，确保 cookie 在响应前写入

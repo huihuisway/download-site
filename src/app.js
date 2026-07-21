@@ -19,13 +19,24 @@ const oauthController = require('./routes/oauth');
 const apiV1Routes = require('./routes/api-v1');
 
 // 中间件
-const { attachUser } = require('./middleware/auth');
+const { attachUser, hasAdminAccess } = require('./middleware/auth');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 // 服务初始化
 const { syncDirectory } = require('./services/sync.service');
+const themeService = require('./services/theme.service');
 
 const app = express();
+
+const renderThemeError = (res, status, title, message) => {
+  const theme = themeService.getTheme();
+  return res.status(status).render(`themes/${theme}/error`, {
+    title,
+    message,
+    currentTheme: theme,
+    siteInfo: themeService.getSiteInfo(),
+  });
+};
 
 // ===== 基础中间件 =====
 app.set('view engine', 'ejs');
@@ -71,24 +82,27 @@ app.use(session({
   },
 }));
 
-// ===== 静态资源 =====
-app.use(express.static(path.join(__dirname, '..', 'public')));
-
 // 后台 React SPA
-const themeService = require('./services/theme.service');
-app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
-app.get('/admin/*', (req, res) => {
+app.use('/admin', (req, res, next) => {
+  if (req.session?.user && !hasAdminAccess(req.session.user)) {
+    return renderThemeError(res, 403, '无后台权限', '当前账号没有管理后台权限，请联系管理员添加邮箱白名单。');
+  }
+  return next();
+});
+app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin'), {
+  index: false,
+  redirect: false,
+}));
+app.get(['/admin', '/admin/*'], (req, res) => {
   const adminIndex = path.join(__dirname, '..', 'public', 'admin', 'index.html');
   if (fs.existsSync(adminIndex)) {
     return res.sendFile(adminIndex);
   }
-  // 如果 React 未构建，返回提示
-  const theme = themeService.getTheme();
-  return res.status(404).render(`themes/${theme}/error`, {
-    title: '后台未构建',
-    message: '请先运行 npm run build:admin 构建后台前端。',
-  });
+  return renderThemeError(res, 404, '后台未构建', '请先运行 npm run build:admin 构建后台前端。');
 });
+
+// ===== 静态资源 =====
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ===== 注入用户信息到模板 =====
 app.use(attachUser);

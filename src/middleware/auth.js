@@ -1,3 +1,5 @@
+const { config } = require('../config');
+
 // 开发模式测试管理员账户
 const DEV_ADMIN_USER = {
   id: 0,
@@ -6,8 +8,34 @@ const DEV_ADMIN_USER = {
   isDev: true,
 };
 
+const normalizeEmail = (email) => {
+  if (typeof email !== 'string') return '';
+  return email.trim().toLowerCase();
+};
+
+const isApiRequest = (req) => {
+  const url = req.originalUrl || req.baseUrl || req.path || '';
+  return url.startsWith('/api/');
+};
+
+const isLocalAdminUser = (user) => {
+  if (!user) return false;
+  if (user.isLocalAdmin || user.authProvider === 'local') return true;
+  return !!(config.admin.username && user.username === config.admin.username && !user.email);
+};
+
+const hasAdminAccess = (user) => {
+  if (!user) return false;
+  if (isLocalAdminUser(user)) return true;
+  if (!config.admin.allowedEmails.length) return true;
+  return config.admin.allowedEmails.includes(normalizeEmail(user.email));
+};
+
 const requireAuth = (req, res, next) => {
   if (req.session && req.session.user) {
+    if (!hasAdminAccess(req.session.user)) {
+      return res.status(403).json({ error: '无后台权限' });
+    }
     return next();
   }
 
@@ -18,7 +46,7 @@ const requireAuth = (req, res, next) => {
   }
 
   // API 请求返回 JSON 错误
-  if (req.path.startsWith('/api/')) {
+  if (isApiRequest(req)) {
     return res.status(401).json({ error: '未授权，请先登录' });
   }
 
@@ -40,5 +68,7 @@ const attachUser = (req, res, next) => {
 module.exports = {
   requireAuth,
   attachUser,
+  hasAdminAccess,
+  isLocalAdminUser,
   DEV_ADMIN_USER,
 };

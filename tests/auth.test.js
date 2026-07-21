@@ -1,28 +1,157 @@
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 
-process.env.NODE_ENV = 'test';
+const ORIGINAL_ENV = {
+  NODE_ENV: process.env.NODE_ENV,
+  ADMIN_ALLOWED_EMAILS: process.env.ADMIN_ALLOWED_EMAILS,
+  ADMIN_USERNAME: process.env.ADMIN_USERNAME,
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+};
+
+const restoreEnv = () => {
+  for (const [key, value] of Object.entries(ORIGINAL_ENV)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+};
+
+const loadAuthModule = () => {
+  delete require.cache[require.resolve('../src/config')];
+  delete require.cache[require.resolve('../src/middleware/auth')];
+  return require('../src/middleware/auth');
+};
+
+const createJsonResponse = () => ({
+  statusCode: 200,
+  body: null,
+  redirectedTo: null,
+  status(code) {
+    this.statusCode = code;
+    return this;
+  },
+  json(body) {
+    this.body = body;
+    return this;
+  },
+  redirect(url) {
+    this.redirectedTo = url;
+    return this;
+  },
+});
 
 describe('auth middleware', () => {
-  const { requireAuth, DEV_ADMIN_USER } = require('../src/middleware/auth');
+  beforeEach(() => {
+    restoreEnv();
+    process.env.NODE_ENV = 'test';
+  });
+
+  afterEach(() => {
+    restoreEnv();
+  });
 
   describe('requireAuth', () => {
-    it('已登录用户应通过', () => {
-      const req = { session: { user: { id: 1, username: 'test' } }, path: '/api/admin/stats' };
-      const res = {};
+    it('已登录且未配置白名单的用户应通过', () => {
+      process.env.NODE_ENV = 'production';
+      const { requireAuth } = loadAuthModule();
+      const req = {
+        session: { user: { id: 1, username: 'test', email: 'user@example.com', authProvider: 'oauth' } },
+        originalUrl: '/api/admin/stats',
+        path: '/stats',
+      };
+      const res = createJsonResponse();
       let nextCalled = false;
       requireAuth(req, res, () => { nextCalled = true; });
       assert.ok(nextCalled);
+      assert.strictEqual(res.statusCode, 200);
     });
 
     it('开发模式未登录应自动注入管理员', () => {
+      const { requireAuth, DEV_ADMIN_USER } = loadAuthModule();
       const req = { session: {}, path: '/api/admin/stats' };
-      const res = {};
+      const res = createJsonResponse();
       let nextCalled = false;
       requireAuth(req, res, () => { nextCalled = true; });
       assert.ok(nextCalled);
       assert.ok(req.session.user);
       assert.strictEqual(req.session.user.username, DEV_ADMIN_USER.username);
+    });
+
+    it('白名单内的 OAuth 邮箱应通过', () => {
+      process.env.NODE_ENV = 'production';
+      process.env.ADMIN_ALLOWED_EMAILS = 'admin@example.com, ops@example.com';
+      const { requireAuth } = loadAuthModule();
+      const req = {
+        session: { user: { id: 1, username: 'admin', email: 'Ops@Example.com', authProvider: 'oauth' } },
+        originalUrl: '/api/admin/stats',
+        path: '/stats',
+      };
+      const res = createJsonResponse();
+      let nextCalled = false;
+
+      requireAuth(req, res, () => { nextCalled = true; });
+
+      assert.ok(nextCalled);
+      assert.strictEqual(res.statusCode, 200);
+    });
+
+    it('白名单外的 OAuth 邮箱访问后台 API 应返回 403', () => {
+      process.env.NODE_ENV = 'production';
+      process.env.ADMIN_ALLOWED_EMAILS = 'admin@example.com';
+      const { requireAuth } = loadAuthModule();
+      const req = {
+        session: { user: { id: 2, username: 'user', email: 'other@example.com', authProvider: 'oauth' } },
+        originalUrl: '/api/admin/stats',
+        path: '/stats',
+      };
+      const res = createJsonResponse();
+      let nextCalled = false;
+
+      requireAuth(req, res, () => { nextCalled = true; });
+
+      assert.strictEqual(nextCalled, false);
+      assert.strictEqual(res.statusCode, 403);
+      assert.deepStrictEqual(res.body, { error: '无后台权限' });
+    });
+
+    it('本地管理员登录应绕过邮箱白名单', () => {
+      process.env.NODE_ENV = 'production';
+      process.env.ADMIN_USERNAME = 'testadmin';
+      process.env.ADMIN_PASSWORD = 'testpass123';
+      process.env.ADMIN_ALLOWED_EMAILS = 'admin@example.com';
+      const { requireAuth } = loadAuthModule();
+      const req = {
+        session: { user: { id: 1, username: 'testadmin', email: '', authProvider: 'local', isLocalAdmin: true } },
+        originalUrl: '/api/admin/stats',
+        path: '/stats',
+      };
+      const res = createJsonResponse();
+      let nextCalled = false;
+
+      requireAuth(req, res, () => { nextCalled = true; });
+
+      assert.ok(nextCalled);
+      assert.strictEqual(res.statusCode, 200);
+    });
+
+    it('未登录的后台 API 请求应返回 401', () => {
+      process.env.NODE_ENV = 'production';
+      const { requireAuth } = loadAuthModule();
+      const req = {
+        session: {},
+        originalUrl: '/api/admin/stats',
+        path: '/stats',
+      };
+      const res = createJsonResponse();
+      let nextCalled = false;
+
+      requireAuth(req, res, () => { nextCalled = true; });
+
+      assert.strictEqual(nextCalled, false);
+      assert.strictEqual(res.statusCode, 401);
+      assert.deepStrictEqual(res.body, { error: '未授权，请先登录' });
     });
   });
 

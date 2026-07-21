@@ -13,6 +13,7 @@ process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-local-login-tes
 process.env.SESSION_SECRET = 'a'.repeat(32);
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
+process.env.ADMIN_ALLOWED_EMAILS = 'allowed@example.com';
 
 const request = (server, options) =>
   new Promise((resolve, reject) => {
@@ -138,5 +139,33 @@ describe('local login', () => {
     assert.strictEqual(meRes.statusCode, 200, `/auth/me 应返回 200，实际返回 ${meRes.statusCode}，body: ${meRes.body}`);
     const userData = JSON.parse(meRes.body);
     assert.strictEqual(userData.user.username, 'testadmin');
+  });
+
+  it('本地管理员登录后应可访问后台 API', async () => {
+    const body = JSON.stringify({ username: 'testadmin', password: 'testpass123' });
+    const loginRes = await request(server, {
+      path: '/auth/local-login',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'X-Forwarded-Proto': 'https',
+      },
+      body,
+    });
+    assert.strictEqual(loginRes.statusCode, 200);
+
+    const cookie = loginRes.headers['set-cookie']
+      .map((c) => c.split(';')[0])
+      .join('; ');
+
+    const statsRes = await request(server, {
+      path: '/api/admin/stats',
+      headers: { Cookie: cookie },
+    });
+    assert.strictEqual(statsRes.statusCode, 200, `/api/admin/stats 应返回 200，实际返回 ${statsRes.statusCode}，body: ${statsRes.body}`);
+
+    const data = JSON.parse(statsRes.body);
+    assert.ok(data.dashboard);
   });
 });
