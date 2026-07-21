@@ -31,6 +31,10 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// 信任反向代理（Cloudflare 等），使 req.secure / X-Forwarded-Proto 生效
+// 必须在 session 中间件之前设置，否则 secure cookie 无法在代理后正常下发
+app.set('trust proxy', true);
+
 app.use(helmet({
   contentSecurityPolicy: false,  // 允许内联样式
   crossOriginEmbedderPolicy: false,
@@ -58,7 +62,7 @@ app.use(session({
   }),
   secret: config.session.secret,
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   cookie: {
     maxAge: config.session.maxAge,
     httpOnly: true,

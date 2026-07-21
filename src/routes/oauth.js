@@ -142,25 +142,24 @@ const handleCallback = async (req, res) => {
 
     const userData = await userResponse.json();
 
-    // 重新生成 Session ID 防止 Session 固定攻击
-    req.session.regenerate((err) => {
+    // 写入用户信息到 Session
+    req.session.user = {
+      id: userData.id || userData.user_id,
+      username: userData.username || userData.name,
+      email: userData.email,
+    };
+
+    // 跳转回原始页面（验证安全性）
+    const returnUrl = isSafeReturnUrl(req.session.oauthReturnUrl)
+      ? req.session.oauthReturnUrl
+      : '/admin';
+    delete req.session.oauthReturnUrl;
+
+    // 显式保存 session，确保 cookie 在重定向前下发
+    req.session.save((err) => {
       if (err) {
-        console.error('[oauth] Session 重新生成失败:', err);
+        console.error('[oauth] Session 保存失败:', err);
       }
-
-      // 写入用户信息到 Session
-      req.session.user = {
-        id: userData.id || userData.user_id,
-        username: userData.username || userData.name,
-        email: userData.email,
-      };
-
-      // 跳转回原始页面（验证安全性）
-      const returnUrl = isSafeReturnUrl(req.session.oauthReturnUrl)
-        ? req.session.oauthReturnUrl
-        : '/admin';
-      delete req.session.oauthReturnUrl;
-
       return res.redirect(returnUrl);
     });
   } catch (err) {
@@ -239,18 +238,19 @@ const localLogin = (req, res) => {
     return res.status(401).json({ error: '用户名或密码错误' });
   }
 
-  // 重新生成 Session ID 防止 Session 固定攻击
-  req.session.regenerate((err) => {
+  // 写入用户信息到 Session（不使用 regenerate，避免与 saveUninitialized:false 冲突）
+  req.session.user = {
+    id: 1,
+    username: config.admin.username,
+    email: '',
+  };
+
+  // 显式保存 session，确保 cookie 在响应前写入
+  req.session.save((err) => {
     if (err) {
-      console.error('[oauth] Session 重新生成失败:', err);
+      console.error('[oauth] Session 保存失败:', err);
+      return res.status(500).json({ error: '登录失败，请重试' });
     }
-
-    req.session.user = {
-      id: 1,
-      username: config.admin.username,
-      email: '',
-    };
-
     return res.json({ ok: true });
   });
 };
