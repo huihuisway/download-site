@@ -5,7 +5,13 @@ const themeService = require('../services/theme.service');
 /** 渲染主题化错误页面 */
 const renderError = (res, status, title, message) => {
   const theme = themeService.getTheme();
-  return res.status(status).render(`themes/${theme}/error`, { title, message });
+  const siteInfo = themeService.getSiteInfo();
+  return res.status(status).render(`themes/${theme}/error`, {
+    title,
+    message,
+    currentTheme: theme,
+    siteInfo,
+  });
 };
 
 /**
