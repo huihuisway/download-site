@@ -31,11 +31,9 @@ const ensureInSandbox = (targetPath) => {
   return resolved;
 };
 
-const getCategoryFromPath = (relativePath) => {
-  const parts = relativePath.split(/[\\/]/);
-  if (parts.length < 2) return 'root';
-  return parts[0];
-};
+const { getParentFolderPath } = require('../services/folder-tree.service');
+
+const getCategoryFromPath = (relativePath) => getParentFolderPath(relativePath);
 
 module.exports = {
   sanitizeFilename,
