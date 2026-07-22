@@ -1,4 +1,5 @@
 const path = require('path');
+const { MAX_FILE_SIZE } = require('./constants');
 require('dotenv').config();
 
 const config = {
@@ -10,7 +11,7 @@ const config = {
   // 文件存储
   downloadDir: path.resolve(process.env.DOWNLOAD_DIR || './downloads'),
   dbPath: path.resolve(process.env.DB_PATH || './data/stats.db'),
-  maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 100 * 1024 * 1024,
+  maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || MAX_FILE_SIZE,
 
   // OAuth 2.0（MindAuth）
   oauth: {

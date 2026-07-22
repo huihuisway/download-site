@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const { config } = require('../config');
-const { MAX_FILE_SIZE } = require('../config/constants');
 const { db } = require('../db');
 const { sanitizeFilename, isAllowedExtension, ensureInSandbox } = require('../utils/filename');
 const { guessMimeType } = require('./sync.service');
