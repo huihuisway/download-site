@@ -3,24 +3,24 @@
   <header class="term-header">
     <div class="term-header-inner">
       <div class="term-logo"><span class="prompt">$</span> <span class="path">~/downloads</span></div>
-      <div class="term-stats"><span class="ok">●</span> <%= totalFiles %> files · <%= formatNumber(totalDownloads) %> downloads</div>
+      <div class="term-stats"><span class="ok">●</span> <%= totalFiles %> 个文件 · <%= formatNumber(totalDownloads) %> 次下载</div>
     </div>
   </header>
 
   <div class="term-layout">
     <aside class="term-sidebar">
-      <a href="/" class="term-nav-item active">all <span class="term-nav-count">(<%= totalFiles %>)</span></a>
+      <a href="/" class="term-nav-item term-nav-command active">/ 根目录 <span class="term-nav-count">(<%= totalFiles %>)</span></a>
       <a href="/admin" class="term-nav-item" style="margin-top:var(--space-4);border-top:1px solid var(--border);padding-top:var(--space-2);">sudo admin</a>
     </aside>
 
     <main class="term-main">
       <% if (directories.length === 0) { %>
-        <div class="term-empty">// empty directory</div>
+        <div class="term-empty">// 此目录为空</div>
       <% } else { %>
         <% directories.forEach(function(dir) { %>
           <a href="/category/<%= dir.path %>" class="term-file term-folder-link">
             <div class="term-file-name"><span class="term-folder-icon" aria-hidden="true"></span><span><%= dir.name %></span></div>
-            <% if (dir.isEmpty) { %><div class="term-file-desc">// empty</div><% } %>
+            <% if (dir.isEmpty) { %><div class="term-file-desc">// 空目录</div><% } %>
           </a>
         <% }); %>
       <% } %>

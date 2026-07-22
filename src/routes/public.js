@@ -160,7 +160,7 @@ router.use((req, res, next) => {
   next();
 });
 
-// 首页 - 顶层目录浏览
+// 首页 - 顶层目录浏览（统一为根目录视图）
 router.get('/', (req, res) => {
   const siteInfo = themeService.getSiteInfo();
   const allFiles = db.prepare('SELECT * FROM download_logs ORDER BY file_path ASC').all();
@@ -173,12 +173,16 @@ router.get('/', (req, res) => {
   renderTheme(res, 'index', {
     title: siteInfo.site_name,
     currentPath: 'root',
-    breadcrumbs: [],
+    isRoot: true,
+    rootHref: '/',
+    parentHref: null,
+    ancestors: [],
     directories: directory.directories,
     files: [],
+    treeRows: directory.treeRows,
     totalFiles,
     totalDownloads,
-    isEmpty: false,
+    isEmpty: directory.isEmpty,
   });
 });
 
@@ -197,12 +201,17 @@ router.get(['/category', '/category/*'], (req, res) => {
   };
 
   renderTheme(res, 'category', {
-    title: `${directory.currentPath === 'root' ? '目录' : directory.currentPath} - ${siteInfo.site_name}`,
+    title: `${directory.isRoot ? '目录' : directory.currentPath} - ${siteInfo.site_name}`,
     currentPath: directory.currentPath,
+    isRoot: directory.isRoot,
+    rootHref: directory.rootHref,
+    parentHref: directory.parentHref,
     parentPath: directory.parentPath,
+    ancestors: directory.ancestors,
     breadcrumbs: directory.breadcrumbs,
     directories: directory.directories,
     files: directory.files,
+    treeRows: directory.treeRows,
     stats: categoryStats,
     isEmpty: directory.isEmpty,
   });
@@ -238,11 +247,13 @@ router.get('*', (req, res, next) => {
   }
 
   const siteInfo = themeService.getSiteInfo();
+  const parentPath = folderTreeService.getParentFolderPath(resolved.file.file_path);
   return renderTheme(res, 'file', {
     title: `${resolved.file.file_name} - ${siteInfo.site_name}`,
     file: resolved.file,
     publicFilePath: resolved.publicFilePath,
     downloadUrl: buildFileDownloadUrl(resolved.file.file_path),
+    parentHref: parentPath === 'root' ? '/' : '/category/' + parentPath,
   });
 });
 

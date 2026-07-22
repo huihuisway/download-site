@@ -35,18 +35,27 @@ const listPhysicalFolders = (downloadDir) => {
 
 const listFolderEntries = ({ currentPath, files, physicalFolders }) => {
   const current = normalizeFolderPath(currentPath);
+  const isRoot = current === 'root';
 
-  const breadcrumbs = [];
-  if (current !== 'root') {
-    breadcrumbs.push({ name: '首页', path: 'root' });
+  const ancestors = [];
+  if (!isRoot) {
     const parts = current.split('/');
     parts.forEach((part, i) => {
-      const path = parts.slice(0, i + 1).join('/');
-      breadcrumbs.push({ name: part, path });
+      ancestors.push({ name: part, path: parts.slice(0, i + 1).join('/') });
     });
   }
 
-  const parentPath = current === 'root' ? null : getParentFolderPath(current + '/dummy');
+  const parentPath = isRoot ? null : getParentFolderPath(current);
+
+  const breadcrumbs = [];
+  if (!isRoot) {
+    breadcrumbs.push({ name: '首页', path: 'root' });
+    const parts = current.split('/');
+    parts.forEach((part, i) => {
+      const crumbPath = parts.slice(0, i + 1).join('/');
+      breadcrumbs.push({ name: part, path: crumbPath });
+    });
+  }
 
   const directories = [];
   const filesHere = [];
@@ -54,7 +63,7 @@ const listFolderEntries = ({ currentPath, files, physicalFolders }) => {
   const directChildFolders = new Set();
   for (const folder of physicalFolders || []) {
     const normalized = normalizeFolderPath(folder);
-    if (current === 'root') {
+    if (isRoot) {
       if (!normalized.includes('/')) directChildFolders.add(normalized);
     } else {
       if (normalized.startsWith(current + '/') && !normalized.slice(current.length + 1).includes('/')) {
@@ -81,14 +90,66 @@ const listFolderEntries = ({ currentPath, files, physicalFolders }) => {
     if (fileParent === current) filesHere.push(file);
   }
 
+  const treeRows = buildTreeRows(current, physicalFolders, files);
+
   return {
     currentPath: current,
+    isRoot,
+    rootHref: '/',
     parentPath,
+    parentHref: parentPath ? (parentPath === 'root' ? '/' : '/category/' + parentPath) : null,
+    ancestors,
     breadcrumbs,
     directories: directories.sort((a, b) => a.path.localeCompare(b.path)),
     files: filesHere.sort((a, b) => a.file_name.localeCompare(b.file_name)),
     isEmpty: directories.length === 0 && filesHere.length === 0,
+    treeRows,
   };
+};
+
+const buildTreeRows = (rootPath, physicalFolders, files) => {
+  const current = normalizeFolderPath(rootPath);
+  const isRoot = current === 'root';
+
+  const allChildPaths = (physicalFolders || []).map(p => normalizeFolderPath(p));
+
+  const hasSubfoldersOf = (targetPath) =>
+    allChildPaths.some(p => p.startsWith(targetPath + '/'));
+
+  const hasFilesInPath = (targetPath) =>
+    files.some(f => getParentFolderPath(f.file_path) === targetPath);
+
+  const collect = (basePath, depth) => {
+    const directChildren = allChildPaths
+      .filter(p => {
+        if (depth === 0 && isRoot) return !p.includes('/');
+        if (depth === 0 && !isRoot) return p.startsWith(current + '/') && !p.slice(current.length + 1).includes('/');
+        return p.startsWith(basePath + '/') && !p.slice(basePath.length + 1).includes('/');
+      })
+      .sort();
+
+    const rows = [];
+    for (const child of directChildren) {
+      const name = child.split('/').pop();
+      const hasChildren = hasSubfoldersOf(child);
+      const hasFiles = hasFilesInPath(child);
+      const isEmpty = !hasChildren && !hasFiles;
+      rows.push({
+        name,
+        path: child,
+        href: '/category/' + child,
+        depth,
+        hasChildren,
+        isEmpty,
+      });
+      if (hasChildren) {
+        rows.push(...collect(child, depth + 1));
+      }
+    }
+    return rows;
+  };
+
+  return collect(current, 0);
 };
 
 module.exports = {
@@ -96,4 +157,5 @@ module.exports = {
   getParentFolderPath,
   listFolderEntries,
   listPhysicalFolders,
+  buildTreeRows,
 };

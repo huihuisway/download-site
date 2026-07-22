@@ -29,10 +29,38 @@ describe('folder tree service', () => {
     const result = listFolderEntries({ currentPath: 'docs', files, physicalFolders });
     assert.deepStrictEqual(result.directories.map((d) => d.path), ['docs/empty', 'docs/guides']);
     assert.deepStrictEqual(result.files.map((f) => f.file_path), []);
-    assert.deepStrictEqual(result.breadcrumbs, [
-      { name: '首页', path: 'root' },
+    assert.deepStrictEqual(result.ancestors, [
       { name: 'docs', path: 'docs' },
     ]);
+    assert.strictEqual(result.isRoot, false);
+    assert.strictEqual(result.parentHref, '/');
+    assert.strictEqual(result.rootHref, '/');
+  });
+
+  it('根目录的 parentHref 应为 null', () => {
+    const result = listFolderEntries({ currentPath: 'root', files, physicalFolders });
+    assert.strictEqual(result.isRoot, true);
+    assert.strictEqual(result.parentHref, null);
+    assert.strictEqual(result.rootHref, '/');
+    assert.deepStrictEqual(result.ancestors, []);
+  });
+
+  it('深层目录应有正确的祖先和父级 href', () => {
+    const result = listFolderEntries({ currentPath: 'docs/guides/v1', files, physicalFolders });
+    assert.deepStrictEqual(result.ancestors.map(a => a.path), ['docs', 'docs/guides', 'docs/guides/v1']);
+    assert.strictEqual(result.parentHref, '/category/docs/guides');
+    assert.strictEqual(result.isRoot, false);
+  });
+
+  it('treeRows 应正确表达多级目录结构', () => {
+    const result = listFolderEntries({ currentPath: 'docs', files, physicalFolders });
+    const paths = result.treeRows.map(r => r.path);
+    assert.ok(paths.includes('docs/guides'));
+    assert.ok(paths.includes('docs/empty'));
+    // v1 should be a nested row under guides
+    const v1Row = result.treeRows.find(r => r.path === 'docs/guides/v1');
+    assert.ok(v1Row);
+    assert.strictEqual(v1Row.depth, 1);
   });
 
   it('空目录页应被识别为可访问且为空', () => {

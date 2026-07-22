@@ -3,15 +3,16 @@
   <header class="term-header">
     <div class="term-header-inner">
       <div class="term-logo"><span class="prompt">$</span> <span class="path">~/downloads/<%= publicFilePath %></span></div>
-      <div class="term-stats"><%= formatNumber(file.download_count) %> downloads</div>
+      <div class="term-stats"><%= formatNumber(file.download_count) %> 次下载</div>
     </div>
   </header>
 
   <div class="term-layout">
     <aside class="term-sidebar">
-      <a href="/" class="term-nav-item">$ cd ..</a>
-      <% if (file.category) { %>
-        <a href="/category/<%= file.category %>" class="term-nav-item active"><%= file.category %></a>
+      <% if (parentHref) { %>
+        <a href="<%= parentHref %>" class="term-nav-item term-nav-command">$ cd ..</a>
+      <% } else { %>
+        <a href="/" class="term-nav-item term-nav-command">$ cd /</a>
       <% } %>
     </aside>
 
@@ -24,10 +25,10 @@
           <div class="term-file-name"><%= file.file_name %></div>
           <% if (file.description) { %><div class="term-file-desc">// <%= file.description %></div><% } %>
           <div class="term-file-meta" style="display: grid; gap: 8px;">
-            <span>path: <code><%= publicFilePath %></code></span>
-            <span>size: <%= formatFileSize(file.file_size) %></span>
-            <span>downloads: <%= formatNumber(file.download_count) %></span>
-            <% if (file.last_download_at) { %><span>last: <%= formatDate(file.last_download_at) %></span><% } %>
+            <span>路径: <code><%= publicFilePath %></code></span>
+            <span>大小: <%= formatFileSize(file.file_size) %></span>
+            <span>下载: <%= formatNumber(file.download_count) %> 次</span>
+            <% if (file.last_download_at) { %><span>最近下载: <%= formatDate(file.last_download_at) %></span><% } %>
             <% if (file.sha256) { %><span>sha256: <span class="term-sha"><%= file.sha256 %></span></span><% } %>
           </div>
         </div>
@@ -35,7 +36,7 @@
 
       <a href="<%= downloadUrl %>" class="term-file">
         <div class="term-file-name">./download</div>
-        <div class="term-file-desc">// start attachment download</div>
+        <div class="term-file-desc">// 开始下载附件</div>
       </a>
     </main>
   </div>

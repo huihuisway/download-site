@@ -3,19 +3,20 @@
   <header class="term-header">
     <div class="term-header-inner">
       <div class="term-logo"><span class="prompt">$</span> <span class="path">~/downloads<%= currentPath === 'root' ? '' : '/' + currentPath %></span></div>
-      <div class="term-stats"><%= stats.file_count %> files · <%= formatFileSize(stats.total_size) %></div>
+      <div class="term-stats"><%= stats.file_count %> 个文件 · <%= formatFileSize(stats.total_size) %></div>
     </div>
   </header>
 
   <div class="term-layout">
     <aside class="term-sidebar">
-      <a href="/" class="term-nav-item">$ cd /</a>
-      <% if (parentPath) { %>
-        <a href="<%= parentPath === 'root' ? '/' : '/category/' + parentPath %>" class="term-nav-item">$ cd ..</a>
+      <a href="<%= rootHref %>" class="term-nav-item term-nav-command">$ cd /</a>
+      <% if (parentHref) { %>
+        <a href="<%= parentHref %>" class="term-nav-item term-nav-command">$ cd ..</a>
       <% } %>
-      <% if (breadcrumbs.length > 0) { %>
-        <% breadcrumbs.forEach(function(crumb) { %>
-          <a href="<%= crumb.path === 'root' ? '/' : '/category/' + crumb.path %>" class="term-nav-item"><%= crumb.name %></a>
+      <% if (ancestors.length > 0) { %>
+        <div class="term-nav-separator"></div>
+        <% ancestors.forEach(function(crumb) { %>
+          <a href="/category/<%= crumb.path %>" class="term-nav-item term-nav-path" style="padding-left: calc(var(--space-2) + <%= crumb.path.split('/').length - 1 %> * var(--tree-indent));"><%= crumb.name %></a>
         <% }); %>
       <% } %>
     </aside>
@@ -25,15 +26,15 @@
         <% directories.forEach(function(dir) { %>
           <a href="/category/<%= dir.path %>" class="term-file term-folder-link">
             <div class="term-file-name"><span class="term-folder-icon" aria-hidden="true"></span><span><%= dir.name %></span></div>
-            <% if (dir.isEmpty) { %><div class="term-file-desc">// empty</div><% } %>
+            <% if (dir.isEmpty) { %><div class="term-file-desc">// 空目录</div><% } %>
           </a>
         <% }); %>
       <% } %>
 
       <% if (isEmpty) { %>
-        <div class="term-empty">// empty directory</div>
+        <div class="term-empty">// 此目录为空</div>
       <% } else if (files.length === 0) { %>
-        <div class="term-empty">// no files here</div>
+        <div class="term-empty">// 没有文件</div>
       <% } else { %>
         <% files.forEach(function(file) { %>
           <a href="<%= buildFilePageUrl(file.file_path) %>" class="term-file">
@@ -42,10 +43,10 @@
             <div class="term-file-meta">
               <span class="size"><%= formatFileSize(file.file_size) %></span>
               <span class="term-sep">|</span>
-              <span class="count"><%= formatNumber(file.download_count) %> dl</span>
+              <span class="count"><%= formatNumber(file.download_count) %> 次下载</span>
               <% if (file.last_download_at) { %>
                 <span class="term-sep">|</span>
-                <span>last: <%= formatDate(file.last_download_at) %></span>
+                <span>最近: <%= formatDate(file.last_download_at) %></span>
               <% } %>
             </div>
           </a>

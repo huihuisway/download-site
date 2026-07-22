@@ -1,6 +1,10 @@
 /* ===== Terminal 主题 — Clean Blue (暗色优先) =====
    全等宽字体，终端隐喻，默认深色 */
 
+:root {
+  --tree-indent: 12px;
+}
+
 .page-wrap { max-width: 960px; margin: 0 auto; padding: 0 var(--space-4); }
 body, .term-header, .term-main, .term-sidebar, .term-footer {
   font-family: 'Geist Mono', 'JetBrains Mono', 'Consolas', 'Monaco', 'Courier New', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', monospace;
@@ -25,6 +29,16 @@ body, .term-header, .term-main, .term-sidebar, .term-footer {
 .term-nav-item:hover { color: var(--text); }
 .term-nav-item.active { color: var(--primary); font-weight: 500; }
 .term-nav-item.active::before { content: '$ '; color: var(--primary); }
+
+.term-nav-command { font-weight: 500; }
+.term-nav-command::before { content: '$ '; color: var(--primary); }
+.term-nav-command:hover::before { color: var(--primary-light, #4a9eff); }
+
+.term-nav-path::before { content: ''; }
+.term-nav-path:hover { color: var(--primary); }
+
+.term-nav-separator { height: 1px; background: var(--border); margin: var(--space-2) 0; }
+
 .term-nav-count { font-size: 11px; color: var(--text-muted); }
 
 .term-section { margin-bottom: var(--space-5); }
@@ -94,4 +108,5 @@ body, .term-header, .term-main, .term-sidebar, .term-footer {
 @media (max-width: 768px) {
   .term-layout { flex-direction: column; }
   .term-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-2); }
+  .term-nav-path { padding-left: var(--space-2) !important; }
 }

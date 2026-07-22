@@ -180,7 +180,6 @@ describe('public routes', () => {
   it('GET /category/docs/guides 应显示面包屑导航和返回上一级', async () => {
     const response = await request(server, '/category/docs/guides');
     assert.strictEqual(response.statusCode, 200);
-    assert.match(response.body, /首页/);
     assert.match(response.body, /docs/);
     assert.match(response.body, /guides/);
     assert.match(response.body, /返回上一级/);
