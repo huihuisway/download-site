@@ -52,7 +52,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: MAX_FILE_SIZE,
+    fileSize: config.maxFileSize,
     files: 20,
     // 限制 multipart 字段名嵌套深度，修复 CVE-2026-5079 DoS 漏洞
     fieldNestingDepth: 5,

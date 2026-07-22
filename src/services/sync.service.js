@@ -176,6 +176,7 @@ const guessMimeType = (filename) => {
     '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     '.md': 'text/markdown',
+    '.jar': 'application/java-archive',
   };
   return mimeMap[ext] || 'application/octet-stream';
 };

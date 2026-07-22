@@ -1,7 +1,7 @@
 // 默认允许的文件扩展名（文档用途，实际白名单由 config.allowedExtensions 控制）
 const DEFAULT_ALLOWED_EXTENSIONS = [
   '.zip', '.iso', '.pdf', '.txt', '.png', '.jpg', '.jpeg',
-  '.gz', '.tar', '.7z', '.doc', '.docx', '.xlsx', '.md',
+  '.gz', '.tar', '.7z', '.doc', '.docx', '.xlsx', '.md', '.jar',
 ];
 
 // 禁止上传的扩展名（即使不在白名单中也要显式拒绝）
@@ -14,7 +14,7 @@ const BLOCKED_EXTENSIONS = [
 ];
 
 // 文件大小限制
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150MB
 
 // 批量操作限制
 const MAX_BATCH_SIZE = 100;

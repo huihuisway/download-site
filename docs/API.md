@@ -210,9 +210,9 @@ curl -X POST \
 ```
 
 **允许的文件类型：**
-`.zip` `.iso` `.pdf` `.txt` `.png` `.jpg` `.jpeg` `.gz` `.tar` `.7z` `.doc` `.docx` `.xlsx` `.md`
+`.zip` `.iso` `.pdf` `.txt` `.png` `.jpg` `.jpeg` `.gz` `.tar` `.7z` `.doc` `.docx` `.xlsx` `.md` `.jar`
 
-**文件大小限制：** 100MB
+**文件大小限制：** 150MB
 
 ---
 

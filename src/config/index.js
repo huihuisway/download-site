@@ -39,7 +39,7 @@ const config = {
   },
 
   // 上传白名单
-  allowedExtensions: (process.env.ALLOWED_EXTENSIONS || '.zip,.pdf,.txt,.png,.jpg')
+  allowedExtensions: (process.env.ALLOWED_EXTENSIONS || '.zip,.pdf,.txt,.png,.jpg,.jar')
     .split(',')
     .map((ext) => ext.trim().toLowerCase()),
 
