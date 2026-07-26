@@ -136,6 +136,17 @@ describe('public routes', () => {
     assert.match(favicon.headers['content-type'], /image\/svg\+xml/);
   });
 
+  it('匿名访问不应创建 session(无 set-cookie、无 session 文件)', async () => {
+    const countSessions = () => {
+      try { return fs.readdirSync(sessionDir).length; } catch { return 0; }
+    };
+    const before = countSessions();
+    const response = await request(server, '/');
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(response.headers['set-cookie'], undefined);
+    assert.strictEqual(countSessions(), before);
+  });
+
   it('已登录但邮箱不在白名单时访问 /admin 应返回 403', async () => {
     const body = JSON.stringify({ username: 'testadmin', password: 'testpass123' });
     const loginRes = await request(server, '/auth/local-login', {

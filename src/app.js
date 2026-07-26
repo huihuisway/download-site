@@ -73,11 +73,13 @@ app.use(session({
   }),
   secret: config.session.secret,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,  // 匿名访客不落 session 文件，防止 data/sessions 无限膨胀
   cookie: {
     maxAge: config.session.maxAge,
     httpOnly: true,
-    secure: false,  // CDN 回源用 HTTP，Secure 标志会阻止 cookie 下发
+    // 'auto' 依据 X-Forwarded-Proto 判断（trust proxy 已开）：
+    // HTTPS 请求下发 Secure cookie，CDN 回源 HTTP 场景也能正常工作
+    secure: config.isProduction ? 'auto' : false,
     sameSite: 'strict',
   },
 }));
