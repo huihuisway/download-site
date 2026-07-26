@@ -97,6 +97,21 @@ describe('theme service', () => {
       assert.strictEqual(info.footer_links.length, 2);
     });
 
+    it('应允许站内相对路径但拒绝协议相对地址', () => {
+      const themeService = require('../src/services/theme.service');
+      themeService.updateSiteInfo({
+        footer_links: [
+          { label: '后台', url: '/admin' },
+          { label: '协议相对', url: '//evil.com/phish' },
+          { label: '反斜杠变体', url: '/\\evil.com' },
+        ],
+      });
+
+      const info = themeService.getSiteInfo();
+      assert.strictEqual(info.footer_links.length, 1);
+      assert.strictEqual(info.footer_links[0].url, '/admin');
+    });
+
     it('应过滤 data: 协议的 URL', () => {
       const themeService = require('../src/services/theme.service');
       themeService.updateSiteInfo({

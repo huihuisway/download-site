@@ -18,7 +18,7 @@
         <div class="term-empty">// 此目录为空</div>
       <% } else { %>
         <% directories.forEach(function(dir) { %>
-          <a href="/category/<%= dir.path %>" class="term-file term-folder-link">
+          <a href="<%= buildCategoryHref(dir.path) %>" class="term-file term-folder-link">
             <div class="term-file-name"><span class="term-folder-icon" aria-hidden="true"></span><span><%= dir.name %></span></div>
             <% if (dir.isEmpty) { %><div class="term-file-desc">// 空目录</div><% } %>
           </a>

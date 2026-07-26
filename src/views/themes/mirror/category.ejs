@@ -13,7 +13,7 @@
     <% if (breadcrumbs.length > 0) { %>
       <% breadcrumbs.forEach(function(crumb) { %>
         <span> / </span>
-        <a href="<%= crumb.path === 'root' ? '/' : '/category/' + crumb.path %>"><%= crumb.name %></a>
+        <a href="<%= buildCategoryHref(crumb.path) %>"><%= crumb.name %></a>
       <% }); %>
     <% } %>
   </div>
@@ -27,7 +27,7 @@
 
   <% if (parentPath) { %>
     <div style="margin-bottom: 0.75rem;">
-      <a href="<%= parentPath === 'root' ? '/' : '/category/' + parentPath %>">← 返回上一级</a>
+      <a href="<%= buildCategoryHref(parentPath) %>">← 返回上一级</a>
     </div>
   <% } %>
 
@@ -36,7 +36,7 @@
   <% if (directories.length > 0) { %>
     <div class="mi-cat-list" style="margin-bottom: 1rem;">
       <% directories.forEach(function(dir) { %>
-        <span class="mi-cat-item"><a href="/category/<%= dir.path %>"><%= dir.name %></a> <% if (dir.isEmpty) { %><span class="mi-count">(空)</span><% } %></span>
+        <span class="mi-cat-item"><a href="<%= buildCategoryHref(dir.path) %>"><%= dir.name %></a> <% if (dir.isEmpty) { %><span class="mi-count">(空)</span><% } %></span>
       <% }); %>
     </div>
   <% } %>

@@ -65,6 +65,12 @@ describe('public routes', () => {
       'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).run('banner.png', 'docs/guides/v1/banner.png', 'docs', 10, 0, 'nested file', 'image/png');
 
+    // 含空格与括号的文件名，用于 URL 编码回归
+    fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'my file (1).txt'), 'spaced name');
+    db.prepare(
+      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run('my file (1).txt', 'docs/my file (1).txt', 'docs', 11, 0, 'spaced', 'text/plain');
+
     const app = require('../src/app');
     server = await new Promise((resolve) => {
       const instance = app.listen(0, () => resolve(instance));
@@ -136,15 +142,29 @@ describe('public routes', () => {
     assert.match(favicon.headers['content-type'], /image\/svg\+xml/);
   });
 
-  it('匿名访问不应创建 session(无 set-cookie、无 session 文件)', async () => {
-    const countSessions = () => {
-      try { return fs.readdirSync(sessionDir).length; } catch { return 0; }
-    };
-    const before = countSessions();
-    const response = await request(server, '/');
-    assert.strictEqual(response.statusCode, 200);
-    assert.strictEqual(response.headers['set-cookie'], undefined);
-    assert.strictEqual(countSessions(), before);
+  it('含空格的文件名应生成编码链接且可访问', async () => {
+    const { buildFileDownloadUrl, buildFilePageUrl } = require('../src/utils/public-paths');
+    assert.strictEqual(buildFileDownloadUrl('docs/my file.txt'), '/d/docs/my%20file.txt');
+    assert.strictEqual(buildFilePageUrl('docs/my file.txt'), '/docs/my%20file.txt');
+
+    const page = await request(server, '/docs/my%20file%20(1).txt');
+    assert.strictEqual(page.statusCode, 200);
+    assert.match(page.body, /my%20file%20\(1\)\.txt/);
+
+    const download = await request(server, '/d/docs/my%20file%20(1).txt');
+    assert.strictEqual(download.statusCode, 200);
+    assert.strictEqual(download.body, 'spaced name');
+  });
+
+  it('匿名访问不应下发 session cookie', async () => {
+    // saveUninitialized:false 下匿名请求不应创建会话
+    // 注:不断言 data/sessions 文件数——该目录被并行测试进程共享
+    const home = await request(server, '/');
+    assert.strictEqual(home.statusCode, 200);
+    assert.strictEqual(home.headers['set-cookie'], undefined);
+
+    const filePage = await request(server, '/docs/a.txt');
+    assert.strictEqual(filePage.headers['set-cookie'], undefined);
   });
 
   it('已登录但邮箱不在白名单时访问 /admin 应返回 403', async () => {

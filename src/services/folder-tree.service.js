@@ -1,5 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const { encodePublicFilePath } = require('../utils/public-paths');
+
+// 目录页链接：按段编码，使含空格/# 等字符的目录名生成合法 href
+const buildCategoryHref = (folderPath) =>
+  folderPath === 'root' ? '/' : '/category/' + encodePublicFilePath(folderPath);
 
 const normalizeFolderPath = (input) => {
   const raw = typeof input === 'string' ? input : '';
@@ -101,7 +106,7 @@ const listFolderEntries = ({ currentPath, files, physicalFolders }) => {
     isRoot,
     rootHref: '/',
     parentPath,
-    parentHref: parentPath ? (parentPath === 'root' ? '/' : '/category/' + parentPath) : null,
+    parentHref: parentPath ? buildCategoryHref(parentPath) : null,
     ancestors,
     breadcrumbs,
     directories: directories.sort((a, b) => a.path.localeCompare(b.path)),
@@ -141,7 +146,7 @@ const buildTreeRows = (rootPath, physicalFolders, files) => {
       rows.push({
         name,
         path: child,
-        href: '/category/' + child,
+        href: buildCategoryHref(child),
         depth,
         hasChildren,
         isEmpty,
@@ -162,4 +167,5 @@ module.exports = {
   listFolderEntries,
   listPhysicalFolders,
   buildTreeRows,
+  buildCategoryHref,
 };

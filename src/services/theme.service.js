@@ -20,9 +20,11 @@ const DEFAULT_SITE_INFO = {
   police_number: '',
 };
 
-// 验证 URL 是否为安全的 http/https 协议
+// 验证 URL 是否安全：http/https 或站内相对路径
+// 禁止 // 与 /\ 开头的协议相对地址（可跳转到外域），禁止 javascript:/data: 等协议
 const isSafeUrl = (url) => {
   if (typeof url !== 'string') return false;
+  if (url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/\\')) return true;
   return /^https?:\/\//i.test(url);
 };
 

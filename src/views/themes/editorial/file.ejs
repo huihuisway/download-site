@@ -16,7 +16,7 @@
     <aside class="ed-sidebar">
       <a href="/" class="ed-nav-item"><span>全部文件</span></a>
       <% if (file.category) { %>
-        <a href="/category/<%= file.category %>" class="ed-nav-item active"><span><%= file.category %></span></a>
+        <a href="<%= buildCategoryHref(file.category) %>" class="ed-nav-item active"><span><%= file.category %></span></a>
       <% } %>
     </aside>
 

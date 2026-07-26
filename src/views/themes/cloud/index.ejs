@@ -21,12 +21,12 @@
                 <div class="cl-file-name-cell">
                   <span class="cl-file-icon cl-icon-folder" aria-hidden="true"></span>
                   <div>
-                    <div class="cl-file-name"><a href="/category/<%= dir.path %>" style="color: inherit; text-decoration: none;"><%= dir.name %></a></div>
+                    <div class="cl-file-name"><a href="<%= buildCategoryHref(dir.path) %>" style="color: inherit; text-decoration: none;"><%= dir.name %></a></div>
                     <% if (dir.isEmpty) { %><div class="cl-file-desc" style="color: var(--text-muted);">(空)</div><% } %>
                   </div>
                 </div>
               </td>
-              <td><a href="/category/<%= dir.path %>" class="cl-dl-btn">进入</a></td>
+              <td><a href="<%= buildCategoryHref(dir.path) %>" class="cl-dl-btn">进入</a></td>
             </tr>
           <% }); %>
         </tbody>

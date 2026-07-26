@@ -16,7 +16,7 @@
       <a href="/" class="ed-nav-item"><span>首页</span></a>
       <% if (breadcrumbs.length > 0) { %>
         <% breadcrumbs.forEach(function(crumb) { %>
-          <a href="<%= crumb.path === 'root' ? '/' : '/category/' + crumb.path %>" class="ed-nav-item">
+          <a href="<%= buildCategoryHref(crumb.path) %>" class="ed-nav-item">
             <span><%= crumb.name %></span>
           </a>
         <% }); %>
@@ -25,7 +25,7 @@
 
     <main class="ed-main">
       <% if (parentPath) { %>
-        <a href="<%= parentPath === 'root' ? '/' : '/category/' + parentPath %>" class="ed-nav-item" style="margin-bottom: 1rem; display: inline-block;">← 返回上一级</a>
+        <a href="<%= buildCategoryHref(parentPath) %>" class="ed-nav-item" style="margin-bottom: 1rem; display: inline-block;">← 返回上一级</a>
       <% } %>
 
       <h1 class="ed-page-title"><%= currentPath === 'root' ? '根目录' : currentPath %></h1>
@@ -33,7 +33,7 @@
       <% if (directories.length > 0) { %>
         <div class="ed-folders">
           <% directories.forEach(function(dir) { %>
-            <a href="/category/<%= dir.path %>" class="ed-folder-link">
+            <a href="<%= buildCategoryHref(dir.path) %>" class="ed-folder-link">
               <span class="ed-folder-icon" aria-hidden="true"></span>
               <span><%= dir.name %></span>
               <% if (dir.isEmpty) { %><span class="ed-folder-empty">(空)</span><% } %>

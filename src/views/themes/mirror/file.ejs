@@ -11,7 +11,7 @@
   <div class="mi-breadcrumb">
     <a href="/">downloads</a>
     <% if (file.category) { %>
-      / <a href="/category/<%= file.category %>"><%= file.category %></a>
+      / <a href="<%= buildCategoryHref(file.category) %>"><%= file.category %></a>
     <% } %>
     / <%= file.file_name %>
   </div>

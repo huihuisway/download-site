@@ -16,7 +16,7 @@
         <% if (i === breadcrumbs.length - 1) { %>
           <span><%= crumb.name %></span>
         <% } else { %>
-          <a href="<%= crumb.path === 'root' ? '/' : '/category/' + crumb.path %>"><%= crumb.name %></a>
+          <a href="<%= buildCategoryHref(crumb.path) %>"><%= crumb.name %></a>
         <% } %>
       <% }); %>
     <% } %>
@@ -25,7 +25,7 @@
 <div class="cl-content page-wrap">
   <% if (parentPath) { %>
     <div style="margin-bottom: 0.75rem;">
-      <a href="<%= parentPath === 'root' ? '/' : '/category/' + parentPath %>">← 返回上一级</a>
+      <a href="<%= buildCategoryHref(parentPath) %>">← 返回上一级</a>
     </div>
   <% } %>
 
@@ -41,12 +41,12 @@
                 <div class="cl-file-name-cell">
                   <span class="cl-file-icon cl-icon-folder" aria-hidden="true"></span>
                   <div>
-                    <div class="cl-file-name"><a href="/category/<%= dir.path %>" style="color: inherit; text-decoration: none;"><%= dir.name %></a></div>
+                    <div class="cl-file-name"><a href="<%= buildCategoryHref(dir.path) %>" style="color: inherit; text-decoration: none;"><%= dir.name %></a></div>
                     <% if (dir.isEmpty) { %><div class="cl-file-desc" style="color: var(--text-muted);">(空)</div><% } %>
                   </div>
                 </div>
               </td>
-              <td class="cl-muted" style="text-align:right"><a href="/category/<%= dir.path %>" class="cl-dl-btn">进入</a></td>
+              <td class="cl-muted" style="text-align:right"><a href="<%= buildCategoryHref(dir.path) %>" class="cl-dl-btn">进入</a></td>
             </tr>
           <% }); %>
         </tbody>

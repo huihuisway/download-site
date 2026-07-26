@@ -156,6 +156,7 @@ router.use((req, res, next) => {
   res.locals.getFileIconClass = getFileIconClass;
   res.locals.buildFilePageUrl = buildFilePageUrl;
   res.locals.buildFileDownloadUrl = buildFileDownloadUrl;
+  res.locals.buildCategoryHref = folderTreeService.buildCategoryHref;
   res.locals.currentTheme = themeService.getTheme();
   res.locals.siteInfo = themeService.getSiteInfo();
   next();
@@ -248,7 +249,15 @@ router.get('/d/*', downloadLimiter, (req, res, next) => {
 
 // 文件页面
 router.get('*', (req, res, next) => {
-  const publicFilePath = normalizePublicFilePath(req.path);
+  // req.path 保留百分号编码，需解码后匹配 DB 中的原始路径；
+  // 非法编码（文件名本身含 %）按原样回退匹配
+  let decodedPath;
+  try {
+    decodedPath = decodeURIComponent(req.path);
+  } catch {
+    decodedPath = req.path;
+  }
+  const publicFilePath = normalizePublicFilePath(decodedPath);
   if (isReservedPublicPath(publicFilePath)) {
     return next();
   }
@@ -265,7 +274,7 @@ router.get('*', (req, res, next) => {
     file: resolved.file,
     publicFilePath: resolved.publicFilePath,
     downloadUrl: buildFileDownloadUrl(resolved.file.file_path),
-    parentHref: parentPath === 'root' ? '/' : '/category/' + parentPath,
+    parentHref: folderTreeService.buildCategoryHref(parentPath),
   });
 });
 
