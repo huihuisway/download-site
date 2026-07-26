@@ -8,7 +8,6 @@ const statsService = require('../services/stats.service');
 const themeService = require('../services/theme.service');
 const folderTreeService = require('../services/folder-tree.service');
 const { formatFileSize, formatDate } = require('../utils/format');
-const { createFileStream } = require('../utils/stream');
 const { ensureInSandbox } = require('../utils/filename');
 const { downloadLimiter } = require('../middleware/rateLimit');
 const {
@@ -231,20 +230,41 @@ router.get(['/category', '/category/*'], (req, res) => {
 });
 
 // 真实下载
+// 用 res.download 以获得 Range(断点续传)、ETag/Last-Modified(协商缓存)
+// 以及符合 RFC 6266/5987 的 Content-Disposition(中文文件名正确落地)
 router.get('/d/*', downloadLimiter, (req, res, next) => {
   const resolved = resolvePublicFileOrRenderError(req.params[0], res);
   if (!resolved) {
     return;
   }
 
-  statsService.recordDownload(resolved.file.id);
-
-  return createFileStream(resolved.fullPath, res, resolved.file.mime_type).catch((err) => {
-    console.error('[download] 文件传输错误:', err);
-    if (!res.headersSent) {
-      next(err);
+  // 计数策略：完整下载或下载工具的首个分片(bytes=0-)才计数；
+  // 中段分片与 304 协商缓存不计数
+  res.on('finish', () => {
+    const range = req.headers.range;
+    const isFullDownload = res.statusCode === 200 && !range;
+    const isFirstChunk = res.statusCode === 206 && /^bytes=0-/.test(range || '');
+    if (isFullDownload || isFirstChunk) {
+      try {
+        statsService.recordDownload(resolved.file.id);
+      } catch (err) {
+        console.error('[download] 下载计数失败:', err.message);
+      }
     }
   });
+
+  return res.download(
+    resolved.fullPath,
+    resolved.file.file_name,
+    { headers: { 'Content-Type': resolved.file.mime_type || 'application/octet-stream' } },
+    (err) => {
+      if (!err) return;
+      console.error('[download] 文件传输错误:', err.message);
+      if (!res.headersSent) {
+        next(err);
+      }
+    },
+  );
 });
 
 // 文件页面

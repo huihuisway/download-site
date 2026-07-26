@@ -116,6 +116,62 @@ describe('public routes', () => {
     assert.strictEqual(record.download_count, 2);
   });
 
+  it('应支持 Range 断点续传且中段分片不计数', async () => {
+    const { db } = require('../src/db');
+    const before = db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get('docs/a.txt').download_count;
+
+    // 'hello public route' 的第 6-11 字节是 'public'
+    const partial = await request(server, '/d/docs/a.txt', { headers: { Range: 'bytes=6-11' } });
+    assert.strictEqual(partial.statusCode, 206);
+    assert.strictEqual(partial.body, 'public');
+    assert.ok(partial.headers['content-range'], '应返回 Content-Range');
+    assert.match(partial.headers['accept-ranges'], /bytes/);
+
+    const after = db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get('docs/a.txt').download_count;
+    assert.strictEqual(after, before, '中段分片不应计数');
+  });
+
+  it('从字节 0 开始的分片应计数一次', async () => {
+    const { db } = require('../src/db');
+    const before = db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get('docs/a.txt').download_count;
+
+    const chunk = await request(server, '/d/docs/a.txt', { headers: { Range: 'bytes=0-4' } });
+    assert.strictEqual(chunk.statusCode, 206);
+    assert.strictEqual(chunk.body, 'hello');
+
+    const after = db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get('docs/a.txt').download_count;
+    assert.strictEqual(after, before + 1);
+  });
+
+  it('ETag 协商缓存应返回 304 且不计数', async () => {
+    const { db } = require('../src/db');
+    const first = await request(server, '/d/docs/a.txt');
+    assert.strictEqual(first.statusCode, 200);
+    const etag = first.headers.etag;
+    assert.ok(etag, '应返回 ETag');
+    assert.ok(first.headers['last-modified'], '应返回 Last-Modified');
+
+    const before = db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get('docs/a.txt').download_count;
+    const cached = await request(server, '/d/docs/a.txt', { headers: { 'If-None-Match': etag } });
+    assert.strictEqual(cached.statusCode, 304);
+
+    const after = db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get('docs/a.txt').download_count;
+    assert.strictEqual(after, before, '304 不应计数');
+  });
+
+  it('中文文件名应输出 RFC 5987 的 filename* 形式', async () => {
+    const { db } = require('../src/db');
+    fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', '报告.txt'), 'cn name');
+    db.prepare(
+      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run('报告.txt', 'docs/报告.txt', 'docs', 7, 0, 'cn', 'text/plain');
+
+    const res = await request(server, `/d/docs/${encodeURIComponent('报告.txt')}`);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body, 'cn name');
+    assert.match(res.headers['content-disposition'], /filename\*=UTF-8''/);
+  });
+
   it('首页与分类页不应再输出 /download/:id 链接', async () => {
     const home = await request(server, '/');
     const category = await request(server, '/category/docs');
