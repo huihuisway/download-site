@@ -8,6 +8,20 @@ const migrations = [
       // schema.sql 已处理初始建表
     },
   },
+  {
+    version: 2,
+    description: 'API Key 明文改为 SHA-256 哈希存储',
+    up: () => {
+      const crypto = require('crypto');
+      for (const k of db.data.api_keys || []) {
+        if (k.key && !k.key_hash) {
+          k.key_hash = crypto.createHash('sha256').update(k.key).digest('hex');
+          k.key_prefix = k.key.substring(0, 8);
+          delete k.key; // 删除明文
+        }
+      }
+    },
+  },
 ];
 
 const getSchemaVersion = () => {

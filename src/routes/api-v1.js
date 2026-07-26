@@ -8,9 +8,6 @@ const { db } = require('../db');
 // 所有 API v1 路由需要 API Key 认证
 router.use(apiKeyAuth);
 
-// 保存 DB 的辅助函数（每次写操作后调用）
-const saveDb = () => db._save();
-
 // ===== 文件列表 (read) =====
 router.get('/files', (req, res) => {
   try {
