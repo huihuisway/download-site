@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const { config, validateConfig } = require('./config');
 
@@ -40,8 +41,30 @@ app.set('views', path.join(__dirname, 'views'));
 // 必须在 session 中间件之前设置，否则 secure cookie 无法在代理后正常下发
 app.set('trust proxy', true);
 
+// 为每个请求生成 CSP nonce，供模板中的内联 <script> 使用
+app.use((req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
 app.use(helmet({
-  contentSecurityPolicy: false,  // 允许内联样式
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      // 内联脚本靠 nonce 放行；未带 nonce 的注入脚本会被拦截
+      scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
+      // 主题模板含大段内联 <style> 与 style 属性，暂需 unsafe-inline
+      // （样式注入风险远低于脚本注入）
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'self'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 

@@ -25,7 +25,7 @@
           <% } %>
         </span>
       <% } %>
-      <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+      <button class="theme-toggle" type="button" aria-label="切换主题">
         <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"></circle>
           <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -43,7 +43,7 @@
       </button>
     </div>
   </footer>
-  <script>
+  <script nonce="<%= cspNonce %>">
     function toggleTheme() {
       var html = document.documentElement;
       var current = html.getAttribute('data-theme');
@@ -69,6 +69,11 @@
         html.classList.remove('theme-transitioning');
       }, 400);
     }
+
+    // 用事件监听代替内联 onclick：CSP 的 script-src-attr 无法用 nonce 放行内联事件属性
+    document.querySelectorAll('.theme-toggle').forEach(function (btn) {
+      btn.addEventListener('click', toggleTheme);
+    });
   </script>
 </body>
 </html>

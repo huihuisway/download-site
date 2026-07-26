@@ -7,14 +7,14 @@
   <title><%= title %></title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <% if (currentTheme === 'terminal') { %>
-  <script>
+  <script nonce="<%= cspNonce %>">
     (function(){
       var t = localStorage.getItem('theme');
       if (t !== 'light') document.documentElement.setAttribute('data-theme', 'dark');
     })();
   </script>
   <% } else { %>
-  <script>
+  <script nonce="<%= cspNonce %>">
     (function(){
       var t = localStorage.getItem('theme');
       if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');

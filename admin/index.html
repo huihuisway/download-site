@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>下载站 - 管理后台</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script>
-    (function(){
-      var t = localStorage.getItem('theme');
-      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    })();
-  </script>
+  <!-- 外部脚本而非内联：静态产物无法注入 CSP nonce -->
+  <script src="/js/theme-init.js"></script>
   <link rel="preload" href="/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/fonts.css">
 </head>
