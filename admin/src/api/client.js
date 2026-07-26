@@ -115,7 +115,8 @@ export const api = {
   },
 
   async deleteCategory(name) {
-    const res = await fetch(`${API_BASE}/categories/${name}`, { method: 'DELETE' });
+    // 编码后嵌套分类(docs/guides)成为单个路径段，服务端 :name 会解回原值
+    const res = await fetch(`${API_BASE}/categories/${encodeURIComponent(name)}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
@@ -193,7 +194,7 @@ export const api = {
   },
 
   async revokeApiKey(id) {
-    const res = await fetch(`${API_BASE}/api-keys/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/api-keys/${encodeURIComponent(id)}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 };
