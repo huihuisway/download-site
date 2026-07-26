@@ -1,6 +1,6 @@
 const { db } = require('../db');
 const { config } = require('../config');
-const { SYNC_BATCH_SIZE, CHECKSUM_BATCH_SIZE } = require('../config/constants');
+const { CHECKSUM_BATCH_SIZE } = require('../config/constants');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const path = require('path');
@@ -108,9 +108,6 @@ const syncDirectory = async () => {
         updated++;
         needsChecksum.push(file.file_path);
       }
-
-      if ((i + 1) % SYNC_BATCH_SIZE === 0) {
-      }
     }
 
     for (const record of dbRecords) {
@@ -132,31 +129,30 @@ const syncDirectory = async () => {
   return result;
 };
 
+/**
+ * 后台计算 SHA256（fire-and-forget，不阻塞调用方）
+ * 用流式哈希：大文件不再一次性读入内存，批次之间让出事件循环
+ */
 const scheduleChecksumComputation = (filePaths) => {
-  const { computeChecksumSync } = require('./checksum.service');
+  const { computeChecksum } = require('./checksum.service');
+  const updateStmt = db.prepare('UPDATE download_logs SET sha256 = ?, updated_at = CURRENT_TIMESTAMP WHERE file_path = ?');
 
-  const processBatch = (batch) => {
-    const updateStmt = db.prepare('UPDATE download_logs SET sha256 = ?, updated_at = CURRENT_TIMESTAMP WHERE file_path = ?');
-
-    const batchTransaction = db.transaction(() => {
+  const run = async () => {
+    for (let i = 0; i < filePaths.length; i += CHECKSUM_BATCH_SIZE) {
+      const batch = filePaths.slice(i, i + CHECKSUM_BATCH_SIZE);
       for (const filePath of batch) {
         try {
-          const fullPath = require('path').join(config.downloadDir, filePath);
-          const hash = computeChecksumSync(fullPath);
+          const hash = await computeChecksum(path.join(config.downloadDir, filePath));
           updateStmt.run(hash, filePath);
         } catch (err) {
           console.error(`[sync] SHA256 计算失败: ${filePath}`, err.message);
         }
       }
-    });
-
-    batchTransaction();
+      await new Promise((resolve) => setImmediate(resolve));
+    }
   };
 
-  for (let i = 0; i < filePaths.length; i += CHECKSUM_BATCH_SIZE) {
-    const batch = filePaths.slice(i, i + CHECKSUM_BATCH_SIZE);
-    setImmediate(() => processBatch(batch));
-  }
+  run().catch((err) => console.error('[sync] 校验计算任务失败:', err.message));
 };
 
 const guessMimeType = (filename) => {

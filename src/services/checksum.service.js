@@ -1,11 +1,7 @@
 const fs = require('fs');
 const crypto = require('crypto');
 
-const computeChecksumSync = (filePath) => {
-  const data = fs.readFileSync(filePath);
-  return crypto.createHash('sha256').update(data).digest('hex');
-};
-
+/** 流式计算 SHA256，避免大文件一次性读入内存 */
 const computeChecksum = async (filePath) => {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
@@ -18,5 +14,4 @@ const computeChecksum = async (filePath) => {
 
 module.exports = {
   computeChecksum,
-  computeChecksumSync,
 };
