@@ -97,6 +97,34 @@ describe('JSON Database', () => {
     });
   });
 
+  describe('防抖落盘', () => {
+    it('写操作后内存立即生效,close() 应 flush 到磁盘', () => {
+      dbModule.db.prepare(
+        'INSERT INTO download_logs (file_name, file_path, category) VALUES (?, ?, ?)'
+      ).run('debounce.txt', 'docs/debounce.txt', 'docs');
+
+      // 内存立即可见
+      const inMemory = dbModule.db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get('docs/debounce.txt');
+      assert.ok(inMemory);
+
+      // close() 兜底落盘（优雅停机路径）
+      dbModule.db.close();
+      const onDisk = JSON.parse(fs.readFileSync(testDbPath, 'utf8'));
+      assert.ok(onDisk.download_logs.some((r) => r.file_path === 'docs/debounce.txt'));
+    });
+
+    it('落盘后不应保留待写定时器', () => {
+      dbModule.db.prepare(
+        'INSERT INTO download_logs (file_name, file_path, category) VALUES (?, ?, ?)'
+      ).run('timer.txt', 'docs/timer.txt', 'docs');
+      assert.ok(dbModule.db._saveTimer, '写操作应安排落盘定时器');
+
+      dbModule.db._save();
+      assert.strictEqual(dbModule.db._saveTimer, null);
+      assert.strictEqual(dbModule.db._dirty, false);
+    });
+  });
+
   describe('LIMIT/OFFSET 位置参数绑定', () => {
     const seed = () => {
       for (let i = 1; i <= 3; i++) {

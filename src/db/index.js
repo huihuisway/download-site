@@ -7,11 +7,16 @@ const fs = require('fs');
 const path = require('path');
 const { config } = require('../config');
 
+// 写入防抖间隔：合并高频写(如每次下载的计数递增)，避免全库重写放大
+const SAVE_DEBOUNCE_MS = 500;
+
 class JsonDatabase {
   constructor(dbPath) {
     this.dbPath = dbPath;
     this.data = {};
     this.tables = {};
+    this._dirty = false;
+    this._saveTimer = null;
     this._load();
   }
 
@@ -55,9 +60,28 @@ class JsonDatabase {
 
   _save() {
     // 原子写入：先写临时文件，再重命名覆盖，避免崩溃时损坏数据库
+    this._dirty = false;
+    if (this._saveTimer) {
+      clearTimeout(this._saveTimer);
+      this._saveTimer = null;
+    }
     const tmp = this.dbPath + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(this.data, null, 2), 'utf-8');
+    fs.writeFileSync(tmp, JSON.stringify(this.data), 'utf-8');
     fs.renameSync(tmp, this.dbPath);
+  }
+
+  /**
+   * 标脏 + 防抖落盘。内存状态立即生效，磁盘最迟 SAVE_DEBOUNCE_MS 后落地。
+   * 硬崩溃(kill -9/断电)最多丢失该窗口内的统计更新；优雅停机由 close() 兜底。
+   */
+  _scheduleSave() {
+    this._dirty = true;
+    if (this._saveTimer) return;
+    this._saveTimer = setTimeout(() => {
+      this._saveTimer = null;
+      if (this._dirty) this._save();
+    }, SAVE_DEBOUNCE_MS);
+    if (this._saveTimer.unref) this._saveTimer.unref(); // 不阻止进程退出
   }
 
   pragma(_stmt) {
@@ -75,7 +99,7 @@ class JsonDatabase {
   transaction(fn) {
     return (...args) => {
       const result = fn(...args);
-      this._save();
+      this._scheduleSave();
       return result;
     };
   }
@@ -173,7 +197,7 @@ class Statement {
           }
         }
         existing.updated_at = new Date().toISOString();
-        this.db._save();
+        this.db._scheduleSave();
         return { changes: 1, lastInsertRowid: existing.id };
       }
     }
@@ -187,7 +211,7 @@ class Statement {
     };
 
     this.db.data[table].push(record);
-    this.db._save();
+    this.db._scheduleSave();
     return { changes: 1, lastInsertRowid: record.id };
   }
 
@@ -212,7 +236,7 @@ class Statement {
         changes++;
       }
     }
-    this.db._save();
+    this.db._scheduleSave();
     return { changes };
   }
 
@@ -224,7 +248,7 @@ class Statement {
     const before = this.db.data[table].length;
     this.db.data[table] = this.db.data[table].filter((r) => !this._matchesWhere(r, whereClause));
     const changes = before - this.db.data[table].length;
-    this.db._save();
+    this.db._scheduleSave();
     return { changes };
   }
 
@@ -492,8 +516,13 @@ const gracefulClose = () => {
   db.close();
 };
 
+// 退出前 flush 防抖窗口内未落盘的写入
 process.on('exit', gracefulClose);
 process.on('SIGINT', () => {
+  gracefulClose();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
   gracefulClose();
   process.exit(0);
 });
