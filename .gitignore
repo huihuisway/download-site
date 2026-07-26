@@ -23,5 +23,8 @@ Thumbs.db
 *.swp
 *.swo
 
+# Claude Code 本地数据(含敏感记忆文件,禁止提交)
+.claude/
+
 # 测试
 coverage/
