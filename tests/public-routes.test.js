@@ -172,6 +172,22 @@ describe('public routes', () => {
     assert.match(res.headers['content-disposition'], /filename\*=UTF-8''/);
   });
 
+  it('HTML 应被压缩,但下载响应必须保留 Content-Length 且不压缩', async () => {
+    const home = await request(server, '/', { headers: { 'Accept-Encoding': 'gzip' } });
+    assert.strictEqual(home.headers['content-encoding'], 'gzip');
+
+    // 压缩会去掉 Content-Length 并破坏 Range,下载必须排除在外
+    const download = await request(server, '/d/docs/a.txt', { headers: { 'Accept-Encoding': 'gzip' } });
+    assert.strictEqual(download.headers['content-encoding'], undefined);
+    assert.ok(download.headers['content-length'], '下载响应应保留 Content-Length');
+  });
+
+  it('静态资源应带缓存头', async () => {
+    const css = await request(server, '/css/clean-blue-base.css');
+    assert.match(css.headers['cache-control'], /max-age=3600/);
+    assert.ok(css.headers.etag);
+  });
+
   it('首页与分类页不应再输出 /download/:id 链接', async () => {
     const home = await request(server, '/');
     const category = await request(server, '/category/docs');

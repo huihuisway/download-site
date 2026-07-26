@@ -3,6 +3,7 @@ const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const helmet = require('helmet');
 const morgan = require('morgan');
+const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 
@@ -52,6 +53,12 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// 压缩 HTML/CSS/JS；必须排除 /d/* —— 压缩会去掉 Content-Length
+// 并破坏 Range 响应，导致下载工具无法续传
+app.use(compression({
+  filter: (req, res) => !req.path.startsWith('/d/') && compression.filter(req, res),
+}));
+
 if (!config.isProduction) {
   app.use(morgan('dev'));
 } else {
@@ -92,20 +99,35 @@ app.use('/admin', (req, res, next) => {
   }
   return next();
 });
+// Vite 产物带内容哈希，可长期强缓存；index.html 必须每次校验
 app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin'), {
   index: false,
   redirect: false,
+  maxAge: '1y',
+  immutable: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
 }));
 app.get(['/admin', '/admin/*'], (req, res) => {
   const adminIndex = path.join(__dirname, '..', 'public', 'admin', 'index.html');
   if (fs.existsSync(adminIndex)) {
-    return res.sendFile(adminIndex);
+    // no-cache：新部署后立刻拿到新的哈希资源地址
+    return res.sendFile(adminIndex, { headers: { 'Cache-Control': 'no-cache' } });
   }
   return renderThemeError(res, 404, '后台未构建', '请先运行 npm run build:admin 构建后台前端。');
 });
 
 // ===== 静态资源 =====
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// 字体文件名固定但内容不变，可长缓存
+app.use('/fonts', express.static(path.join(__dirname, '..', 'public', 'fonts'), {
+  maxAge: '30d',
+  immutable: true,
+}));
+// 主题 CSS 无内容哈希：短缓存 + ETag 协商，部署后最迟 1 小时生效
+app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: '1h' }));
 
 // ===== 注入用户信息到模板 =====
 app.use(attachUser);
