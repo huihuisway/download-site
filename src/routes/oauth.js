@@ -1,18 +1,9 @@
 const crypto = require('crypto');
 const { config } = require('../config');
-const themeService = require('../services/theme.service');
+const { renderThemeError } = require('../utils/render-theme');
 
-/** 渲染主题化错误页面 */
-const renderError = (res, status, title, message) => {
-  const theme = themeService.getTheme();
-  const siteInfo = themeService.getSiteInfo();
-  return res.status(status).render(`themes/${theme}/error`, {
-    title,
-    message,
-    currentTheme: theme,
-    siteInfo,
-  });
-};
+/** 渲染主题化错误页面（保留原签名，内部委托给统一实现） */
+const renderError = (res, status, title, message) => renderThemeError(res, status, { title, message });
 
 /**
  * 检查 URL 是否为安全的本地重定向地址

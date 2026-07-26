@@ -1,0 +1,230 @@
+<style>
+  .dl-error-wrap {
+    min-height: calc(100vh - var(--header-height) - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6) var(--space-4);
+  }
+  .dl-error-card {
+    max-width: 480px;
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    padding: 0;
+    text-align: center;
+    overflow: hidden;
+  }
+  .dl-error-icon-bar {
+    padding: var(--space-6) var(--space-6) 0;
+    display: flex;
+    justify-content: center;
+  }
+  .dl-error-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid;
+  }
+  .dl-error-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  /* Pending — amber */
+  .dl-error-icon.is-pending {
+    border-color: var(--warning);
+    background: var(--warning-bg);
+    color: #b45309;
+  }
+  [data-theme="dark"] .dl-error-icon.is-pending { color: #fbbf24; }
+
+  /* Rejected — red */
+  .dl-error-icon.is-rejected {
+    border-color: var(--error);
+    background: var(--error-bg);
+    color: #dc2626;
+  }
+  [data-theme="dark"] .dl-error-icon.is-rejected { color: #f87171; }
+
+  /* Not found — gray */
+  .dl-error-icon.is-not-found {
+    border-color: var(--border);
+    background: var(--muted);
+    color: var(--text-muted);
+  }
+
+  /* Generic error */
+  .dl-error-icon.is-generic {
+    border-color: var(--info);
+    background: var(--info-bg);
+    color: var(--info);
+  }
+
+  .dl-error-body {
+    padding: var(--space-5) var(--space-6) var(--space-6);
+  }
+  .dl-error-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 var(--space-2);
+    line-height: 1.4;
+  }
+  .dl-error-file {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--muted);
+    border: 1px solid var(--border);
+    padding: var(--space-1) var(--space-3);
+    margin-bottom: var(--space-4);
+    word-break: break-all;
+    max-width: 100%;
+  }
+  .dl-error-msg {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-5);
+  }
+  .dl-error-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: var(--space-1) var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+  .dl-error-status.is-pending {
+    background: var(--warning-bg);
+    color: #b45309;
+    border: 1px solid var(--warning-border);
+  }
+  [data-theme="dark"] .dl-error-status.is-pending { color: #fbbf24; }
+
+  .dl-error-status.is-rejected {
+    background: var(--error-bg);
+    color: #dc2626;
+    border: 1px solid var(--error-border);
+  }
+  [data-theme="dark"] .dl-error-status.is-rejected { color: #f87171; }
+
+  .dl-error-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .dl-error-status.is-pending .dl-error-status-dot {
+    animation: dl-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes dl-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .dl-error-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+  .dl-error-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-5);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+  .dl-error-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--bg-hover);
+  }
+  .dl-error-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .dl-error-btn.is-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .dl-error-btn.is-primary:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: #fff;
+  }
+</style>
+
+<div class="dl-error-wrap">
+  <div class="dl-error-card">
+    <%
+      var type = typeof errorType !== 'undefined' ? errorType : 'generic';
+      var iconClass = type === 'pending' ? 'is-pending' : type === 'rejected' ? 'is-rejected' : type === 'not_found' ? 'is-not-found' : 'is-generic';
+      var statusLabel = type === 'pending' ? '等待审核' : type === 'rejected' ? '审核未通过' : type === 'not_found' ? '文件不存在' : '错误';
+    %>
+
+    <div class="dl-error-icon-bar">
+      <div class="dl-error-icon <%= iconClass %>">
+        <% if (type === 'pending') { %>
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+        <% } else if (type === 'rejected') { %>
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+        <% } else if (type === 'not_found') { %>
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+        <% } else { %>
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="dl-error-body">
+      <div class="dl-error-status <%= iconClass %>">
+        <span class="dl-error-status-dot"></span>
+        <%= statusLabel %>
+      </div>
+
+      <h1 class="dl-error-title"><%= title %></h1>
+
+      <% if (typeof fileName !== 'undefined' && fileName) { %>
+        <div class="dl-error-file"><%= fileName %></div>
+      <% } %>
+
+      <p class="dl-error-msg"><%= message %></p>
+
+      <div class="dl-error-actions">
+        <a href="/" class="dl-error-btn">
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
+          返回文件列表
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

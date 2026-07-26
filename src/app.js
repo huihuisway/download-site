@@ -26,19 +26,11 @@ const { loginLimiter } = require('./middleware/rateLimit');
 
 // 服务初始化
 const { syncDirectory } = require('./services/sync.service');
-const themeService = require('./services/theme.service');
+const { renderThemeError } = require('./utils/render-theme');
 
 const app = express();
 
-const renderThemeError = (res, status, title, message) => {
-  const theme = themeService.getTheme();
-  return res.status(status).render(`themes/${theme}/error`, {
-    title,
-    message,
-    currentTheme: theme,
-    siteInfo: themeService.getSiteInfo(),
-  });
-};
+const renderError = (res, status, title, message) => renderThemeError(res, status, { title, message });
 
 // ===== 基础中间件 =====
 app.set('view engine', 'ejs');
@@ -95,7 +87,7 @@ app.use(session({
 // 后台 React SPA
 app.use('/admin', (req, res, next) => {
   if (req.session?.user && !hasAdminAccess(req.session.user)) {
-    return renderThemeError(res, 403, '无后台权限', '当前账号没有管理后台权限，请联系管理员添加邮箱白名单。');
+    return renderError(res, 403, '无后台权限', '当前账号没有管理后台权限，请联系管理员添加邮箱白名单。');
   }
   return next();
 });
@@ -117,7 +109,7 @@ app.get(['/admin', '/admin/*'], (req, res) => {
     // no-cache：新部署后立刻拿到新的哈希资源地址
     return res.sendFile(adminIndex, { headers: { 'Cache-Control': 'no-cache' } });
   }
-  return renderThemeError(res, 404, '后台未构建', '请先运行 npm run build:admin 构建后台前端。');
+  return renderError(res, 404, '后台未构建', '请先运行 npm run build:admin 构建后台前端。');
 });
 
 // ===== 静态资源 =====

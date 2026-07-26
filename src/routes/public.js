@@ -10,6 +10,7 @@ const folderTreeService = require('../services/folder-tree.service');
 const { formatFileSize, formatDate, formatNumber } = require('../utils/format');
 const { ensureInSandbox } = require('../utils/filename');
 const { downloadLimiter } = require('../middleware/rateLimit');
+const { renderThemeError } = require('../utils/render-theme');
 const {
   normalizePublicFilePath,
   buildFilePageUrl,
@@ -41,9 +42,8 @@ const renderTheme = (res, view, data, status = 200) => {
   return res.status(status).render(`themes/${theme}/${view}`, data);
 };
 
-const renderFileError = (res, status, data) => {
-  return renderTheme(res, 'error', data, status);
-};
+// 委托给统一实现（会显式补齐 currentTheme / siteInfo / errorType 默认值）
+const renderFileError = (res, status, data) => renderThemeError(res, status, data);
 
 const isReservedPublicPath = (publicFilePath) => {
   if (!publicFilePath) {
