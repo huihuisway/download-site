@@ -48,10 +48,17 @@ const config = {
   logLevel: process.env.LOG_LEVEL || 'info',
 };
 
+/**
+ * 校验配置安全性。
+ * 返回 { fatal, warnings }：fatal 在生产环境应拒绝启动（由调用方执行 process.exit），
+ * warnings 仅提示。OAuth 缺失保持 warning——仅用本地管理员登录是受支持的部署模式。
+ */
 const validateConfig = () => {
+  const fatal = [];
+  const warnings = [];
+
   const required = ['oauth.authorizeUrl', 'oauth.tokenUrl', 'oauth.clientId', 'oauth.clientSecret', 'oauth.callbackUrl'];
   const missing = [];
-
   for (const key of required) {
     const parts = key.split('.');
     let value = config;
@@ -62,27 +69,23 @@ const validateConfig = () => {
       missing.push(key);
     }
   }
+  if (missing.length > 0) {
+    warnings.push(`以下 OAuth 配置项未正确设置: ${missing.join(', ')}`);
+  }
 
-  // 检查 session secret 安全性
-  const sessionSecretWarnings = [];
+  // 未配置任何登录方式时后台将不可用
+  if (missing.length > 0 && !(config.admin.username && config.admin.password)) {
+    warnings.push('OAuth 与本地管理员（ADMIN_USERNAME/ADMIN_PASSWORD）均未配置，管理后台将无法登录');
+  }
+
+  // session secret 不安全在生产环境属于致命错误
   if (config.session.secret === 'dev-secret-change-me') {
-    sessionSecretWarnings.push('SESSION_SECRET 使用默认值，请设置安全的随机字符串');
-  }
-  if (config.session.secret && config.session.secret.length < 32) {
-    sessionSecretWarnings.push('SESSION_SECRET 长度不足 32 字符，建议使用更长的随机字符串');
-  }
-
-  if (missing.length > 0 && config.isProduction) {
-    console.warn(`[config] 警告: 以下 OAuth 配置项未正确设置: ${missing.join(', ')}`);
+    fatal.push('SESSION_SECRET 使用默认值，请设置安全的随机字符串');
+  } else if (config.session.secret.length < 32) {
+    fatal.push('SESSION_SECRET 长度不足 32 字符，请使用更长的随机字符串');
   }
 
-  if (sessionSecretWarnings.length > 0 && config.isProduction) {
-    for (const warning of sessionSecretWarnings) {
-      console.error(`[config] 严重警告: ${warning}`);
-    }
-  }
-
-  return missing.length === 0 && sessionSecretWarnings.length === 0;
+  return { fatal, warnings };
 };
 
 module.exports = { config, validateConfig };

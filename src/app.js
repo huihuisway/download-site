@@ -132,6 +132,16 @@ app.use(errorHandler);
 
 // ===== 启动服务 =====
 const startServer = async () => {
+  // 先校验配置：生产环境下不安全的配置直接拒绝启动
+  const { fatal, warnings } = validateConfig();
+  warnings.forEach((w) => console.warn(`[config] 警告: ${w}`));
+  if (fatal.length > 0) {
+    fatal.forEach((e) => console.error(`[config] ${config.isProduction ? '致命错误' : '严重警告'}: ${e}`));
+    if (config.isProduction) {
+      process.exit(1);
+    }
+  }
+
   // 运行数据库迁移
   runMigrations();
 
@@ -143,9 +153,6 @@ const startServer = async () => {
   } catch (err) {
     console.error('[init] 同步失败:', err.message);
   }
-
-  // 校验配置
-  validateConfig();
 
   app.listen(config.port, () => {
     console.log(`[server] 下载站已启动: http://localhost:${config.port}`);
