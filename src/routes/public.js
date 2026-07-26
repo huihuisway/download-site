@@ -17,7 +17,8 @@ const {
   buildFileDownloadUrl,
 } = require('../utils/public-paths');
 
-const RESERVED_ROOTS = new Set(['admin', 'auth', 'api', 'd', 'category', 'css']);
+// 新增顶层路由或静态挂载点时必须同步登记，否则会被文件详情页的 catch-all 吞掉
+const RESERVED_ROOTS = new Set(['admin', 'auth', 'api', 'd', 'category', 'css', 'fonts', 'js']);
 const RESERVED_EXACT_PATHS = new Set(['favicon.svg']);
 
 // Cloud theme helpers

@@ -4,6 +4,28 @@
 
 ---
 
+> ## ⚠️ 历史设计文档
+>
+> 本文记录的是开发前的设计意图，部分内容与最终实现不一致。以实际代码为准，
+> 主要差异如下：
+>
+> | 本文设计 | 实际实现 |
+> |---|---|
+> | SQLite + better-sqlite3 | JSON 文件数据库（`src/db/index.js`，模拟 better-sqlite3 API） |
+> | connect-sqlite3 存 Session | session-file-store（文件存储于 `data/sessions/`） |
+> | `file-type` 嗅探 magic number | 仅扩展名白名单 + 显式黑名单 |
+> | 单一前台样式 | 4 套可切换主题（`src/views/themes/`） |
+> | 仅 OAuth 登录 | OAuth + 本地管理员账号双方式 |
+> | 未涉及 | `/api/v1` 第三方 API + API Key + 文件审核流程 |
+>
+> 另外 `src/db/schema.sql` 与 `src/db/migrations.js` 在 JSON 数据库下不执行建表
+> （`db.exec()` 是 no-op），schema.sql 仅作为数据模型文档与将来迁移 SQLite 的参考。
+>
+> **SQLite 迁移列为未来工作**，届时可回到本文的相关章节。当前架构说明见
+> [../CLAUDE.md](../CLAUDE.md) 与 [../README.md](../README.md)。
+
+---
+
 ## 一、项目概述
 
 构建一个类似 Debian 镜像站风格的纯粹文件下载服务。核心诉求：
