@@ -6,8 +6,8 @@ const http = require('http');
 
 process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-public-routes.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-public-routes-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('public-routes');
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
 process.env.ADMIN_ALLOWED_EMAILS = 'allowed@example.com';
@@ -78,13 +78,10 @@ describe('public routes', () => {
   });
 
   after(async () => {
+    tmpEnv.cleanup();
     if (server) {
       await new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
-    }
-
-    try { fs.rmSync(process.env.DOWNLOAD_DIR, { recursive: true, force: true }); } catch {}
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-  });
+    }  });
 
   it('GET /docs/a.txt 应返回文件页面 HTML', async () => {
     const response = await request(server, '/docs/a.txt');

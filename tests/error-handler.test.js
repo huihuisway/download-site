@@ -4,8 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 process.env.NODE_ENV = 'test';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-error-handler.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-error-handler-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('error-handler');
 
 const createRes = (acceptsResult) => ({
   statusCode: 200,
@@ -33,8 +33,7 @@ describe('errorHandler', () => {
   });
 
   after(() => {
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-    try { fs.rmSync(process.env.DOWNLOAD_DIR, { recursive: true, force: true }); } catch {}
+    tmpEnv.cleanup();
   });
 
   it('API 请求应返回 JSON 且不含 stack', () => {

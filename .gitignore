@@ -28,3 +28,6 @@ Thumbs.db
 
 # 测试
 coverage/
+# 兜底：旧版本测试会在仓库内建这些目录/文件（现已改用系统临时目录）
+downloads-*-test/
+data/test-*.db*

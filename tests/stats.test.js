@@ -4,8 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 process.env.NODE_ENV = 'test';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-stats.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-stats-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('stats');
 
 describe('stats service', () => {
   const testDir = process.env.DOWNLOAD_DIR;
@@ -21,10 +21,7 @@ describe('stats service', () => {
     db._save();
   });
 
-  after(() => {
-    try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-  });
+  after(() => {  });
 
   describe('recordDownload', () => {
     it('应该原子递增下载计数', () => {

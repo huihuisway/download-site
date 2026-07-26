@@ -6,8 +6,8 @@ const http = require('http');
 
 process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-rate-limit.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-rate-limit-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('rate-limit');
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
 process.env.RATE_LIMIT_LOGIN_MAX = '2';
@@ -68,9 +68,8 @@ describe('rate limiting', () => {
   });
 
   after(async () => {
+    tmpEnv.cleanup();
     if (server) server.close();
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-    try { fs.rmSync(process.env.DOWNLOAD_DIR, { recursive: true, force: true }); } catch {}
   });
 
   it('连续错误登录超过限制应返回 429', async () => {

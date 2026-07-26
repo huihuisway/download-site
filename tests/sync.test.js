@@ -4,8 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 process.env.NODE_ENV = 'test';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-sync.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-sync-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('sync');
 
 const clearModule = (modulePath) => {
   delete require.cache[require.resolve(modulePath)];
@@ -14,10 +14,7 @@ const clearModule = (modulePath) => {
 describe('sync service', () => {
   const testDir = process.env.DOWNLOAD_DIR;
 
-  before(() => {
-    try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-
+  before(() => {
     fs.mkdirSync(path.join(testDir, 'documents', 'guides', 'v1'), { recursive: true });
     fs.mkdirSync(path.join(testDir, 'software'), { recursive: true });
     fs.mkdirSync(path.join(testDir, 'empty', 'nested'), { recursive: true });
@@ -36,8 +33,7 @@ describe('sync service', () => {
   });
 
   after(() => {
-    try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
+    tmpEnv.cleanup();
   });
 
   it('应该能初始化数据库', () => {

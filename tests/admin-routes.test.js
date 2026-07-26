@@ -6,8 +6,8 @@ const http = require('http');
 
 process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-admin-routes.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-admin-routes-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('admin-routes');
 process.env.SESSION_SECRET = 'b'.repeat(32);
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
@@ -69,9 +69,8 @@ describe('admin routes - 嵌套分类删除', () => {
   });
 
   after(async () => {
+    tmpEnv.cleanup();
     if (server) server.close();
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-    try { fs.rmSync(process.env.DOWNLOAD_DIR, { recursive: true, force: true }); } catch {}
   });
 
   it('编码后的嵌套分类名应能删除(%2F 往返)', async () => {

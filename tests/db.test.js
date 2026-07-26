@@ -4,21 +4,19 @@ const path = require('path');
 const fs = require('fs');
 
 process.env.NODE_ENV = 'test';
-const testDbPath = path.join(__dirname, '..', 'data', 'test-db-unit.db');
-process.env.DB_PATH = testDbPath;
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('db-unit');
+const testDbPath = tmpEnv.dbPath;
 
 describe('JSON Database', () => {
   let dbModule;
 
   before(() => {
-    fs.mkdirSync(path.dirname(testDbPath), { recursive: true });
-    try { fs.unlinkSync(testDbPath); } catch {}
     dbModule = require('../src/db');
   });
 
   after(() => {
-    try { fs.unlinkSync(testDbPath); } catch {}
-    try { fs.unlinkSync(testDbPath + '.tmp'); } catch {}
+    tmpEnv.cleanup();
   });
 
   beforeEach(() => {

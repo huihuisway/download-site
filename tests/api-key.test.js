@@ -4,8 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 process.env.NODE_ENV = 'test';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-api-key.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-api-key-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('api-key');
 
 describe('api key service', () => {
   before(() => {
@@ -17,7 +17,7 @@ describe('api key service', () => {
   });
 
   after(() => {
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
+    tmpEnv.cleanup();
   });
 
   it('生成的 Key 只存哈希与前缀,不存明文', () => {

@@ -513,7 +513,15 @@ if (!fs.existsSync(dbDir)) {
 const db = new JsonDatabase(config.dbPath);
 
 const gracefulClose = () => {
-  db.close();
+  // 退出路径上的落盘失败不应让进程带异常栈崩溃；
+  // ENOENT 表示数据目录已被移除（测试清理场景），此时无处可写，静默跳过。
+  try {
+    db.close();
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.error('[db] 退出时落盘失败:', err.message);
+    }
+  }
 };
 
 // 退出前 flush 防抖窗口内未落盘的写入

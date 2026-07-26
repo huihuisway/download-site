@@ -4,8 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 process.env.NODE_ENV = 'test';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-theme.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-theme-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('theme');
 
 describe('theme service', () => {
   before(() => {
@@ -14,8 +14,7 @@ describe('theme service', () => {
   });
 
   after(() => {
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-    try { fs.rmSync(process.env.DOWNLOAD_DIR, { recursive: true, force: true }); } catch {}
+    tmpEnv.cleanup();
   });
 
   beforeEach(() => {

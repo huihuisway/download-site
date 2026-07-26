@@ -8,8 +8,8 @@ const http = require('http');
 // 设为 test 而非 production，避免 secure cookie 在测试 HTTP 环境下被拦截
 process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-local-login.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-local-login-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('local-login');
 process.env.SESSION_SECRET = 'a'.repeat(32);
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
@@ -63,11 +63,8 @@ describe('local login', () => {
   });
 
   after(async () => {
-    if (server) server.close();
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-    try { fs.rmSync(process.env.DOWNLOAD_DIR, { recursive: true, force: true }); } catch {}
-    // 只清理本测试创建的 session 文件，不影响其他并行测试
-  });
+    tmpEnv.cleanup();
+    if (server) server.close();  });
 
   it('GET /auth/config 应返回 localLogin: true', async () => {
     const res = await request(server, { path: '/auth/config' });

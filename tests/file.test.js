@@ -5,8 +5,8 @@ const fs = require('fs');
 
 // 设置测试环境变量
 process.env.NODE_ENV = 'test';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-stats.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('file');
 
 const { sanitizeFilename, isAllowedExtension, ensureInSandbox, getCategoryFromPath } = require('../src/utils/filename');
 const { normalizePublicFilePath, buildFilePageUrl, buildFileDownloadUrl } = require('../src/utils/public-paths');
@@ -17,9 +17,8 @@ describe('filename utils', () => {
   });
 
   after(() => {
-    fs.rmSync(process.env.DOWNLOAD_DIR, { recursive: true, force: true });
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
-  });
+    tmpEnv.cleanup();
+    fs.rmSync(process.env.DOWNLOAD_DIR, { recursive: true, force: true });  });
 
   describe('sanitizeFilename', () => {
     it('应该保留安全文件名', () => {

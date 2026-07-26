@@ -5,8 +5,8 @@ const fs = require('fs');
 
 process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
-process.env.DB_PATH = path.join(__dirname, '..', 'data', 'test-file-service.db');
-process.env.DOWNLOAD_DIR = path.join(__dirname, '..', 'downloads-file-service-test');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('file-service');
 
 describe('file service - nested folder operations', () => {
   const testDir = process.env.DOWNLOAD_DIR;
@@ -22,8 +22,7 @@ describe('file service - nested folder operations', () => {
   });
 
   after(() => {
-    try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
-    try { fs.unlinkSync(process.env.DB_PATH); } catch {}
+    tmpEnv.cleanup();
   });
 
   describe('createFolder', () => {
