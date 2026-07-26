@@ -1,31 +1,54 @@
-const errorHandler = (err, req, res, _next) => {
-  console.error(`[error] ${req.method} ${req.path}:`, err.message);
+const { config } = require('../config');
 
-  // multer 文件上传错误
+/**
+ * 把错误映射为 { status, message }
+ * stack 只进日志，永不返回给客户端
+ */
+const classifyError = (err) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({ error: '文件大小超出限制' });
+    return { status: 400, message: '文件大小超出限制' };
   }
-
-  // 自定义业务错误
   if (err.statusCode) {
-    return res.status(err.statusCode).json({ error: err.message });
+    return { status: err.statusCode, message: err.message };
   }
-
-  // 路径越界错误
   if (err.message && err.message.includes('路径越界')) {
-    return res.status(403).json({ error: err.message });
+    return { status: 403, message: err.message };
+  }
+  // 生产环境隐藏内部错误细节
+  return { status: 500, message: config.isProduction ? '服务器内部错误' : err.message };
+};
+
+const errorHandler = (err, req, res, _next) => {
+  console.error(`[error] ${req.method} ${req.path}:`, err.message, config.isProduction ? '' : err.stack);
+
+  // 响应头已发出（如流传输中途出错）时无法再改写响应
+  if (res.headersSent) {
+    return;
   }
 
-  // 生产环境隐藏详细错误
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(500).json({ error: '服务器内部错误' });
+  const { status, message } = classifyError(err);
+
+  // 内容协商：API 请求返回 JSON，浏览器请求渲染主题化错误页
+  const wantsHtml = !req.path.startsWith('/api/') && req.accepts(['html', 'json']) === 'html';
+  if (!wantsHtml) {
+    return res.status(status).json({ error: message });
   }
 
-  // 开发环境返回详细信息
-  return res.status(500).json({
-    error: err.message,
-    stack: err.stack,
-  });
+  try {
+    const themeService = require('../services/theme.service');
+    const theme = themeService.getTheme();
+    return res.status(status).render(`themes/${theme}/error`, {
+      title: '出错了',
+      message,
+      errorType: 'generic',
+      fileName: null,
+      currentTheme: theme,
+      siteInfo: themeService.getSiteInfo(),
+    });
+  } catch (renderErr) {
+    console.error('[error] 错误页渲染失败:', renderErr.message);
+    return res.status(status).type('text').send(message);
+  }
 };
 
 const notFoundHandler = (req, res) => {
@@ -40,4 +63,5 @@ const notFoundHandler = (req, res) => {
 module.exports = {
   errorHandler,
   notFoundHandler,
+  classifyError,
 };
