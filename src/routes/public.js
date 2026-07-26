@@ -7,7 +7,7 @@ const { config } = require('../config');
 const statsService = require('../services/stats.service');
 const themeService = require('../services/theme.service');
 const folderTreeService = require('../services/folder-tree.service');
-const { formatFileSize, formatDate } = require('../utils/format');
+const { formatFileSize, formatDate, formatNumber } = require('../utils/format');
 const { ensureInSandbox } = require('../utils/filename');
 const { downloadLimiter } = require('../middleware/rateLimit');
 const {
@@ -43,29 +43,6 @@ const renderTheme = (res, view, data, status = 200) => {
 
 const renderFileError = (res, status, data) => {
   return renderTheme(res, 'error', data, status);
-};
-
-const getTrackedCategories = () => {
-  const rawCategories = db.prepare('SELECT category FROM download_logs').all().map((r) => r.category);
-  return [...new Set(rawCategories)].sort();
-};
-
-const getCategoriesWithDirectories = () => {
-  const categories = getTrackedCategories();
-
-  if (fs.existsSync(config.downloadDir)) {
-    const dirs = fs.readdirSync(config.downloadDir, { withFileTypes: true })
-      .filter((d) => d.isDirectory())
-      .map((d) => d.name);
-
-    for (const dir of dirs) {
-      if (!categories.includes(dir)) {
-        categories.push(dir);
-      }
-    }
-  }
-
-  return categories.sort();
 };
 
 const isReservedPublicPath = (publicFilePath) => {
@@ -150,7 +127,7 @@ const resolvePublicFileOrRenderError = (reqPath, res) => {
 router.use((req, res, next) => {
   res.locals.formatFileSize = formatFileSize;
   res.locals.formatDate = formatDate;
-  res.locals.formatNumber = (num) => num?.toLocaleString('zh-CN') || '0';
+  res.locals.formatNumber = formatNumber;
   res.locals.getFileExt = getFileExt;
   res.locals.getFileIconClass = getFileIconClass;
   res.locals.buildFilePageUrl = buildFilePageUrl;

@@ -40,6 +40,7 @@ const config = {
   },
 
   // 上传白名单
+  // 推荐完整取值：.zip,.iso,.pdf,.txt,.png,.jpg,.jpeg,.gz,.tar,.7z,.doc,.docx,.xlsx,.md,.jar
   allowedExtensions: (process.env.ALLOWED_EXTENSIONS || '.zip,.pdf,.txt,.png,.jpg,.jar')
     .split(',')
     .map((ext) => ext.trim().toLowerCase()),
