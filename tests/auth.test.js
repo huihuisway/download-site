@@ -6,6 +6,7 @@ const ORIGINAL_ENV = {
   ADMIN_ALLOWED_EMAILS: process.env.ADMIN_ALLOWED_EMAILS,
   ADMIN_USERNAME: process.env.ADMIN_USERNAME,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+  DEV_ADMIN_BYPASS: process.env.DEV_ADMIN_BYPASS,
 };
 
 const restoreEnv = () => {
@@ -68,7 +69,8 @@ describe('auth middleware', () => {
       assert.strictEqual(res.statusCode, 200);
     });
 
-    it('开发模式未登录应自动注入管理员', () => {
+    it('显式开启 DEV_ADMIN_BYPASS=1 时未登录应自动注入管理员', () => {
+      process.env.DEV_ADMIN_BYPASS = '1';
       const { requireAuth, DEV_ADMIN_USER } = loadAuthModule();
       const req = { session: {}, path: '/api/admin/stats' };
       const res = createJsonResponse();
@@ -77,6 +79,28 @@ describe('auth middleware', () => {
       assert.ok(nextCalled);
       assert.ok(req.session.user);
       assert.strictEqual(req.session.user.username, DEV_ADMIN_USER.username);
+    });
+
+    it('未开启 DEV_ADMIN_BYPASS 时非生产环境未登录 API 请求应返回 401', () => {
+      const { requireAuth } = loadAuthModule();
+      const req = { session: {}, originalUrl: '/api/admin/stats', path: '/stats' };
+      const res = createJsonResponse();
+      let nextCalled = false;
+      requireAuth(req, res, () => { nextCalled = true; });
+      assert.strictEqual(nextCalled, false);
+      assert.strictEqual(res.statusCode, 401);
+    });
+
+    it('生产环境即使设置 DEV_ADMIN_BYPASS=1 也不应注入管理员', () => {
+      process.env.NODE_ENV = 'production';
+      process.env.DEV_ADMIN_BYPASS = '1';
+      const { requireAuth } = loadAuthModule();
+      const req = { session: {}, originalUrl: '/api/admin/stats', path: '/stats' };
+      const res = createJsonResponse();
+      let nextCalled = false;
+      requireAuth(req, res, () => { nextCalled = true; });
+      assert.strictEqual(nextCalled, false);
+      assert.strictEqual(res.statusCode, 401);
     });
 
     it('白名单内的 OAuth 邮箱应通过', () => {

@@ -191,9 +191,9 @@ const logout = (req, res) => {
 };
 
 const getMe = (req, res) => {
-  // 开发模式：返回测试管理员
-  if (process.env.NODE_ENV !== 'production' && !req.session?.user) {
-    const { DEV_ADMIN_USER } = require('../middleware/auth');
+  // 开发旁路（DEV_ADMIN_BYPASS=1 且非生产）：返回测试管理员
+  const { isDevBypassEnabled, DEV_ADMIN_USER } = require('../middleware/auth');
+  if (isDevBypassEnabled() && !req.session?.user) {
     req.session.user = { ...DEV_ADMIN_USER };
     return res.json({ user: req.session.user });
   }

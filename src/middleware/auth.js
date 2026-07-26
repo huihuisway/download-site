@@ -18,6 +18,11 @@ const isApiRequest = (req) => {
   return url.startsWith('/api/');
 };
 
+// 开发管理员旁路：必须显式设置 DEV_ADMIN_BYPASS=1 且非生产环境才生效
+// （运行时读取 env，生产环境下即使误设 flag 也不会生效）
+const isDevBypassEnabled = () =>
+  process.env.NODE_ENV !== 'production' && process.env.DEV_ADMIN_BYPASS === '1';
+
 const isLocalAdminUser = (user) => {
   if (!user) return false;
   if (user.isLocalAdmin || user.authProvider === 'local') return true;
@@ -39,8 +44,8 @@ const requireAuth = (req, res, next) => {
     return next();
   }
 
-  // 开发模式：自动注入测试管理员
-  if (process.env.NODE_ENV !== 'production') {
+  // 开发模式：仅在显式开启 DEV_ADMIN_BYPASS=1 时自动注入测试管理员
+  if (isDevBypassEnabled()) {
     req.session.user = { ...DEV_ADMIN_USER };
     return next();
   }
@@ -56,8 +61,8 @@ const requireAuth = (req, res, next) => {
 };
 
 const attachUser = (req, res, next) => {
-  // 开发模式下也注入测试用户到模板
-  if (process.env.NODE_ENV !== 'production' && !req.session?.user) {
+  // 开发旁路开启时也注入测试用户到模板
+  if (isDevBypassEnabled() && !req.session?.user) {
     res.locals.currentUser = { ...DEV_ADMIN_USER };
   } else {
     res.locals.currentUser = req.session?.user || null;
@@ -70,5 +75,6 @@ module.exports = {
   attachUser,
   hasAdminAccess,
   isLocalAdminUser,
+  isDevBypassEnabled,
   DEV_ADMIN_USER,
 };
