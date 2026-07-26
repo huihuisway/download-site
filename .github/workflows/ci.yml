@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    name: 测试 (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            admin/package-lock.json
+
+      # npm ci 严格按锁文件安装：可捕捉 node_modules 与锁文件不一致的漂移
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 代码检查
+        run: npm run lint
+
+      - name: 单元与接口测试
+        run: npm test
+
+  build-admin:
+    name: 构建管理后台
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+        working-directory: admin
+
+      - name: 构建
+        run: npm run build
+        working-directory: admin
