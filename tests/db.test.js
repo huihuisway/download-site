@@ -97,6 +97,35 @@ describe('JSON Database', () => {
     });
   });
 
+  describe('LIMIT/OFFSET 位置参数绑定', () => {
+    const seed = () => {
+      for (let i = 1; i <= 3; i++) {
+        dbModule.db.prepare(
+          'INSERT INTO download_logs (file_name, file_path, category, download_count) VALUES (?, ?, ?, ?)'
+        ).run(`f${i}.txt`, `docs/f${i}.txt`, 'docs', i * 10);
+      }
+    };
+
+    it('单个 LIMIT ? 参数应生效(回归:此前取 params[-1] 导致返回空)', () => {
+      seed();
+      const rows = dbModule.db.prepare(
+        'SELECT * FROM download_logs ORDER BY download_count DESC LIMIT ?'
+      ).all(2);
+      assert.strictEqual(rows.length, 2);
+      assert.strictEqual(rows[0].download_count, 30);
+      assert.strictEqual(rows[1].download_count, 20);
+    });
+
+    it('WHERE ? + LIMIT ? OFFSET ? 组合应正确定位各参数', () => {
+      seed();
+      const rows = dbModule.db.prepare(
+        'SELECT * FROM download_logs WHERE category = ? ORDER BY download_count ASC LIMIT ? OFFSET ?'
+      ).all('docs', 1, 1);
+      assert.strictEqual(rows.length, 1);
+      assert.strictEqual(rows[0].download_count, 20);
+    });
+  });
+
   describe('COUNT(DISTINCT)', () => {
     it('应该正确计算不重复值数量', () => {
       dbModule.db.prepare(

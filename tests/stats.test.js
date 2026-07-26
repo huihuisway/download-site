@@ -96,6 +96,24 @@ describe('stats service', () => {
     });
   });
 
+  describe('getTopFiles', () => {
+    it('单个 LIMIT 位置参数应正确生效(回归:此前恒返回空数组)', () => {
+      const statsService = require('../src/services/stats.service');
+      const top = statsService.getTopFiles(5);
+      assert.ok(top.length > 0, 'getTopFiles 不应返回空数组');
+      // 按 download_count 降序
+      for (let i = 1; i < top.length; i++) {
+        assert.ok(top[i - 1].download_count >= top[i].download_count);
+      }
+    });
+
+    it('LIMIT 应截断结果数量', () => {
+      const statsService = require('../src/services/stats.service');
+      const top = statsService.getTopFiles(1);
+      assert.strictEqual(top.length, 1);
+    });
+  });
+
   describe('getFileByPath', () => {
     it('应该按 file_path 精确查找文件', () => {
       const statsService = require('../src/services/stats.service');

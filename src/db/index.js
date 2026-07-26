@@ -271,10 +271,19 @@ class Statement {
     const offsetMatch = sql.match(/OFFSET\s+(\?|\d+)/i);
 
     if (limitMatch) {
-      const limit = limitMatch[1] === '?' ? (Array.isArray(params) ? params[params.length - 2] : params.limit || 50) : parseInt(limitMatch[1]);
-      const offset = offsetMatch
-        ? (offsetMatch[1] === '?' ? (Array.isArray(params) ? params[params.length - 1] : params.offset || 0) : parseInt(offsetMatch[1]))
-        : 0;
+      // 位置参数按占位符在 SQL 中的序数定位：数该占位符之前出现的 '?' 个数
+      // （WHERE 的 ? 在前，LIMIT/OFFSET 的 ? 在后，顺序与 params 数组一致）
+      const countPlaceholdersBefore = (index) => (sql.slice(0, index).match(/\?/g) || []).length;
+      const resolvePositional = (match, namedKey, fallback) => {
+        if (match[1] !== '?') return parseInt(match[1]);
+        if (Array.isArray(params)) {
+          const value = Number(params[countPlaceholdersBefore(match.index)]);
+          return Number.isFinite(value) ? value : fallback;
+        }
+        return params[namedKey] || fallback;
+      };
+      const limit = resolvePositional(limitMatch, 'limit', 50);
+      const offset = offsetMatch ? resolvePositional(offsetMatch, 'offset', 0) : 0;
       results = results.slice(offset, offset + limit);
     }
 
