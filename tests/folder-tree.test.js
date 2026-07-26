@@ -1,9 +1,15 @@
-const { describe, it } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
+const fs = require('fs');
+const os = require('os');
+const nodePath = require('path');
 const {
   normalizeFolderPath,
   getParentFolderPath,
   listFolderEntries,
+  listPhysicalFolders,
+  invalidateFolderCache,
+  buildCategoryHref,
 } = require('../src/services/folder-tree.service');
 
 describe('folder tree service', () => {
@@ -78,5 +84,47 @@ describe('folder tree service', () => {
     assert.strictEqual(result.isEmpty, true);
     assert.deepStrictEqual(result.directories, []);
     assert.deepStrictEqual(result.files, []);
+  });
+
+  it('目录链接应按段编码', () => {
+    assert.strictEqual(buildCategoryHref('root'), '/');
+    assert.strictEqual(buildCategoryHref('docs/my folder'), '/category/docs/my%20folder');
+  });
+
+  describe('物理目录缓存', () => {
+    let tmpDir;
+
+    before(() => {
+      tmpDir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'dlsite-foldercache-'));
+      fs.mkdirSync(nodePath.join(tmpDir, 'alpha'), { recursive: true });
+      invalidateFolderCache();
+    });
+
+    after(() => {
+      invalidateFolderCache();
+      try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    });
+
+    it('TTL 内的新目录不会立刻出现,失效后可见', () => {
+      assert.deepStrictEqual(listPhysicalFolders(tmpDir), ['alpha']);
+
+      // 绕过服务层直接建目录：缓存仍返回旧结果
+      fs.mkdirSync(nodePath.join(tmpDir, 'beta'), { recursive: true });
+      assert.deepStrictEqual(listPhysicalFolders(tmpDir), ['alpha'], '缓存命中时应返回旧结果');
+
+      invalidateFolderCache();
+      assert.deepStrictEqual(listPhysicalFolders(tmpDir), ['alpha', 'beta']);
+    });
+
+    it('切换目录参数时不应复用其他目录的缓存', () => {
+      const other = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'dlsite-foldercache2-'));
+      try {
+        fs.mkdirSync(nodePath.join(other, 'gamma'), { recursive: true });
+        assert.deepStrictEqual(listPhysicalFolders(other), ['gamma']);
+        assert.deepStrictEqual(listPhysicalFolders(tmpDir), ['alpha', 'beta']);
+      } finally {
+        fs.rmSync(other, { recursive: true, force: true });
+      }
+    });
   });
 });

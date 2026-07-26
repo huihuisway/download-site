@@ -23,9 +23,26 @@ const getParentFolderPath = (filePath) => {
   return parts.slice(0, -1).join('/');
 };
 
+// 物理目录树缓存：首页/分类页每次请求都要递归遍历整个下载目录，
+// 用 TTL 兜底 + 写操作显式失效，避免高频同步 IO
+const FOLDER_CACHE_TTL_MS = 10 * 1000;
+let folderCache = { dir: null, expiresAt: 0, data: null };
+
+const invalidateFolderCache = () => {
+  folderCache = { dir: null, expiresAt: 0, data: null };
+};
+
 const listPhysicalFolders = (downloadDir) => {
+  const now = Date.now();
+  if (folderCache.dir === downloadDir && now < folderCache.expiresAt) {
+    return folderCache.data;
+  }
+
   const result = [];
-  if (!fs.existsSync(downloadDir)) return result;
+  if (!fs.existsSync(downloadDir)) {
+    folderCache = { dir: downloadDir, expiresAt: now + FOLDER_CACHE_TTL_MS, data: result };
+    return result;
+  }
 
   const walk = (dir, prefix = '') => {
     let entries;
@@ -39,7 +56,9 @@ const listPhysicalFolders = (downloadDir) => {
   };
 
   walk(downloadDir);
-  return result.sort();
+  const data = result.sort();
+  folderCache = { dir: downloadDir, expiresAt: now + FOLDER_CACHE_TTL_MS, data };
+  return data;
 };
 
 const listFolderEntries = ({ currentPath, files, physicalFolders }) => {
@@ -166,6 +185,7 @@ module.exports = {
   getParentFolderPath,
   listFolderEntries,
   listPhysicalFolders,
+  invalidateFolderCache,
   buildTreeRows,
   buildCategoryHref,
 };

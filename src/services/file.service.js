@@ -112,6 +112,7 @@ const uploadFiles = (req, res, extraFields = {}) => {
     });
 
     insertTransaction();
+    folderTreeService.invalidateFolderCache();  // 上传可能创建了新目录
 
     return res.json({
       message: `成功上传 ${results.length} 个文件`,
@@ -255,6 +256,8 @@ const moveFile = (fileId, folderPath) => {
     WHERE id = @id
   `).run({ file_path: newRelativePath, category: newCategory, id: fileId });
 
+  folderTreeService.invalidateFolderCache();  // 移动可能创建了新目录
+
   return { old_path: record.file_path, new_path: newRelativePath, new_category: newCategory };
 };
 
@@ -266,6 +269,7 @@ const createFolder = (folderPath) => {
   const fullPath = path.join(config.downloadDir, normalized);
   ensureInSandbox(fullPath);
   fs.mkdirSync(fullPath, { recursive: true });
+  folderTreeService.invalidateFolderCache();
   return { folder: normalized };
 };
 
@@ -293,6 +297,7 @@ const renameFolder = (folderPath, newName) => {
   }
 
   fs.renameSync(oldFullPath, newFullPath);
+  folderTreeService.invalidateFolderCache();
 
   // Update all files under the renamed folder (filter in JS since JSON DB doesn't support LIKE)
   const allFiles = db.prepare('SELECT id, file_path FROM download_logs').all();
@@ -336,7 +341,8 @@ const deleteFolder = (folderPath, options = {}) => {
     throw new Error(`目录 "${normalized}" 下还有 ${filesUnderFolder.length} 个文件，请先删除文件或启用递归删除`);
   }
 
-  // Check for subfolders
+  // Check for subfolders（先失效缓存，确保基于最新磁盘状态判断）
+  folderTreeService.invalidateFolderCache();
   const physicalFolders = folderTreeService.listPhysicalFolders(config.downloadDir);
   const subfolders = physicalFolders.filter((f) => f.startsWith(normalized + '/'));
 
@@ -373,6 +379,7 @@ const deleteFolder = (folderPath, options = {}) => {
   });
 
   deleteTransaction();
+  folderTreeService.invalidateFolderCache();
 
   return { deleted_folders: deletedFolders, deleted_files: deletedFiles };
 };

@@ -121,6 +121,7 @@ const syncDirectory = async () => {
   });
 
   const result = syncTransaction();
+  folderTreeService.invalidateFolderCache();  // 同步后目录结构可能已变化
 
   if (result.needsChecksum.length > 0 && process.env.NODE_ENV !== 'test') {
     scheduleChecksumComputation(result.needsChecksum);
