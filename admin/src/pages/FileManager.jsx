@@ -123,22 +123,33 @@ function FileManager() {
   const [showUpload, setShowUpload] = useState(false);
   const [filterCategory, setFilterCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [editType, setEditType] = useState('');
+
+  // 搜索防抖:300ms 后下发服务端搜索(跨页命中),并回到第一页
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
     try {
       const params = { page, pageSize: 50 };
       if (filterCategory) params.category = filterCategory;
+      if (debouncedSearch) params.search = debouncedSearch;
       const result = await api.getFiles(params);
       setFiles(result.files);
       setPagination(result.pagination);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  }, [page, filterCategory]);
+  }, [page, filterCategory, debouncedSearch]);
 
   const loadCategories = async () => {
     try { const r = await api.getCategories(); setCategories(r.categories); }
@@ -170,8 +181,6 @@ function FileManager() {
       setEditingId(null); await loadFiles();
     } catch (err) { alert(`更新失败: ${err.message}`); }
   };
-
-  const filteredFiles = searchQuery ? files.filter((f) => f.file_name.toLowerCase().includes(searchQuery.toLowerCase())) : files;
 
   return (
     <div className="space-y-6">
@@ -217,7 +226,7 @@ function FileManager() {
             <thead>
               <tr>
                 <th className="px-4 py-3.5 w-10">
-                  <input type="checkbox" checked={selected.size === filteredFiles.length && filteredFiles.length > 0} onChange={toggleSelectAll} />
+                  <input type="checkbox" checked={selected.size === files.length && files.length > 0} onChange={toggleSelectAll} />
                 </th>
                 <th>文件名</th>
                 <th>分类</th>
@@ -232,12 +241,12 @@ function FileManager() {
                 <tr><td colSpan={7} className="px-4 py-16 text-center" style={{ color: 'var(--text-muted)' }}>
                   <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />加载中...
                 </td></tr>
-              ) : filteredFiles.length === 0 ? (
+              ) : files.length === 0 ? (
                 <tr><td colSpan={7} className="px-4 py-16 text-center" style={{ color: 'var(--text-muted)' }}>
                   <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />暂无文件
                 </td></tr>
               ) : (
-                filteredFiles.map((file) => (
+                files.map((file) => (
                   <tr key={file.id} style={selected.has(file.id) ? { background: 'var(--muted)' } : {}}>
                     <td className="px-4 py-3"><input type="checkbox" checked={selected.has(file.id)} onChange={() => toggleSelect(file.id)} /></td>
                     <td className="px-4 py-3">

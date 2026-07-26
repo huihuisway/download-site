@@ -94,6 +94,23 @@ describe('stats service', () => {
       const result = statsService.getAllFiles({ category: 'docs' });
       assert.ok(result.files.every((f) => f.category === 'docs'));
     });
+
+    it('搜索应在分页之前生效(回归:此前只搜当前页)', () => {
+      const statsService = require('../src/services/stats.service');
+      // pageSize=1 时按 file_name 升序第一页是 a.txt;搜索 b.zip 必须跨页命中
+      const result = statsService.getAllFiles({ page: 1, pageSize: 1, search: 'b.zip' });
+      assert.strictEqual(result.files.length, 1);
+      assert.strictEqual(result.files[0].file_name, 'b.zip');
+      assert.strictEqual(result.pagination.total, 1);
+    });
+
+    it('搜索不区分大小写且空白搜索等于不过滤', () => {
+      const statsService = require('../src/services/stats.service');
+      const upper = statsService.getAllFiles({ search: 'B.ZIP' });
+      assert.strictEqual(upper.pagination.total, 1);
+      const blank = statsService.getAllFiles({ search: '   ' });
+      assert.strictEqual(blank.pagination.total, 2);
+    });
   });
 
   describe('getTopFiles', () => {

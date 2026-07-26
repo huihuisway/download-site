@@ -44,6 +44,7 @@ router.get('/files', (req, res) => {
       sortBy = 'file_name',
       sortOrder = 'ASC',
       category,
+      search,
     } = req.query;
 
     const result = statsService.getAllFiles({
@@ -52,6 +53,7 @@ router.get('/files', (req, res) => {
       sortBy,
       sortOrder,
       category,
+      search,
     });
 
     res.json(result);

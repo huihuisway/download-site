@@ -77,7 +77,7 @@ const getFilesByCategory = (category) => {
 };
 
 const getAllFiles = (options = {}) => {
-  const { page = 1, pageSize = 50, sortBy = 'file_name', sortOrder = 'ASC', category } = options;
+  const { page = 1, pageSize = 50, sortBy = 'file_name', sortOrder = 'ASC', category, search } = options;
   const offset = (page - 1) * pageSize;
 
   const allowedSorts = ['file_name', 'file_size', 'download_count', 'file_mtime', 'created_at'];
@@ -92,14 +92,20 @@ const getAllFiles = (options = {}) => {
     params.push(category);
   }
 
-  const total = db.prepare(`SELECT COUNT(*) as count FROM download_logs ${whereClause}`).get(...params).count;
-
-  const files = db.prepare(`
+  // 先取全量再过滤：搜索必须在分页之前生效，total 反映过滤后数量
+  let rows = db.prepare(`
     SELECT * FROM download_logs
     ${whereClause}
     ORDER BY ${sort} ${order}
-    LIMIT ? OFFSET ?
-  `).all(...params, pageSize, offset);
+  `).all(...params);
+
+  if (search && String(search).trim()) {
+    const q = String(search).trim().toLowerCase();
+    rows = rows.filter((f) => (f.file_name || '').toLowerCase().includes(q));
+  }
+
+  const total = rows.length;
+  const files = rows.slice(offset, offset + pageSize);
 
   return {
     files,

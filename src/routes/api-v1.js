@@ -28,19 +28,13 @@ router.get('/files', (req, res) => {
       sortBy,
       sortOrder,
       category,
+      search,
     });
-
-    // 如果有搜索参数，在结果中过滤
-    let files = result.files;
-    if (search) {
-      const q = search.toLowerCase();
-      files = files.filter((f) => f.file_name.toLowerCase().includes(q));
-    }
 
     res.json({
       success: true,
       data: {
-        files,
+        files: result.files,
         pagination: result.pagination,
       },
     });
