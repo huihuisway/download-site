@@ -20,6 +20,16 @@ describe('folder tree service', () => {
     assert.strictEqual(normalizeFolderPath(''), 'root');
   });
 
+  it('应拒绝含路径穿越段的目录路径', () => {
+    assert.throws(() => normalizeFolderPath('../../etc'), /路径越界/);
+    assert.throws(() => normalizeFolderPath('a/../b'), /路径越界/);
+    assert.throws(() => normalizeFolderPath('..'), /路径越界/);
+    assert.throws(() => normalizeFolderPath('.'), /路径越界/);
+    assert.throws(() => normalizeFolderPath('..\\..\\x'), /路径越界/);
+    // 名字里含点但非穿越段的目录仍合法
+    assert.strictEqual(normalizeFolderPath('foo..bar/v1.2'), 'foo..bar/v1.2');
+  });
+
   it('应从文件路径推导完整父目录', () => {
     assert.strictEqual(getParentFolderPath('docs/guides/v1/readme.pdf'), 'docs/guides/v1');
     assert.strictEqual(getParentFolderPath('readme.pdf'), 'root');

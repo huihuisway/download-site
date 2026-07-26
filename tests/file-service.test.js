@@ -166,6 +166,23 @@ describe('file service - nested folder operations', () => {
       const category = folderTreeService.getParentFolderPath('moveme.txt');
       assert.strictEqual(category, 'root');
     });
+
+    it('移动到穿越路径应报错且不在沙箱外创建目录', () => {
+      const fileService = require('../src/services/file.service');
+      const { db } = require('../src/db');
+
+      fileService.createFolder('escape-src');
+      fs.writeFileSync(path.join(testDir, 'escape-src', 'victim.txt'), 'stay');
+      db.prepare('INSERT INTO download_logs (file_name, file_path, category, file_size) VALUES (?, ?, ?, ?)')
+        .run('victim.txt', 'escape-src/victim.txt', 'escape-src', 4);
+      const record = db.prepare('SELECT * FROM download_logs WHERE file_name = ?').get('victim.txt');
+
+      assert.throws(() => fileService.moveFile(record.id, '../escape'), /路径越界/);
+      // 回归:此前 mkdirSync 在沙箱校验之前执行,会在沙箱外创建目录树
+      assert.ok(!fs.existsSync(path.join(testDir, '..', 'escape')));
+      // 文件保持原位
+      assert.ok(fs.existsSync(path.join(testDir, 'escape-src', 'victim.txt')));
+    });
   });
 
   describe('category from folder path', () => {

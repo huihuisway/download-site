@@ -234,6 +234,7 @@ const moveFile = (fileId, folderPath) => {
   ensureInSandbox(oldFullPath);
 
   const newDir = normalized === 'root' ? config.downloadDir : path.join(config.downloadDir, normalized);
+  ensureInSandbox(newDir);  // 先校验再创建，防止 mkdir 在沙箱外落地
   fs.mkdirSync(newDir, { recursive: true });
 
   const newFullPath = path.join(newDir, record.file_name);

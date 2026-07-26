@@ -4,6 +4,10 @@ const path = require('path');
 const normalizeFolderPath = (input) => {
   const raw = typeof input === 'string' ? input : '';
   const normalized = raw.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
+  // 拒绝路径穿越段（"路径越界"前缀由 errorHandler 映射为 403）
+  if (normalized.split('/').some((seg) => seg === '..' || seg === '.')) {
+    throw new Error('路径越界: 非法目录路径');
+  }
   return normalized || 'root';
 };
 

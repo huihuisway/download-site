@@ -189,7 +189,18 @@ router.get('/', (req, res) => {
 // 分类页 - 支持多层路径浏览
 router.get(['/category', '/category/*'], (req, res) => {
   const siteInfo = themeService.getSiteInfo();
-  const currentPath = folderTreeService.normalizeFolderPath(req.params[0] || 'root');
+  let currentPath;
+  try {
+    currentPath = folderTreeService.normalizeFolderPath(req.params[0] || 'root');
+  } catch {
+    // 路径穿越等非法目录路径：渲染主题化 404
+    return renderFileError(res, 404, {
+      title: '目录不存在',
+      message: '请求的目录路径无效。',
+      errorType: 'not_found',
+      fileName: null,
+    });
+  }
   const allFiles = db.prepare('SELECT * FROM download_logs ORDER BY file_path ASC').all();
   const physicalFolders = folderTreeService.listPhysicalFolders(config.downloadDir);
   const directory = folderTreeService.listFolderEntries({ currentPath, files: allFiles, physicalFolders });
