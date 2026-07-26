@@ -44,6 +44,13 @@ const config = {
     .split(',')
     .map((ext) => ext.trim().toLowerCase()),
 
+  // 速率限制
+  rateLimit: {
+    loginMax: parseInt(process.env.RATE_LIMIT_LOGIN_MAX, 10) || 5,        // 每 15 分钟每 IP
+    apiMax: parseInt(process.env.RATE_LIMIT_API_MAX, 10) || 120,          // 每分钟每 Key
+    downloadMax: parseInt(process.env.RATE_LIMIT_DOWNLOAD_MAX, 10) || 60, // 每分钟每 IP
+  },
+
   // 日志
   logLevel: process.env.LOG_LEVEL || 'info',
 };

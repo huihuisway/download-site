@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { apiKeyAuth, requireWritePermission } = require('../middleware/apiKeyAuth');
+const { apiLimiter } = require('../middleware/rateLimit');
 const fileService = require('../services/file.service');
 const statsService = require('../services/stats.service');
 const { db } = require('../db');
 
-// 所有 API v1 路由需要 API Key 认证
+// 所有 API v1 路由需要 API Key 认证；认证后按 Key 限流
 router.use(apiKeyAuth);
+router.use(apiLimiter);
 
 // ===== 文件列表 (read) =====
 router.get('/files', (req, res) => {

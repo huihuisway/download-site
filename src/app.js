@@ -21,6 +21,7 @@ const apiV1Routes = require('./routes/api-v1');
 // 中间件
 const { attachUser, hasAdminAccess } = require('./middleware/auth');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { loginLimiter } = require('./middleware/rateLimit');
 
 // 服务初始化
 const { syncDirectory } = require('./services/sync.service');
@@ -116,7 +117,7 @@ oauthRouter.get('/callback', oauthController.handleCallback);
 oauthRouter.get('/logout', oauthController.logout);
 oauthRouter.get('/me', oauthController.getMe);
 oauthRouter.get('/config', oauthController.getAuthConfig);
-oauthRouter.post('/local-login', oauthController.localLogin);
+oauthRouter.post('/local-login', loginLimiter, oauthController.localLogin);
 app.use('/auth', oauthRouter);
 
 // ===== 后台 API =====

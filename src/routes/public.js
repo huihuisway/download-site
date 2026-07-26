@@ -10,6 +10,7 @@ const folderTreeService = require('../services/folder-tree.service');
 const { formatFileSize, formatDate } = require('../utils/format');
 const { createFileStream } = require('../utils/stream');
 const { ensureInSandbox } = require('../utils/filename');
+const { downloadLimiter } = require('../middleware/rateLimit');
 const {
   normalizePublicFilePath,
   buildFilePageUrl,
@@ -229,7 +230,7 @@ router.get(['/category', '/category/*'], (req, res) => {
 });
 
 // 真实下载
-router.get('/d/*', (req, res, next) => {
+router.get('/d/*', downloadLimiter, (req, res, next) => {
   const resolved = resolvePublicFileOrRenderError(req.params[0], res);
   if (!resolved) {
     return;
