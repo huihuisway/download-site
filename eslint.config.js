@@ -56,6 +56,16 @@ module.exports = [
     },
   },
 
+  // 前台静态脚本：浏览器环境
+  {
+    files: ['public/js/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: { ...globals.browser },
+    },
+  },
+
   // Vite / Tailwind 等构建配置文件运行在 Node 下
   {
     files: ['admin/*.config.js', 'admin/*.config.cjs'],
