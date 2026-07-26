@@ -1,7 +1,6 @@
 const { db } = require('../db');
 const { config } = require('../config');
 const { CHECKSUM_BATCH_SIZE } = require('../config/constants');
-const fs = require('fs');
 const fsp = require('fs').promises;
 const path = require('path');
 const folderTreeService = require('./folder-tree.service');

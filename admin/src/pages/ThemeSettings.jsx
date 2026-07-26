@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Palette, Check, RefreshCw } from 'lucide-react';
+import { Check, RefreshCw } from 'lucide-react';
 import api from '../api/client';
 
 const themeDescs = {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Key, Plus, Trash2, Copy, Check, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Key, Plus, Trash2, Copy, Check, RefreshCw, EyeOff } from 'lucide-react';
 import api from '../api/client';
 
 function ApiKeys() {

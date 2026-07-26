@@ -1,6 +1,5 @@
 const { describe, it, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert');
-const path = require('path');
 const fs = require('fs');
 
 process.env.NODE_ENV = 'test';

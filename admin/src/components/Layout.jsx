@@ -11,7 +11,7 @@ import {
   Moon,
   Key,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 function ThemeToggle() {
   const [dark, setDark] = useState(() => {
@@ -122,7 +122,7 @@ function Layout({ user, children }) {
                     color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
                   })}
                 >
-                  {({ isActive }) => (
+                  {() => (
                     <>
                       <Icon className="w-4 h-4" />
                       {item.label}

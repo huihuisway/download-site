@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FolderTree, Plus, Trash2, Edit3, RefreshCw, ChevronRight, ChevronDown, Check, X, Files, Download, HardDrive } from 'lucide-react';
+import { FolderTree, Plus, Trash2, Edit3, RefreshCw, ChevronRight, ChevronDown, Check, X } from 'lucide-react';
 import api from '../api/client';
-import { formatSize } from '../lib/utils';
 
 function Categories() {
   const [categories, setCategories] = useState([]);

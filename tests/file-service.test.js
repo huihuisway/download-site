@@ -160,7 +160,6 @@ describe('file service - nested folder operations', () => {
     });
 
     it('应支持移动到根目录', () => {
-      const fileService = require('../src/services/file.service');
       const folderTreeService = require('../src/services/folder-tree.service');
       const category = folderTreeService.getParentFolderPath('moveme.txt');
       assert.strictEqual(category, 'root');

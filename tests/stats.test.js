@@ -12,7 +12,6 @@ describe('stats service', () => {
 
   before(() => {
     fs.mkdirSync(path.join(testDir, 'docs'), { recursive: true });
-    fs.mkdirSync(path.join(__dirname, '..', 'data'), { recursive: true });
     fs.writeFileSync(path.join(testDir, 'docs', 'a.txt'), 'hello');
 
     const { db } = require('../src/db');
@@ -21,7 +20,9 @@ describe('stats service', () => {
     db._save();
   });
 
-  after(() => {  });
+  after(() => {
+    tmpEnv.cleanup();
+  });
 
   describe('recordDownload', () => {
     it('应该原子递增下载计数', () => {

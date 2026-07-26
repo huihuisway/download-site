@@ -7,7 +7,7 @@ process.env.NODE_ENV = 'test';
 const { setupTmpEnv } = require('./helpers/tmp-env');
 const tmpEnv = setupTmpEnv('error-handler');
 
-const createRes = (acceptsResult) => ({
+const createRes = () => ({
   statusCode: 200,
   body: null,
   rendered: null,
