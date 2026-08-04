@@ -1,0 +1,16 @@
+<script nonce="<%= cspNonce %>">
+(function() {
+  var link = document.querySelector('[data-track="download"]');
+  if (!link) return;
+  link.addEventListener('click', function() {
+    try {
+      fetch('/count-download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: '<%= file.id %>' }),
+        keepalive: true
+      });
+    } catch(e) { /* 计数失败不影响下载 */ }
+  });
+})();
+</script>

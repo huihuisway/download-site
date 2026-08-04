@@ -9,7 +9,7 @@ const themeService = require('../services/theme.service');
 const folderTreeService = require('../services/folder-tree.service');
 const { formatFileSize, formatDate, formatNumber } = require('../utils/format');
 const { ensureInSandbox } = require('../utils/filename');
-const { downloadLimiter } = require('../middleware/rateLimit');
+const { downloadLimiter, countDownloadLimiter } = require('../middleware/rateLimit');
 const { renderThemeError } = require('../utils/render-theme');
 const {
   normalizePublicFilePath,
@@ -205,6 +205,22 @@ router.get(['/category', '/category/*'], (req, res) => {
     stats: categoryStats,
     isEmpty: directory.isEmpty,
   });
+});
+
+// 前端下载计数上报（EdgeOne 等 CDN 缓存 /d/* 后，源站 res.on('finish') 不再触发，
+// 由前端 JS 在用户点击下载按钮时主动上报；源站计数保留用于直链下载场景）
+router.post('/count-download', countDownloadLimiter, (req, res) => {
+  const { fileId } = req.body || {};
+  if (!fileId || (typeof fileId !== 'string' && typeof fileId !== 'number')) {
+    return res.status(400).json({ error: '缺少 fileId 参数' });
+  }
+  try {
+    statsService.recordDownload(fileId);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[count-download] 计数失败:', err.message);
+    res.status(500).json({ error: '计数失败' });
+  }
 });
 
 // 真实下载

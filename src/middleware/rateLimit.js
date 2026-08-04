@@ -39,4 +39,12 @@ const downloadLimiter = rateLimit({
   message: { error: '下载请求过于频繁，请稍后再试' },
 });
 
-module.exports = { loginLimiter, apiLimiter, downloadLimiter };
+// 前端下载计数上报：每分钟每 IP（与下载限流同配置）
+const countDownloadLimiter = rateLimit({
+  ...common,
+  windowMs: 60 * 1000,
+  limit: config.rateLimit.downloadMax,
+  message: { error: '请求过于频繁，请稍后再试' },
+});
+
+module.exports = { loginLimiter, apiLimiter, downloadLimiter, countDownloadLimiter };

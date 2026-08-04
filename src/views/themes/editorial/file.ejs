@@ -32,8 +32,9 @@
         <% if (file.last_download_at) { %><div>最后下载：<%= formatDate(file.last_download_at) %></div><% } %>
         <% if (file.sha256) { %><div>SHA256：<span class="ed-file-sha"><%= file.sha256 %></span></div><% } %>
       </div>
-      <a href="<%= downloadUrl %>" class="ed-file-name" style="color: var(--primary);">下载文件</a>
+      <a href="<%= downloadUrl %>" class="ed-file-name" style="color: var(--primary);" data-track="download">下载文件</a>
     </main>
   </div>
 </div>
+<%- include('../../partials/download-track') %>
 <%- include('../../partials/footer') %>
