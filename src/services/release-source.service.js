@@ -64,6 +64,12 @@ const publicSource = (source) => {
   return safe;
 };
 
+const publicJob = (job) => {
+  if (!job) return job;
+  const { payload: _payload, ...safe } = job;
+  return safe;
+};
+
 const list = () => {
   ensureStore();
   return db.data.release_sources.map(publicSource);
@@ -140,7 +146,8 @@ const jobs = (sourceId) => {
   ensureStore();
   return db.data.release_jobs
     .filter((job) => sourceId === undefined || String(job.source_id) === String(sourceId))
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .map(publicJob);
 };
 
 const health = () => {
@@ -159,6 +166,7 @@ const preview = (source, releases = []) => ({
 });
 
 const fallbackSync = async (source, payload = {}) => {
+  if (source.status === 'running') throw new Error('来源同步正在运行');
   const job = createJob(source, 'sync', payload);
   source.status = 'running';
   source.last_sync_at = now();
@@ -180,9 +188,30 @@ const optionalService = () => {
 const sync = async (id, payload = {}) => {
   const source = rawGet(id);
   if (!source) return null;
-  const service = optionalService();
-  if (service && typeof service.sync === 'function') return service.sync(source, payload);
-  return fallbackSync(source, payload);
+  if (source.status === 'running') throw new Error('来源同步正在运行');
+  const job = createJob(source, 'sync', payload);
+  const started = now();
+  Object.assign(source, { status: 'running', last_sync_at: started, last_error: null, updated_at: started });
+  job.status = 'running';
+  job.started_at = started;
+  db._save();
+  try {
+    const service = optionalService();
+    const result = service && typeof service.sync === 'function'
+      ? await service.sync(source, payload)
+      : await fallbackSync(source, payload);
+    const finished = now();
+    Object.assign(source, { status: 'idle', last_success_at: finished, last_error: null, updated_at: finished });
+    Object.assign(job, { status: 'succeeded', finished_at: finished });
+    db._save();
+    return { ...result, job: publicJob(job), source: publicSource(source) };
+  } catch (error) {
+    const finished = now();
+    Object.assign(source, { status: 'error', last_error: error.message, updated_at: finished });
+    Object.assign(job, { status: 'failed', error: error.message, finished_at: finished });
+    db._save();
+    throw error;
+  }
 };
 
 const call = async (method, sourceView, payload) => {

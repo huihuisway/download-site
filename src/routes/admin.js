@@ -346,10 +346,14 @@ router.post('/releases/sources/:id/disable', (req, res) => {
 
 router.post('/releases/sources/:id/sync', async (req, res) => {
   try {
+    if (req.body && typeof req.body !== 'object') return res.status(400).json({ error: '请求参数必须是对象' });
     const result = await releaseSourceService.sync(req.params.id, req.body || {});
     if (!result) return res.status(404).json({ error: '来源不存在' });
     return res.json(result);
-  } catch (err) { return res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    const status = /正在运行|locked|already/i.test(err.message) ? 409 : 502;
+    return res.status(status).json({ error: err.message });
+  }
 });
 
 for (const action of ['preview', 'status', 'assets']) {
