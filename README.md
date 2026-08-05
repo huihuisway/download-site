@@ -7,6 +7,7 @@ Debian 镜像站风格的纯粹文件下载服务。
 - **极简前台**：4 套可切换主题，EJS 服务端渲染，仅一小段内联脚本用于主题切换
 - **现代后台**：React + Tailwind CSS，统计看板 + 文件管理 + 目录管理 + 批量操作
 - **自动同步**：物理目录 ↔ 数据库双向同步，SHA256 流式计算
+- **GitHub Releases 同步**：支持多个仓库来源、每小时获取最新非 Draft Release，资产安全下载到版本隔离目录
 - **完整下载能力**：断点续传（Range）、协商缓存（ETag/Last-Modified）、中文文件名正确落地
 - **双登录方式**：OAuth 2.0（对接论坛，state 防 CSRF）+ 本地管理员账号
 - **第三方 API**：`/api/v1` 以 API Key 认证，支持文件审核流程对接
@@ -79,7 +80,56 @@ downloads/
 
 字体（Inter / Geist Mono）自托管于 `public/fonts/`，不依赖 Google Fonts。
 
-## 文件审核流程
+## GitHub Releases 自动同步
+
+Releases 同步由后台来源配置驱动，Token 不保存在数据库中。启用后默认每小时检查一次每个已启用来源，选择最新的非 Draft Release（正式版和 prerelease 均可），按现有扩展名白名单、150MB `MAX_FILE_SIZE` 和来源文件名规则筛选资产，并排除 GitHub 自动生成的源码包。
+
+资产会先写入下载目录下的临时文件，完成实际大小和摘要校验后原子移动到版本隔离目录：
+
+```text
+downloads/github/{owner}/{repo}/{tag}/{asset}
+```
+
+下载成功后自动登记并公开。旧版本默认保留，不因远端版本变化自动删除。失败的网络请求会记录同步状态，管理员可以通过来源 API 查看、预览和手动重试。
+
+### 来源管理 API
+
+以下接口均需要后台管理员认证：
+
+```text
+GET    /api/admin/releases/sources
+POST   /api/admin/releases/sources
+GET    /api/admin/releases/sources/:id
+PUT    /api/admin/releases/sources/:id
+DELETE /api/admin/releases/sources/:id
+POST   /api/admin/releases/sources/:id/enable
+POST   /api/admin/releases/sources/:id/disable
+POST   /api/admin/releases/sources/:id/sync
+GET    /api/admin/releases/sources/:id/preview
+GET    /api/admin/releases/sources/:id/status
+GET    /api/admin/releases/sources/:id/assets
+GET    /api/admin/releases/sources/:id/jobs
+POST   /api/admin/releases/sources/:id/retry
+GET    /api/admin/releases/health
+```
+
+新增来源示例：
+
+```json
+{
+  "name": "My App",
+  "type": "github",
+  "owner": "example",
+  "repo": "my-app",
+  "enabled": true,
+  "target_category": "github/example/my-app",
+  "asset_include_pattern": "MyApp-*",
+  "asset_exclude_pattern": "*-debug*"
+}
+```
+
+来源删除默认只删除配置，已经同步的本地文件不会被删除。生产部署必须保持单实例，因为当前 JSON 数据库和文件 Session 不支持多进程并发写入。
+
 
 供论坛侧通过 `/api/v1` 驱动，字段 `approval_status`：
 
@@ -117,6 +167,10 @@ downloads/
 | GET/PUT | `/api/admin/theme` | 主题读取/切换 |
 | GET/PUT | `/api/admin/settings` | 站点信息 |
 | GET/POST/DELETE | `/api/admin/api-keys[/:id]` | API Key 管理 |
+| GET/POST/PUT/DELETE | `/api/admin/releases/sources[/:id]` | GitHub Releases 来源管理 |
+| POST | `/api/admin/releases/sources/:id/sync` | 立即同步指定来源 |
+| GET | `/api/admin/releases/sources/:id/preview` | 预览最新 Release 资产 |
+| GET | `/api/admin/releases/health` | Releases 同步健康状态 |
 
 ### 第三方 API（`/api/v1`，需 API Key）
 
@@ -140,7 +194,12 @@ downloads/
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | 本地管理员登录（论坛未上线时的方案） |
 | `ADMIN_ALLOWED_EMAILS` | 后台邮箱白名单（逗号分隔）。留空则任意 OAuth 用户可进后台 |
 | `OAUTH_*` | OAuth 2.0 端点与凭据，见 `.env.example` |
-| `ALLOWED_EXTENSIONS` | 上传扩展名白名单（逗号分隔） |
+| `ALLOWED_EXTENSIONS` | 上传和 Releases 资产扩展名白名单（逗号分隔） |
+| `GITHUB_TOKEN` | GitHub API 只读 Token，仅从环境变量读取，不通过后台 API 保存或返回 |
+| `GITHUB_REPOSITORY` | 可选的兼容性单仓库配置，格式为 `owner/repository` |
+| `RELEASE_SYNC_ENABLED` | 是否启用 Releases 自动同步，`true`/`1` 启用，默认关闭 |
+| `RELEASE_SYNC_INTERVAL_MS` | 同步周期，默认 3600000（1 小时），最短 5 分钟 |
+| `RELEASE_SYNC_REQUEST_TIMEOUT_MS` | GitHub 请求超时时间，默认 30000 毫秒 |
 | `RATE_LIMIT_LOGIN_MAX` | 登录失败次数上限 / 15 分钟，默认 5 |
 | `RATE_LIMIT_API_MAX` | `/api/v1` 每分钟每 Key 上限，默认 120 |
 | `RATE_LIMIT_DOWNLOAD_MAX` | 下载每分钟每 IP 上限，默认 60 |

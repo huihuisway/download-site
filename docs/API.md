@@ -65,7 +65,76 @@ Authorization: Bearer dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ---
 
-## 三、文件接口
+---
+
+## 四、后台 GitHub Releases 来源管理
+
+> 以下接口挂载在 `/api/admin`，使用后台 Session 管理员认证，不使用 `/api/v1` API Key。
+> `GITHUB_TOKEN` 只从服务器环境变量读取，不能通过接口写入或读取。
+
+### 4.1 来源字段
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `name` | string | 来源显示名称 |
+| `type` | string | 固定为 `github` |
+| `owner` | string | GitHub Owner，仅允许字母、数字、`.`, `_`, `-` |
+| `repo` | string | GitHub 仓库名 |
+| `enabled` | boolean | 是否参与自动同步 |
+| `target_category` | string | 下载站目标目录 |
+| `asset_include_pattern` | string | 可选的资产名称包含规则 |
+| `asset_exclude_pattern` | string | 可选的资产名称排除规则 |
+| `include_prerelease` | boolean | 是否允许 prerelease，默认允许 |
+| `include_draft` | boolean | 是否允许 draft，默认不允许 |
+| `sync_interval_ms` | number | 可选周期，范围 5 分钟至 7 天 |
+
+### 4.2 来源 CRUD
+
+```text
+GET    /api/admin/releases/sources
+POST   /api/admin/releases/sources
+GET    /api/admin/releases/sources/:id
+PUT    /api/admin/releases/sources/:id
+DELETE /api/admin/releases/sources/:id
+```
+
+创建请求示例：
+
+```json
+{
+  "name": "My App",
+  "type": "github",
+  "owner": "example",
+  "repo": "my-app",
+  "enabled": true,
+  "target_category": "github/example/my-app",
+  "asset_include_pattern": "MyApp-*",
+  "asset_exclude_pattern": "*-debug*"
+}
+```
+
+`PUT` 支持部分更新。删除来源只删除来源配置，默认保留已同步文件和下载记录。
+
+### 4.3 来源操作
+
+```text
+POST /api/admin/releases/sources/:id/enable
+POST /api/admin/releases/sources/:id/disable
+POST /api/admin/releases/sources/:id/sync
+GET  /api/admin/releases/sources/:id/preview
+GET  /api/admin/releases/sources/:id/status
+GET  /api/admin/releases/sources/:id/assets
+GET  /api/admin/releases/sources/:id/jobs
+POST /api/admin/releases/sources/:id/retry
+GET  /api/admin/releases/health
+```
+
+`sync` 会选择最新的非 Draft Release，正式版和 prerelease 均可。资产必须通过扩展名白名单、`MAX_FILE_SIZE`、源码包排除和文件名规则；成功后自动公开。文件写入版本隔离目录：
+
+```text
+downloads/{target_category}/{tag}/{asset}
+```
+
 
 ### 3.1 获取文件列表
 
