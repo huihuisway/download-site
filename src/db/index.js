@@ -56,6 +56,9 @@ class JsonDatabase {
     if (!Array.isArray(this.data.release_jobs)) {
       this.data.release_jobs = [];
     }
+    if (!Array.isArray(this.data.release_history)) {
+      this.data.release_history = [];
+    }
     if (!this.data._nextReleaseSourceId) {
       this.data._nextReleaseSourceId = 1;
     }

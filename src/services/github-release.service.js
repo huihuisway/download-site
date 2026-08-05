@@ -55,12 +55,12 @@ const requestJson = (url, headers = {}, timeout = config.releaseSync.requestTime
   request.on('error', reject);
 });
 
-const getLatestRelease = async (repository) => {
+const getLatestRelease = async (repository, options = {}) => {
   const [owner, repo] = validateRepository(repository);
   const headers = config.releaseSync.token ? { Authorization: `Bearer ${config.releaseSync.token}` } : {};
   const releases = await requestJson(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases?per_page=100`, headers);
   if (!Array.isArray(releases)) throw new Error('GitHub Releases 响应格式无效');
-  const candidates = releases.filter((item) => item && !item.draft);
+  const candidates = releases.filter((item) => item && (options.includeDraft || !item.draft) && (options.includePrerelease || !item.prerelease));
   candidates.sort((a, b) => String(b.published_at || b.created_at || '').localeCompare(String(a.published_at || a.created_at || '')));
   return candidates[0] || null;
 };
