@@ -47,8 +47,21 @@ class JsonDatabase {
     if (!this.data.api_keys) {
       this.data.api_keys = [];
     }
+<<<<<<< HEAD
     if (!this.data.release_sync) {
       this.data.release_sync = [];
+    }
+    if (!Array.isArray(this.data.release_sources)) {
+      this.data.release_sources = [];
+    }
+    if (!Array.isArray(this.data.release_jobs)) {
+      this.data.release_jobs = [];
+    }
+    if (!this.data._nextReleaseSourceId) {
+      this.data._nextReleaseSourceId = 1;
+    }
+    if (!this.data._nextReleaseJobId) {
+      this.data._nextReleaseJobId = 1;
     }
     if (!this.data._nextApiKeyId) {
       this.data._nextApiKeyId = 1;

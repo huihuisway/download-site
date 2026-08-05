@@ -4,6 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const fileService = require('../services/file.service');
 const statsService = require('../services/stats.service');
 const { syncDirectory } = require('../services/sync.service');
+const releaseSourceService = require('../services/release-source.service');
 
 // 所有后台 API 需要鉴权
 router.use(requireAuth);
@@ -301,5 +302,79 @@ router.delete('/api-keys/:id', (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+
+// ===== Releases 来源管理 =====
+router.get('/releases/sources', (req, res) => {
+  res.json({ sources: releaseSourceService.list() });
+});
+
+router.post('/releases/sources', (req, res) => {
+  try { res.status(201).json({ source: releaseSourceService.create(req.body) }); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+router.get('/releases/sources/:id', (req, res) => {
+  const source = releaseSourceService.get(req.params.id);
+  if (!source) return res.status(404).json({ error: '来源不存在' });
+  return res.json({ source });
+});
+
+router.put('/releases/sources/:id', (req, res) => {
+  try {
+    const source = releaseSourceService.update(req.params.id, req.body);
+    if (!source) return res.status(404).json({ error: '来源不存在' });
+    return res.json({ source });
+  } catch (err) { return res.status(400).json({ error: err.message }); }
+});
+
+router.delete('/releases/sources/:id', (req, res) => {
+  if (!releaseSourceService.remove(req.params.id)) return res.status(404).json({ error: '来源不存在' });
+  return res.json({ deleted: true });
+});
+
+router.post('/releases/sources/:id/enable', (req, res) => {
+  const source = releaseSourceService.setEnabled(req.params.id, true);
+  if (!source) return res.status(404).json({ error: '来源不存在' });
+  return res.json({ source });
+});
+
+router.post('/releases/sources/:id/disable', (req, res) => {
+  const source = releaseSourceService.setEnabled(req.params.id, false);
+  if (!source) return res.status(404).json({ error: '来源不存在' });
+  return res.json({ source });
+});
+
+router.post('/releases/sources/:id/sync', async (req, res) => {
+  try {
+    const result = await releaseSourceService.sync(req.params.id, req.body || {});
+    if (!result) return res.status(404).json({ error: '来源不存在' });
+    return res.json(result);
+  } catch (err) { return res.status(500).json({ error: err.message }); }
+});
+
+for (const action of ['preview', 'status', 'assets']) {
+  router.get(`/releases/sources/:id/${action}`, async (req, res) => {
+    try {
+      const source = releaseSourceService.get(req.params.id);
+      if (!source) return res.status(404).json({ error: '来源不存在' });
+      return res.json(await releaseSourceService.call(action, source, req.query));
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  });
+}
+
+router.get('/releases/sources/:id/jobs', (req, res) => {
+  if (!releaseSourceService.get(req.params.id)) return res.status(404).json({ error: '来源不存在' });
+  return res.json({ jobs: releaseSourceService.jobs(req.params.id) });
+});
+
+router.post('/releases/sources/:id/retry', async (req, res) => {
+  try {
+    const source = releaseSourceService.get(req.params.id);
+    if (!source) return res.status(404).json({ error: '来源不存在' });
+    return res.json(await releaseSourceService.call('retry', source, req.body || {}));
+  } catch (err) { return res.status(500).json({ error: err.message }); }
+});
+
+router.get('/releases/health', (req, res) => res.json(releaseSourceService.health()));
 
 module.exports = router;
