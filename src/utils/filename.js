@@ -30,9 +30,13 @@ const ensureInSandbox = (targetPath) => {
   }
 
   // 对已存在路径解析真实路径，阻止下载目录内的符号链接逃逸。
-  const existingPath = require('fs').existsSync(resolved) ? resolved : path.dirname(resolved);
-  const realPath = require('fs').realpathSync.native(existingPath);
-  const realSandbox = require('fs').realpathSync.native(sandbox);
+  const fs = require('fs');
+  let existingPath = resolved;
+  while (!fs.existsSync(existingPath) && existingPath !== sandbox) {
+    existingPath = path.dirname(existingPath);
+  }
+  const realPath = fs.realpathSync.native(existingPath);
+  const realSandbox = fs.realpathSync.native(sandbox);
   if (!realPath.startsWith(realSandbox + path.sep) && realPath !== realSandbox) {
     throw new Error('路径越界: 文件操作被限制在下载目录内');
   }

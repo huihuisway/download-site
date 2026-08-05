@@ -1,5 +1,4 @@
 const { config } = require('../config');
-const { db } = require('../db');
 const releaseSourceService = require('./release-source.service');
 const { syncRelease } = require('./release-sync.service');
 
