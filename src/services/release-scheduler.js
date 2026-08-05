@@ -46,7 +46,7 @@ const startReleaseScheduler = () => {
 const stopReleaseScheduler = () => {
   if (timer) clearInterval(timer);
   timer = undefined;
-  running = false;
+  sourceLocks.clear();
 };
 
 module.exports = { startReleaseScheduler, stopReleaseScheduler, run };

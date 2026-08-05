@@ -33,6 +33,7 @@ const validAsset = (asset) => {
 };
 const matches = (value, pattern) => {
   if (!pattern) return true;
+  if (typeof pattern !== 'string' || pattern.length > 200) return false;
   try { return new RegExp(pattern).test(value); } catch { return false; }
 };
 const selectAssets = (release, source) => (Array.isArray(release.assets) ? release.assets : [])

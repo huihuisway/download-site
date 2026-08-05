@@ -101,7 +101,7 @@ const create = (input) => {
   };
   db.data.release_sources.push(source);
   db._save();
-  return source;
+  return publicSource(source);
 };
 
 const update = (id, input) => {
