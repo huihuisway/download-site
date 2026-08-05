@@ -47,7 +47,6 @@ class JsonDatabase {
     if (!this.data.api_keys) {
       this.data.api_keys = [];
     }
-<<<<<<< HEAD
     if (!this.data.release_sync) {
       this.data.release_sync = [];
     }

@@ -8,6 +8,12 @@ const SOURCE_FIELDS = [
   'branch',
   'enabled',
   'schedule',
+  'target_category',
+  'asset_include_pattern',
+  'asset_exclude_pattern',
+  'include_prerelease',
+  'include_draft',
+  'sync_interval_ms',
   'config',
 ];
 
@@ -27,26 +33,48 @@ const normalize = (input, partial = false) => {
     if (input[field] !== undefined) value[field] = input[field];
   }
   if (!partial) {
-    if (!value.name || typeof value.name !== 'string') throw new Error('请提供来源名称');
-    if (!value.type || typeof value.type !== 'string') value.type = 'github';
-    if (!value.owner || !value.repo) throw new Error('请提供 owner 和 repo');
+    if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 100) throw new Error('请提供有效的来源名称');
+    if (value.type === undefined) value.type = 'github';
+    if (value.type !== 'github') throw new Error('来源类型必须是 github');
+    if (typeof value.owner !== 'string' || !/^[A-Za-z0-9_.-]{1,100}$/.test(value.owner)) throw new Error('owner 格式无效');
+    if (typeof value.repo !== 'string' || !/^[A-Za-z0-9_.-]{1,100}$/.test(value.repo)) throw new Error('repo 格式无效');
   }
-  if (value.enabled !== undefined) value.enabled = Boolean(value.enabled);
-  if (value.config !== undefined && (typeof value.config !== 'object' || Array.isArray(value.config))) {
+  if (value.type !== undefined && value.type !== 'github') throw new Error('来源类型必须是 github');
+  for (const field of ['name', 'owner', 'repo', 'branch']) {
+    if (value[field] !== undefined && (typeof value[field] !== 'string' || value[field].length > 100)) throw new Error(`${field} 格式无效`);
+  }
+  for (const field of ['asset_include_pattern', 'asset_exclude_pattern']) {
+    if (value[field] !== undefined && (typeof value[field] !== 'string' || value[field].length > 200)) throw new Error(`${field} 格式无效`);
+  }
+  if (value.enabled !== undefined) {
+    if (typeof value.enabled !== 'boolean') throw new Error('enabled 必须是布尔值');
+  }
+  if (value.include_prerelease !== undefined && typeof value.include_prerelease !== 'boolean') throw new Error('include_prerelease 必须是布尔值');
+  if (value.include_draft !== undefined && typeof value.include_draft !== 'boolean') throw new Error('include_draft 必须是布尔值');
+  if (value.sync_interval_ms !== undefined && (!Number.isInteger(value.sync_interval_ms) || value.sync_interval_ms < 300000 || value.sync_interval_ms > 604800000)) throw new Error('sync_interval_ms 必须在 5 分钟至 7 天之间');
+  if (value.config !== undefined && (!value.config || typeof value.config !== 'object' || Array.isArray(value.config))) {
     throw new Error('config 必须是对象');
   }
   return value;
 };
 
-const list = () => {
-  ensureStore();
-  return db.data.release_sources.map((source) => ({ ...source }));
+const publicSource = (source) => {
+  if (!source) return source;
+  const { config: _config, ...safe } = source;
+  return safe;
 };
 
-const get = (id) => {
+const list = () => {
+  ensureStore();
+  return db.data.release_sources.map(publicSource);
+};
+
+const rawGet = (id) => {
   ensureStore();
   return db.data.release_sources.find((source) => String(source.id) === String(id)) || null;
 };
+
+const get = (id) => publicSource(rawGet(id));
 
 const create = (input) => {
   ensureStore();
@@ -71,12 +99,12 @@ const create = (input) => {
 };
 
 const update = (id, input) => {
-  const source = get(id);
+  const source = rawGet(id);
   if (!source) return null;
   const value = normalize(input, true);
   Object.assign(source, value, { updated_at: now() });
   db._save();
-  return source;
+  return publicSource(source);
 };
 
 const remove = (id) => {
@@ -150,14 +178,15 @@ const optionalService = () => {
 };
 
 const sync = async (id, payload = {}) => {
-  const source = get(id);
+  const source = rawGet(id);
   if (!source) return null;
   const service = optionalService();
   if (service && typeof service.sync === 'function') return service.sync(source, payload);
   return fallbackSync(source, payload);
 };
 
-const call = async (method, source, payload) => {
+const call = async (method, sourceView, payload) => {
+  const source = rawGet(sourceView.id);
   const service = optionalService();
   if (service && typeof service[method] === 'function') return service[method](source, payload);
   if (method === 'preview') return preview(source, payload?.releases);

@@ -1,8 +1,24 @@
 const https = require('https');
 const { config } = require('../config');
 
+const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
+const IDENTIFIER = /^[A-Za-z0-9_.-]{1,100}$/;
+
+const validateRepository = (repository) => {
+  if (typeof repository !== 'string') throw new Error('仓库必须是 owner/name 格式');
+  const parts = repository.split('/');
+  if (parts.length !== 2 || !IDENTIFIER.test(parts[0]) || !IDENTIFIER.test(parts[1])) {
+    throw new Error('仓库必须使用安全的 owner/name 格式');
+  }
+  return parts;
+};
+
 const requestJson = (url, headers = {}, timeout = config.releaseSync.requestTimeout) => new Promise((resolve, reject) => {
-  const request = https.get(url, {
+  const parsed = new URL(url);
+  if (parsed.protocol !== 'https:' || parsed.hostname !== 'api.github.com') {
+    return reject(new Error('GitHub API 地址不被允许'));
+  }
+  const request = https.get(parsed, {
     headers: {
       Accept: 'application/vnd.github+json',
       'User-Agent': 'download-site-release-sync',
@@ -10,8 +26,17 @@ const requestJson = (url, headers = {}, timeout = config.releaseSync.requestTime
     },
   }, (response) => {
     let body = '';
+    let size = 0;
     response.setEncoding('utf8');
-    response.on('data', (chunk) => { body += chunk; });
+    response.on('data', (chunk) => {
+      size += Buffer.byteLength(chunk);
+      if (size > MAX_RESPONSE_SIZE) {
+        response.destroy(new Error('GitHub API 响应过大'));
+        return;
+      }
+      body += chunk;
+    });
+    response.on('error', reject);
     response.on('end', () => {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         const error = new Error(`GitHub API returned ${response.statusCode}`);
@@ -31,14 +56,13 @@ const requestJson = (url, headers = {}, timeout = config.releaseSync.requestTime
 });
 
 const getLatestRelease = async (repository) => {
-  if (!repository || !/^[^/]+\/[^/]+$/.test(repository)) {
-    throw new Error('GITHUB_REPOSITORY must use owner/name format');
-  }
+  const [owner, repo] = validateRepository(repository);
   const headers = config.releaseSync.token ? { Authorization: `Bearer ${config.releaseSync.token}` } : {};
-  const release = await requestJson(`https://api.github.com/repos/${repository}/releases?per_page=30`, headers);
-  const candidates = release.filter((item) => !item.draft);
-  if (!candidates.length) return null;
-  return candidates[0];
+  const releases = await requestJson(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases?per_page=100`, headers);
+  if (!Array.isArray(releases)) throw new Error('GitHub Releases 响应格式无效');
+  const candidates = releases.filter((item) => item && !item.draft);
+  candidates.sort((a, b) => String(b.published_at || b.created_at || '').localeCompare(String(a.published_at || a.created_at || '')));
+  return candidates[0] || null;
 };
 
-module.exports = { getLatestRelease, requestJson };
+module.exports = { getLatestRelease, requestJson, validateRepository };

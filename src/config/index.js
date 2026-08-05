@@ -15,11 +15,11 @@ const config = {
 
   // GitHub Releases 自动同步
   releaseSync: {
-    enabled: process.env.RELEASE_SYNC_ENABLED !== '0',
+    enabled: process.env.RELEASE_SYNC_ENABLED === 'true' || process.env.RELEASE_SYNC_ENABLED === '1',
     repository: process.env.GITHUB_REPOSITORY || '',
     token: process.env.GITHUB_TOKEN || '',
-    interval: parseInt(process.env.RELEASE_SYNC_INTERVAL, 10) || 60 * 60 * 1000,
-    requestTimeout: parseInt(process.env.RELEASE_SYNC_TIMEOUT, 10) || 30 * 1000,
+    interval: Math.max(5 * 60 * 1000, parseInt(process.env.RELEASE_SYNC_INTERVAL_MS || process.env.RELEASE_SYNC_INTERVAL, 10) || 60 * 60 * 1000),
+    requestTimeout: Math.max(1000, parseInt(process.env.RELEASE_SYNC_REQUEST_TIMEOUT_MS || process.env.RELEASE_SYNC_TIMEOUT, 10) || 30 * 1000),
     blockedExtensions: ['.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs', '.sh', '.bash', '.bat', '.cmd', '.ps1', '.php', '.py', '.rb', '.pl', '.exe', '.dll', '.so', '.dylib', '.html', '.htm', '.svg'],
   },
 
