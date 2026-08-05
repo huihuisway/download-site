@@ -55,7 +55,6 @@ CREATE INDEX IF NOT EXISTS idx_category ON download_logs(category);
 CREATE INDEX IF NOT EXISTS idx_file_path ON download_logs(file_path);
 CREATE INDEX IF NOT EXISTS idx_download_count ON download_logs(download_count DESC);
 CREATE INDEX IF NOT EXISTS idx_file_mtime ON download_logs(file_mtime);
-<<<<<<< HEAD
 CREATE INDEX IF NOT EXISTS idx_approval_status ON download_logs(approval_status);
 CREATE INDEX IF NOT EXISTS idx_api_key_hash ON api_keys(key_hash);
 
