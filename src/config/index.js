@@ -13,6 +13,16 @@ const config = {
   dbPath: path.resolve(process.env.DB_PATH || './data/stats.db'),
   maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || MAX_FILE_SIZE,
 
+  // GitHub Releases 自动同步
+  releaseSync: {
+    enabled: process.env.RELEASE_SYNC_ENABLED !== '0',
+    repository: process.env.GITHUB_REPOSITORY || '',
+    token: process.env.GITHUB_TOKEN || '',
+    interval: parseInt(process.env.RELEASE_SYNC_INTERVAL, 10) || 60 * 60 * 1000,
+    requestTimeout: parseInt(process.env.RELEASE_SYNC_TIMEOUT, 10) || 30 * 1000,
+    blockedExtensions: ['.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs', '.sh', '.bash', '.bat', '.cmd', '.ps1', '.php', '.py', '.rb', '.pl', '.exe', '.dll', '.so', '.dylib', '.html', '.htm', '.svg'],
+  },
+
   // OAuth 2.0（MindAuth）
   oauth: {
     authorizeUrl: process.env.OAUTH_AUTHORIZE_URL,

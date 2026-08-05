@@ -47,6 +47,9 @@ class JsonDatabase {
     if (!this.data.api_keys) {
       this.data.api_keys = [];
     }
+    if (!this.data.release_sync) {
+      this.data.release_sync = [];
+    }
     if (!this.data._nextApiKeyId) {
       this.data._nextApiKeyId = 1;
     }
@@ -190,14 +193,20 @@ class Statement {
       const existingIdx = this.db.data[table].findIndex((r) => r.file_path === values.file_path);
       if (existingIdx >= 0) {
         const existing = this.db.data[table][existingIdx];
-        // ON CONFLICT DO UPDATE SET - update specified fields but preserve download_count
         for (const key of Object.keys(values)) {
-          if (key !== 'download_count' && key !== 'created_at') {
-            existing[key] = values[key];
-          }
+          if (key !== 'download_count' && key !== 'created_at') existing[key] = values[key];
         }
         existing.updated_at = new Date().toISOString();
         this.db._scheduleSave();
+        return { changes: 1, lastInsertRowid: existing.id };
+      }
+    }
+    if (upsert && table === 'release_sync' && values.repository) {
+      const existingIdx = this.db.data[table].findIndex((r) => r.repository === values.repository);
+      if (existingIdx >= 0) {
+        const existing = this.db.data[table][existingIdx];
+        Object.assign(existing, values, { updated_at: new Date().toISOString() });
+        this.db._save();
         return { changes: 1, lastInsertRowid: existing.id };
       }
     }
@@ -258,7 +267,7 @@ class Statement {
 
     // Handle sqlite_master queries
     if (!table || table === 'sqlite_master') {
-      return [{ name: 'download_logs' }, { name: 'sessions' }];
+      return [{ name: 'download_logs' }, { name: 'sessions' }, { name: '_migrations' }];
     }
 
     if (!this.db.data[table]) return [];

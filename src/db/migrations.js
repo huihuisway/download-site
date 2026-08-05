@@ -22,6 +22,13 @@ const migrations = [
       }
     },
   },
+  {
+    version: 3,
+    description: 'GitHub Releases 同步记录',
+    up: () => {
+      if (!db.data.release_sync) db.data.release_sync = [];
+    },
+  },
 ];
 
 const getSchemaVersion = () => {

@@ -55,5 +55,20 @@ CREATE INDEX IF NOT EXISTS idx_category ON download_logs(category);
 CREATE INDEX IF NOT EXISTS idx_file_path ON download_logs(file_path);
 CREATE INDEX IF NOT EXISTS idx_download_count ON download_logs(download_count DESC);
 CREATE INDEX IF NOT EXISTS idx_file_mtime ON download_logs(file_mtime);
+<<<<<<< HEAD
 CREATE INDEX IF NOT EXISTS idx_approval_status ON download_logs(approval_status);
 CREATE INDEX IF NOT EXISTS idx_api_key_hash ON api_keys(key_hash);
+
+-- release_sync 表: GitHub Releases 同步状态（JSON 数据库中对应同名集合）
+CREATE TABLE IF NOT EXISTS release_sync (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  repository TEXT NOT NULL UNIQUE,
+  release_id INTEGER NOT NULL,
+  tag_name TEXT NOT NULL,
+  status TEXT NOT NULL,
+  prerelease INTEGER NOT NULL DEFAULT 0,
+  published_at DATETIME,
+  synced_at DATETIME,
+  error TEXT,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

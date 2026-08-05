@@ -28,6 +28,7 @@ const { loginLimiter } = require('./middleware/rateLimit');
 // 服务初始化
 const { syncDirectory } = require('./services/sync.service');
 const { renderThemeError } = require('./utils/render-theme');
+const { startReleaseScheduler, stopReleaseScheduler } = require('./services/release-scheduler');
 
 const app = express();
 
@@ -193,6 +194,7 @@ const startServer = async () => {
   } catch (err) {
     console.error('[init] 同步失败:', err.message);
   }
+  startReleaseScheduler();
 
   app.listen(config.port, () => {
     console.log(`[server] 下载站已启动: http://localhost:${config.port}`);
@@ -205,6 +207,7 @@ const startServer = async () => {
 // 仅在直接运行时启动服务（允许测试安全导入）
 if (require.main === module) {
   startServer();
+  process.on('SIGTERM', stopReleaseScheduler);
 }
 
 module.exports = app;
