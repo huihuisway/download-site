@@ -187,6 +187,7 @@ GET    /api/admin/releases/health
 | `PORT` | 监听端口，默认 3000 |
 | `NODE_ENV` | `production` 时启用生产行为（配置校验 fail-fast、Secure cookie 等） |
 | `DOWNLOAD_DIR` | 文件沙箱目录，默认 `./downloads` |
+| `DOWNLOAD_BASE_URL` | 下载 CDN 域名，例如 `https://d.file.mdtbbs.cn`；留空则使用相对 `/d/...` 链接 |
 | `DB_PATH` | JSON 数据库路径，默认 `./data/stats.db` |
 | `MAX_FILE_SIZE` | 单文件上限字节数，默认 150MB |
 | `SESSION_SECRET` | **必填**：≥32 字符随机串，生产环境使用默认值会拒绝启动 |

@@ -14,8 +14,9 @@ const buildFilePageUrl = (filePath = '') => {
   return `/${encodePublicFilePath(filePath)}`;
 };
 
-const buildFileDownloadUrl = (filePath = '') => {
-  return `/d/${encodePublicFilePath(filePath)}`;
+const buildFileDownloadUrl = (filePath = '', baseUrl = '') => {
+  const downloadPath = `/d/${encodePublicFilePath(filePath)}`;
+  return baseUrl ? `${baseUrl.replace(/\/+$/, '')}${downloadPath}` : downloadPath;
 };
 
 module.exports = {

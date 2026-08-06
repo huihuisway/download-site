@@ -8,6 +8,9 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   isProduction: process.env.NODE_ENV === 'production',
 
+  // 下载域名：未配置时保持相对路径，生产可指向独立 CDN 域名
+  downloadBaseUrl: process.env.DOWNLOAD_BASE_URL ? process.env.DOWNLOAD_BASE_URL.replace(/\/+$/, '') : '',
+
   // 文件存储
   downloadDir: path.resolve(process.env.DOWNLOAD_DIR || './downloads'),
   dbPath: path.resolve(process.env.DB_PATH || './data/stats.db'),

@@ -505,16 +505,45 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name downloads.example.com;
+    server_name d.file.mdtbbs.cn;
 
-    ssl_certificate     /etc/letsencrypt/live/downloads.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/downloads.example.com/privkey.pem;
+    # 下载域名只允许下载路由，交由 CDN 缓存成功响应
+    location ^~ /d/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Range $http_range;
+        proxy_set_header If-Range $http_if_range;
+        proxy_set_header If-None-Match $http_if_none_match;
+        proxy_set_header If-Modified-Since $http_if_modified_since;
+        proxy_buffering off;
+        gzip off;
+    }
 
-    # Gzip 压缩
-    gzip on;
+    location / {
+        return 404;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name file.mdtbbs.cn;
+
+    ssl_certificate     /etc/letsencrypt/live/file.mdtbbs.cn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/file.mdtbbs.cn/privkey.pem;
+
+    # 下载文件使用独立域名 d.file.mdtbbs.cn；路径发布后不要覆盖，才能安全使用 CDN 长缓存
+    # 生产环境设置 DOWNLOAD_BASE_URL=https://d.file.mdtbbs.cn
+    # /d/* 必须透传 Range/ETag/Last-Modified，且不经过 gzip
+
+
     gzip_types text/plain text/css application/json application/javascript;
 
-    # 静态资源直接由 Nginx 处理
+    # Gzip 压缩（下载域名 server 已显式关闭）
+    gzip on;
     location /css/ {
         alias /path/to/download-site/public/css/;
         expires 7d;

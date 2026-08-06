@@ -132,7 +132,7 @@ router.use((req, res, next) => {
   res.locals.getFileExt = getFileExt;
   res.locals.getFileIconClass = getFileIconClass;
   res.locals.buildFilePageUrl = buildFilePageUrl;
-  res.locals.buildFileDownloadUrl = buildFileDownloadUrl;
+  res.locals.buildFileDownloadUrl = (filePath) => buildFileDownloadUrl(filePath, config.downloadBaseUrl);
   res.locals.buildCategoryHref = folderTreeService.buildCategoryHref;
   res.locals.currentTheme = themeService.getTheme();
   res.locals.siteInfo = themeService.getSiteInfo();
@@ -287,7 +287,7 @@ router.get('*', (req, res, next) => {
     title: `${resolved.file.file_name} - ${siteInfo.site_name}`,
     file: resolved.file,
     publicFilePath: resolved.publicFilePath,
-    downloadUrl: buildFileDownloadUrl(resolved.file.file_path),
+    downloadUrl: buildFileDownloadUrl(resolved.file.file_path, config.downloadBaseUrl),
     parentHref: folderTreeService.buildCategoryHref(parentPath),
   });
 });

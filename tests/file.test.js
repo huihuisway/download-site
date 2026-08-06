@@ -88,8 +88,12 @@ describe('filename utils', () => {
       assert.strictEqual(buildFilePageUrl('docs/readme.txt'), '/docs/readme.txt');
     });
 
-    it('应该构建真实下载 URL', () => {
-      assert.strictEqual(buildFileDownloadUrl('docs/readme.txt'), '/d/docs/readme.txt');
+    it('应该构建带 CDN 域名的下载 URL', () => {
+      assert.strictEqual(
+        buildFileDownloadUrl('docs/my file.txt', 'https://d.file.mdtbbs.cn/'),
+        'https://d.file.mdtbbs.cn/d/docs/my%20file.txt',
+      );
     });
+
   });
 });
