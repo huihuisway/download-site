@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Check, RefreshCw } from 'lucide-react';
 import api from '../api/client';
+import { useToast } from '../components/Toast';
 
 const themeDescs = {
   editorial: '侧边栏导航，粗体标题，蓝色分隔线。杂志风格，适合文艺站点。',
@@ -14,6 +15,7 @@ function ThemeSettings() {
   const [themes, setThemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null);
+  const { notify } = useToast();
 
   const loadTheme = async () => {
     try {
@@ -31,7 +33,7 @@ function ThemeSettings() {
     if (themeId === currentTheme) return;
     setSaving(themeId);
     try { await api.setTheme(themeId); setCurrentTheme(themeId); }
-    catch (err) { alert(`切换失败: ${err.message}`); }
+    catch (err) { notify(`切换失败：${err.message}`, 'error'); }
     finally { setSaving(null); }
   };
 
@@ -58,10 +60,11 @@ function ThemeSettings() {
           const isSaving = saving === theme.id;
 
           return (
-            <div
+            <button
+              type="button"
               key={theme.id}
-              className="card !p-0 cursor-pointer transition-colors"
-              style={{ borderColor: isActive ? 'var(--primary)' : 'var(--border)', borderWidth: isActive ? '2px' : '1px' }}
+              className="card relative !p-0 cursor-pointer text-left transition-colors"
+              aria-pressed={isActive}
               onClick={() => handleSelect(theme.id)}
             >
               {/* Preview strip */}
@@ -95,7 +98,7 @@ function ThemeSettings() {
                   </div>
                 )}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

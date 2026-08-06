@@ -12,6 +12,8 @@ body, .term-header, .term-main, .term-sidebar, .term-footer {
 
 .term-header { border-bottom: 1px solid var(--border); padding: var(--space-3) 0; }
 .term-header-inner { display: flex; align-items: center; justify-content: space-between; }
+.term-header-inner > *, .term-main, .term-section, .term-file { min-width: 0; }
+.term-logo, .term-stats, .term-file-name, .term-file-desc, .term-file-meta, .term-sha { overflow-wrap: anywhere; word-break: break-word; }
 .term-logo { font-weight: 700; color: var(--primary); }
 .term-logo .prompt { color: var(--success, #4caf50); }
 .term-logo .path { color: var(--text-secondary); }
@@ -84,7 +86,8 @@ body, .term-header, .term-main, .term-sidebar, .term-footer {
   border-radius: 3px 3px 0 0;
   box-sizing: border-box;
 }
-.term-file:hover .term-file-name { color: var(--primary-light); }
+.term-primary-action { border: 1px solid var(--primary); color: var(--primary); font-weight: 600; }
+.term-primary-action:hover { background: var(--bg-hover); }
 .term-file-desc { font-size: 12px; color: var(--text-muted); }
 .term-file-meta { font-size: 11px; color: var(--text-muted); }
 .term-file-meta .size { color: var(--success, #4caf50); }
@@ -106,7 +109,9 @@ body, .term-header, .term-main, .term-sidebar, .term-footer {
 .term-error-prompt { font-size: 1rem; color: var(--text-muted); margin-top: var(--space-3); }
 
 @media (max-width: 768px) {
+  .term-header-inner { align-items: flex-start; flex-wrap: wrap; gap: var(--space-2); }
   .term-layout { flex-direction: column; }
   .term-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-2); }
   .term-nav-path { padding-left: var(--space-2) !important; }
+  .term-main { padding: var(--space-3); }
 }

@@ -27,10 +27,12 @@
 .cl-section-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: var(--space-3); }
 
 .cl-card { background: var(--card); border: 1px solid var(--border); padding: 0; margin-bottom: var(--space-4); }
-.cl-table { width: 100%; border-collapse: collapse; }
+.cl-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .cl-table th { padding: var(--space-2) var(--space-3); font-size: 12px; font-weight: 600; color: var(--text-secondary); text-align: left; text-transform: uppercase; letter-spacing: 0.04em; background: var(--muted); border-bottom: 1px solid var(--border); }
-.cl-table td { padding: var(--space-3); border-bottom: 1px solid var(--border-light); font-size: 0.875rem; }
+.cl-table td { padding: var(--space-3); border-bottom: 1px solid var(--border-light); font-size: 0.875rem; min-width: 0; }
 .cl-table tr:hover td { background: var(--bg-hover); }
+.cl-file-name-cell > div:last-child { min-width: 0; }
+.cl-file-name, .cl-file-desc { overflow-wrap: anywhere; word-break: break-word; }
 
 .cl-file-name-cell { display: flex; align-items: center; gap: var(--space-3); }
 .cl-file-icon {
@@ -85,6 +87,16 @@
 .cl-error { max-width: 480px; margin: 15vh auto; text-align: center; }
 
 @media (max-width: 768px) {
+  .cl-header-inner { height: auto; min-height: var(--header-height); flex-wrap: wrap; gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; }
+  .cl-stats { overflow-wrap: anywhere; }
+  .cl-table { table-layout: auto; min-width: 420px; }
+  .cl-card { overflow-x: auto; }
+  .cl-content { padding-top: var(--space-4); }
+  .cl-breadcrumb { overflow-wrap: anywhere; }
+  .cl-file-name-cell { min-width: 0; }
+  .cl-file-name { font-size: 0.875rem; }
+  .cl-card[style*="padding"] { padding: var(--space-4) !important; }
+  .cl-card .cl-file-name[style*="font-size"] { font-size: 1.25rem !important; }
   .cl-table th:nth-child(3), .cl-table td:nth-child(3),
   .cl-table th:nth-child(5), .cl-table td:nth-child(5) { display: none; }
 }

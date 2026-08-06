@@ -219,6 +219,31 @@
   transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease !important;
 }
 
+/* ===== Mobile safeguards ===== */
+@media (max-width: 767px) {
+  .data-table {
+    min-width: 640px;
+  }
+
+  .card {
+    min-width: 0;
+  }
+
+  button, input, select, textarea {
+    max-width: 100%;
+  }
+
+  :focus-visible {
+    outline: 3px solid rgba(47, 128, 237, 0.45);
+    outline-offset: 2px;
+  }
+
+  code, [class*="font-mono"] {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
 /* ===== Reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

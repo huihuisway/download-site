@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import api from '../api/client';
 import { formatSize } from '../lib/utils';
+import { useToast } from '../components/Toast';
 
 function StatCard({ icon: Icon, label, value, sub }) {
   return (
@@ -33,6 +34,7 @@ function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const { notify } = useToast();
 
   const loadData = async () => {
     try {
@@ -52,10 +54,10 @@ function Dashboard() {
     setSyncing(true);
     try {
       const result = await api.sync();
-      alert(`同步完成: 新增 ${result.inserted}, 更新 ${result.updated}, 删除 ${result.deleted}`);
+      notify(`同步完成：新增 ${result.inserted}，更新 ${result.updated}，删除 ${result.deleted}`, 'success');
       await loadData();
     } catch (err) {
-      alert(`同步失败: ${err.message}`);
+      notify(`同步失败：${err.message}`, 'error');
     } finally {
       setSyncing(false);
     }
@@ -72,12 +74,21 @@ function Dashboard() {
     );
   }
 
+  if (!data) {
+    return (
+      <div className="card flex flex-col items-center gap-3 py-16 text-center">
+        <p style={{ color: 'var(--text-secondary)' }}>数据加载失败，请重试。</p>
+        <button type="button" className="btn-secondary" onClick={loadData}>重新加载</button>
+      </div>
+    );
+  }
+
   const { dashboard, topFiles, categoryStats } = data;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="page-title">数据概览</h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>文件下载站运行状态一览</p>
@@ -161,7 +172,7 @@ function Dashboard() {
                   style={{ border: '1px solid var(--border-light)', background: 'var(--bg)' }}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{cat.category}</span>
+                    <span className="text-sm font-semibold min-w-0 break-words" style={{ color: 'var(--text)' }}>{cat.category}</span>
                     <span className="badge-neutral">{cat.file_count} 文件</span>
                   </div>
                   <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>

@@ -86,7 +86,7 @@ function SiteSettings() {
                 <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>底部文本</label>
                 <input type="text" className="input-field" value={siteInfo.footer_text} onChange={(e) => handleChange('footer_text', e.target.value)} placeholder="例如：Powered by Node.js" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>ICP 备案号</label>
                   <input type="text" className="input-field" value={siteInfo.icp_number} onChange={(e) => handleChange('icp_number', e.target.value)} placeholder="例如：京ICP备12345678号" />
@@ -106,9 +106,9 @@ function SiteSettings() {
                 ) : (
                   <div className="space-y-2">
                     {siteInfo.footer_links.map((link, i) => (
-                      <div key={i} className="flex gap-2 items-center">
-                        <input type="text" className="input-field flex-1" placeholder="标签" value={link.label} onChange={(e) => handleUpdateLink(i, 'label', e.target.value)} />
-                        <input type="text" className="input-field flex-1" placeholder="URL" value={link.url} onChange={(e) => handleUpdateLink(i, 'url', e.target.value)} />
+                      <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input type="text" className="input-field flex-1 min-w-0" placeholder="标签" value={link.label} onChange={(e) => handleUpdateLink(i, 'label', e.target.value)} />
+                        <input type="text" className="input-field flex-1 min-w-0" placeholder="URL" value={link.url} onChange={(e) => handleUpdateLink(i, 'url', e.target.value)} />
                         <button onClick={() => handleRemoveLink(i)} className="btn-ghost !p-2" style={{ color: 'var(--error)' }}><Trash2 className="w-4 h-4" /></button>
                       </div>
                     ))}
@@ -131,7 +131,7 @@ function SiteSettings() {
                 </div>
                 <div className="p-4" style={{ border: '1px solid var(--border)' }}>
                   <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>页脚</p>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{siteInfo.footer_text || '底部文本'}</p>
                     <div className="flex gap-3">
                       {siteInfo.footer_links.map((link, i) => (

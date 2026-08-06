@@ -101,9 +101,9 @@ function Categories() {
     const isEmpty = category.file_count === 0 && !hasChildren;
 
     return (
-      <div style={{ marginLeft: `${depth * 1.5}rem` }}>
+      <div style={{ marginLeft: `min(${depth * 1.5}rem, 1rem)` }}>
         <div className="card !p-4 mb-2 group" style={{ borderLeft: '3px solid var(--primary)' }}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               {hasChildren && (
                 <button onClick={() => toggleExpand(category.category)} className="btn-ghost !p-1">
@@ -113,7 +113,7 @@ function Categories() {
               {!hasChildren && <div className="w-6" />}
 
               {renamingPath === category.category ? (
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <input
                     type="text"
                     className="input-field !py-1 !text-sm flex-1"
@@ -135,7 +135,7 @@ function Categories() {
               ) : (
                 <>
                   <FolderTree className="w-5 h-5" style={{ color: 'var(--primary)' }} />
-                  <span className="font-semibold" style={{ color: 'var(--text)' }}>{category.category.split('/').pop()}</span>
+                  <span className="font-semibold min-w-0 break-words" style={{ color: 'var(--text)' }}>{category.category.split('/').pop()}</span>
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {isEmpty ? '空' : `${category.file_count} 个文件`}
                   </span>
@@ -201,7 +201,7 @@ function Categories() {
 
       <div className="card !p-5">
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>创建新目录</h3>
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <input
             type="text"
             className="input-field flex-1"

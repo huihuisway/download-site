@@ -36,6 +36,35 @@ a:hover {
   color: var(--primary-dark);
 }
 
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(47, 128, 237, 0.45);
+  outline-offset: 2px;
+}
+
+.btn-primary, .cl-primary-action, .ed-primary-action, .mi-primary-action, .term-primary-action {
+  min-height: 40px;
+}
+
+.cl-primary-action, .ed-primary-action, .mi-primary-action, .term-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  font-weight: 600;
+}
+
+/* 动态文件名、路径和哈希不能撑开页面 */
+code, pre, [class*="path"], [class*="filename"], [class*="file-name"], [class*="sha"] {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+img, video, iframe {
+  max-width: 100%;
+  height: auto;
+}
+
 /* ===== 按钮系统 ===== */
 .btn {
   display: inline-flex;
@@ -389,6 +418,22 @@ select.input {
 
   html {
     font-size: 13px;
+  }
+
+  .container, .page-wrap {
+    width: 100%;
+    min-width: 0;
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .footer-inner {
+    align-items: flex-start;
+    text-align: center;
+  }
+
+  .btn, .theme-toggle {
+    min-height: 40px;
   }
 }
 

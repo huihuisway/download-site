@@ -15,7 +15,7 @@
 
   <div class="ed-layout">
     <aside class="ed-sidebar">
-      <a href="/" class="ed-nav-item active">
+      <a href="/" class="ed-nav-item active" aria-current="page">
         <span>首页</span>
         <span class="ed-nav-count"><%= totalFiles %></span>
       </a>
@@ -37,7 +37,10 @@
       <% } %>
 
       <% if (directories.length === 0) { %>
-        <div class="ed-empty">暂无文件。管理员可通过后台上传。</div>
+        <div class="ed-empty">
+          <p>暂无文件</p>
+          <a href="/admin" class="ed-back">管理员可进入后台上传文件 →</a>
+        </div>
       <% } %>
     </main>
   </div>

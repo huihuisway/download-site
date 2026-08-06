@@ -125,7 +125,8 @@ function ApiKeys() {
         </div>
       ) : (
         <div className="card !p-0 overflow-hidden">
-          <table className="data-table">
+          <div className="overflow-x-auto">
+            <table className="data-table">
             <thead>
               <tr>
                 <th>名称</th>
@@ -165,6 +166,7 @@ function ApiKeys() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

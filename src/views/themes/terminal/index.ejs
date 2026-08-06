@@ -15,7 +15,7 @@
 
     <main class="term-main">
       <% if (directories.length === 0) { %>
-        <div class="term-empty">// 此目录为空</div>
+        <div class="term-empty"><p>// 此目录为空</p><a href="/admin" class="term-primary-action">进入管理后台上传</a></div>
       <% } else { %>
         <% directories.forEach(function(dir) { %>
           <a href="<%= buildCategoryHref(dir.path) %>" class="term-file term-folder-link">

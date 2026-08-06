@@ -8,6 +8,7 @@ import ThemeSettings from './pages/ThemeSettings';
 import SiteSettings from './pages/SiteSettings';
 import ApiKeys from './pages/ApiKeys';
 import Login from './pages/Login';
+import { ToastProvider } from './components/Toast';
 
 function App() {
   const { user, loading } = useAuth();
@@ -20,22 +21,24 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <Login />;
-  }
-
   return (
-    <Layout user={user}>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/files" element={<FileManager />} />
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/theme" element={<ThemeSettings />} />
-        <Route path="/settings" element={<SiteSettings />} />
-        <Route path="/api-keys" element={<ApiKeys />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
+    <ToastProvider>
+      {user ? (
+        <Layout user={user}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/files" element={<FileManager />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/theme" element={<ThemeSettings />} />
+            <Route path="/settings" element={<SiteSettings />} />
+            <Route path="/api-keys" element={<ApiKeys />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Layout>
+      ) : (
+        <Login />
+      )}
+    </ToastProvider>
   );
 }
 

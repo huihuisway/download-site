@@ -10,6 +10,8 @@ import {
   Sun,
   Moon,
   Key,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -50,6 +52,7 @@ function ThemeToggle() {
 function Layout({ user, children }) {
   const isDev = user?.isDev === true;
   const location = useLocation();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const navItems = [
     { to: '/', label: '统计看板', icon: LayoutDashboard, end: true },
@@ -78,7 +81,7 @@ function Layout({ user, children }) {
       <div className="flex flex-1">
         {/* Sidebar */}
         <aside
-          className="w-[200px] flex flex-col"
+          className={`fixed inset-y-0 left-0 z-40 w-[min(84vw,280px)] flex flex-col transform transition-transform duration-200 md:static md:w-[200px] md:translate-x-0 ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}`}
           style={{ background: 'var(--card)', borderRight: '1px solid var(--border)' }}
         >
           {/* Logo */}
@@ -111,6 +114,7 @@ function Layout({ user, children }) {
                   key={item.to}
                   to={item.to}
                   end={item.end}
+                  onClick={() => setMobileNavOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
                       isActive ? 'font-semibold' : ''
@@ -159,19 +163,37 @@ function Layout({ user, children }) {
           </div>
         </aside>
 
+        {mobileNavOpen && (
+          <button
+            type="button"
+            aria-label="关闭导航菜单"
+            className="fixed inset-0 z-30 bg-slate-950/40 md:hidden"
+            onClick={() => setMobileNavOpen(false)}
+          />
+        )}
+
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Top Bar */}
           <div
-            className="h-14 flex items-center px-6"
+            className="h-14 flex items-center gap-3 px-4 md:px-6"
             style={{ borderBottom: '1px solid var(--border)', background: 'var(--card)' }}
           >
-            <h2 className="text-page font-semibold" style={{ color: 'var(--text)' }}>
+            <button
+              type="button"
+              className="btn-ghost !p-2 md:hidden"
+              aria-label={mobileNavOpen ? '关闭导航菜单' : '打开导航菜单'}
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen((open) => !open)}
+            >
+              {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <h2 className="text-page font-semibold min-w-0 truncate" style={{ color: 'var(--text)' }}>
               {currentPage?.label || '管理后台'}
             </h2>
           </div>
 
-          <main className="flex-1 p-6 overflow-auto" style={{ background: 'var(--bg)' }}>
+          <main className="flex-1 p-4 md:p-6 overflow-auto min-w-0" style={{ background: 'var(--bg)' }}>
             {children}
           </main>
         </div>

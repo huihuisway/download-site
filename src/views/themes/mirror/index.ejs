@@ -11,7 +11,7 @@
   <div class="mi-stats"><strong><%= totalFiles %></strong> 个文件 · <strong><%= formatNumber(totalDownloads) %></strong> 次下载</div>
 
   <% if (directories.length === 0) { %>
-    <div class="mi-empty">暂无文件</div>
+    <div class="mi-empty"><p>暂无文件</p><a href="/admin" class="mi-primary-action">进入管理后台上传</a></div>
   <% } else { %>
     <table class="mi-table">
       <thead><tr><th>文件夹</th><th class="mi-right">操作</th></tr></thead>
