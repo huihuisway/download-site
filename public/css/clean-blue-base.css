@@ -380,6 +380,12 @@ select.input {
 .footer-sep { color: var(--border); }
 .footer-beian a { color: var(--text-muted); }
 .footer-beian a:hover { color: var(--primary); }
+.footer-version {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
 .theme-toggle {
   background: none; border: 1px solid var(--border); cursor: pointer;
   padding: var(--space-1) var(--space-2); color: var(--text-muted);

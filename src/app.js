@@ -9,6 +9,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const { config, validateConfig } = require('./config');
+const { getAppVersion } = require('./utils/app-version');
 
 // 确保数据库初始化
 require('./db');
@@ -31,6 +32,7 @@ const { renderThemeError } = require('./utils/render-theme');
 const { startReleaseScheduler, stopReleaseScheduler } = require('./services/release-scheduler');
 
 const app = express();
+const appVersion = getAppVersion();
 
 const renderError = (res, status, title, message) => renderThemeError(res, status, { title, message });
 
@@ -45,6 +47,7 @@ app.set('trust proxy', true);
 // 为每个请求生成 CSP nonce，供模板中的内联 <script> 使用
 app.use((req, res, next) => {
   res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  res.locals.appVersion = appVersion;
   next();
 });
 

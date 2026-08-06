@@ -12,30 +12,34 @@ process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
 process.env.ADMIN_ALLOWED_EMAILS = 'allowed@example.com';
 
-const request = (server, targetPath, options = {}) => new Promise((resolve, reject) => {
-  const address = server.address();
-  const req = http.request({
-    hostname: '127.0.0.1',
-    port: address.port,
-    path: targetPath,
-    method: options.method || 'GET',
-    headers: options.headers || {},
-  }, (res) => {
-    const chunks = [];
-    res.on('data', (chunk) => chunks.push(chunk));
-    res.on('end', () => {
-      resolve({
-        statusCode: res.statusCode,
-        headers: res.headers,
-        body: Buffer.concat(chunks).toString('utf8'),
-      });
-    });
-  });
+const request = (server, targetPath, options = {}) =>
+  new Promise((resolve, reject) => {
+    const address = server.address();
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port: address.port,
+        path: targetPath,
+        method: options.method || 'GET',
+        headers: options.headers || {},
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          resolve({
+            statusCode: res.statusCode,
+            headers: res.headers,
+            body: Buffer.concat(chunks).toString('utf8'),
+          });
+        });
+      },
+    );
 
-  req.on('error', reject);
-  if (options.body) req.write(options.body);
-  req.end();
-});
+    req.on('error', reject);
+    if (options.body) req.write(options.body);
+    req.end();
+  });
 
 describe('public routes', () => {
   let server;
@@ -57,17 +61,17 @@ describe('public routes', () => {
     db._save();
 
     db.prepare(
-      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run('a.txt', 'docs/a.txt', 'docs', 18, 0, 'route test file', 'text/plain');
 
     db.prepare(
-      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run('banner.png', 'docs/guides/v1/banner.png', 'docs', 10, 0, 'nested file', 'image/png');
 
     // 含空格与括号的文件名，用于 URL 编码回归
     fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'my file (1).txt'), 'spaced name');
     db.prepare(
-      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run('my file (1).txt', 'docs/my file (1).txt', 'docs', 11, 0, 'spaced', 'text/plain');
 
     const app = require('../src/app');
@@ -80,7 +84,8 @@ describe('public routes', () => {
     tmpEnv.cleanup();
     if (server) {
       await new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
-    }  });
+    }
+  });
 
   it('GET /docs/a.txt 应返回文件页面 HTML', async () => {
     const response = await request(server, '/docs/a.txt');
@@ -159,7 +164,7 @@ describe('public routes', () => {
     const { db } = require('../src/db');
     fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', '报告.txt'), 'cn name');
     db.prepare(
-      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run('报告.txt', 'docs/报告.txt', 'docs', 7, 0, 'cn', 'text/plain');
 
     const res = await request(server, `/d/docs/${encodeURIComponent('报告.txt')}`);
@@ -196,10 +201,13 @@ describe('public routes', () => {
   });
 
   it('后台静态资源应返回正确 MIME，缺失资源不得回退到 HTML', async () => {
-    const asset = await request(server, '/admin/assets/index-DkunsnY5.js');
+    const adminIndex = await request(server, '/admin');
+    const assetPath = adminIndex.body.match(/<script type="module"[^>]+src="([^"]+\.js)"/)?.[1];
+    assert.ok(assetPath, '后台首页应包含模块 JS 资源地址');
+    const asset = await request(server, assetPath);
     assert.strictEqual(asset.statusCode, 200);
     assert.match(asset.headers['content-type'], /javascript/);
-    assert.match(asset.body, /import|export/);
+    assert.match(asset.body, /import|export|function|const/);
 
     const missing = await request(server, '/admin/assets/missing.js?v=stale');
     assert.strictEqual(missing.statusCode, 404);

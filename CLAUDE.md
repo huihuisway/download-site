@@ -99,3 +99,7 @@ Content-Length 并破坏续传。
 - `styleSrc` 目前仍需 `unsafe-inline`（主题模板含大段内联样式）
 - `LOG_LEVEL` 已读入配置但未接线，全站仍用带 `[tag]` 前缀的 console
 - 管理后台无前端测试；`alert`/`confirm` 反馈与弹窗可访问性有待改进
+
+## 版本号
+
+公共页脚显示 `v` 加 Git 提交计数，例如 `v1234`。每新增一个 commit，服务启动后版本号自动增加；没有 `.git` 的部署环境可通过 `APP_VERSION=v1234` 指定固定版本。
