@@ -127,6 +127,8 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin'), 
     }
   },
 }));
+// 静态资源缺失时不能回退到 index.html，否则浏览器会把 HTML 当作模块脚本
+app.get('/admin/assets/*', (req, res) => res.sendStatus(404));
 app.get(['/admin', '/admin/*'], (req, res) => {
   const adminIndex = path.join(__dirname, '..', 'public', 'admin', 'index.html');
   if (fs.existsSync(adminIndex)) {

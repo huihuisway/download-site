@@ -520,9 +520,19 @@ server {
         expires 7d;
     }
 
+    # 后台静态资源必须与 index.html 来自同一次构建；缺失 chunk 返回 404，不能回退成 HTML
+    location ^~ /admin/assets/ {
+        alias /path/to/download-site/public/admin/assets/;
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # 后台 SPA 导航（无扩展名路径）回退到 index.html
     location /admin/ {
         alias /path/to/download-site/public/admin/;
         try_files $uri $uri/ /admin/index.html;
+        add_header Cache-Control "no-cache";
     }
 
     # 其余请求代理到 Node.js

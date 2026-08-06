@@ -40,7 +40,6 @@ const request = (server, targetPath, options = {}) => new Promise((resolve, reje
 describe('public routes', () => {
   let server;
   let sessionDir;
-
   before(async () => {
     const dataDir = path.join(__dirname, '..', 'data');
     fs.mkdirSync(dataDir, { recursive: true });
@@ -196,6 +195,26 @@ describe('public routes', () => {
     assert.match(category.body, /\/docs\/a\.txt/);
   });
 
+  it('后台静态资源应返回正确 MIME，缺失资源不得回退到 HTML', async () => {
+    const asset = await request(server, '/admin/assets/index-DkunsnY5.js');
+    assert.strictEqual(asset.statusCode, 200);
+    assert.match(asset.headers['content-type'], /javascript/);
+    assert.match(asset.body, /import|export/);
+
+    const missing = await request(server, '/admin/assets/missing.js?v=stale');
+    assert.strictEqual(missing.statusCode, 404);
+    assert.doesNotMatch(missing.headers['content-type'] || '', /html/);
+    assert.doesNotMatch(missing.body, /admin fixture/);
+  });
+
+  it('后台导航路径仍回退到 SPA index', async () => {
+    for (const route of ['/admin', '/admin/', '/admin/files']) {
+      const response = await request(server, route);
+      assert.strictEqual(response.statusCode, 200);
+      assert.match(response.headers['content-type'], /text\/html/);
+      assert.match(response.body, /id="root"/);
+    }
+  });
   it('保留前缀不应被文件页 catch-all 截获', async () => {
     const admin = await request(server, '/admin');
     const auth = await request(server, '/auth/login');
