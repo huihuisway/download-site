@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Save, Plus, Trash2, RefreshCw, Eye } from 'lucide-react';
 import api from '../api/client';
+import { useToast } from '../components/Toast';
 
 function SiteSettings() {
   const [siteInfo, setSiteInfo] = useState({ site_name: '', site_description: '', footer_text: '', footer_links: [], icp_number: '', police_number: '' });
@@ -8,6 +9,7 @@ function SiteSettings() {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const { notify } = useToast();
 
   const loadSettings = async () => {
     try { setLoading(true); setSiteInfo((await api.getSettings()).siteInfo); }
@@ -27,9 +29,14 @@ function SiteSettings() {
 
   const handleSave = async () => {
     setSaving(true);
-    try { setSiteInfo((await api.updateSettings(siteInfo)).siteInfo); setDirty(false); }
-    catch (err) { alert(`保存失败: ${err.message}`); }
-    finally { setSaving(false); }
+    try {
+      const result = await api.updateSettings(siteInfo);
+      setSiteInfo(result.siteInfo);
+      setDirty(false);
+      notify('设置已保存', 'success');
+    } catch (err) {
+      notify(`保存失败：${err.message}`, 'error');
+    } finally { setSaving(false); }
   };
 
   if (loading) {
@@ -67,13 +74,13 @@ function SiteSettings() {
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>站点名称</label>
-                <input type="text" className="input-field" value={siteInfo.site_name} onChange={(e) => handleChange('site_name', e.target.value)} placeholder="例如：文件下载站" />
+                <label htmlFor="site-name" className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>站点名称</label>
+                <input id="site-name" type="text" className="input-field" value={siteInfo.site_name} onChange={(e) => handleChange('site_name', e.target.value)} placeholder="例如：文件下载站" />
                 <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>显示在页面标题和顶部</p>
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>站点描述</label>
-                <input type="text" className="input-field" value={siteInfo.site_description} onChange={(e) => handleChange('site_description', e.target.value)} placeholder="例如：轻量级文件下载服务" />
+                <label htmlFor="site-description" className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>站点描述</label>
+                <input id="site-description" type="text" className="input-field" value={siteInfo.site_description} onChange={(e) => handleChange('site_description', e.target.value)} placeholder="例如：轻量级文件下载服务" />
                 <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>显示在页面标题下方（部分主题使用）</p>
               </div>
             </div>

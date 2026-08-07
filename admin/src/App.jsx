@@ -7,6 +7,7 @@ import Categories from './pages/Categories';
 import ThemeSettings from './pages/ThemeSettings';
 import SiteSettings from './pages/SiteSettings';
 import ApiKeys from './pages/ApiKeys';
+import Releases from './pages/Releases';
 import Login from './pages/Login';
 import { ToastProvider } from './components/Toast';
 
@@ -32,6 +33,7 @@ function App() {
             <Route path="/theme" element={<ThemeSettings />} />
             <Route path="/settings" element={<SiteSettings />} />
             <Route path="/api-keys" element={<ApiKeys />} />
+            <Route path="/releases" element={<Releases />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>

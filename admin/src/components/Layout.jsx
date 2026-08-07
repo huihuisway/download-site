@@ -10,6 +10,7 @@ import {
   Sun,
   Moon,
   Key,
+  GitBranch,
   Menu,
   X,
 } from 'lucide-react';
@@ -61,6 +62,7 @@ function Layout({ user, children }) {
     { to: '/theme', label: '主题设置', icon: Palette },
     { to: '/settings', label: '站点设置', icon: Settings },
     { to: '/api-keys', label: 'API Key', icon: Key },
+    { to: '/releases', label: '发布同步', icon: GitBranch },
   ];
 
   const currentPage = navItems.find(

@@ -197,6 +197,34 @@ export const api = {
     const res = await fetch(`${API_BASE}/api-keys/${encodeURIComponent(id)}`, { method: 'DELETE' });
     return handleResponse(res);
   },
+
+  // 发布同步来源
+  async getReleases() {
+    const [sources, health] = await Promise.all([
+      fetch(`${API_BASE}/releases/sources`).then(handleResponse),
+      fetch(`${API_BASE}/releases/health`).then(handleResponse),
+    ]);
+    return { ...sources, health };
+  },
+
+  async getReleaseSources() {
+    return handleResponse(await fetch(`${API_BASE}/releases/sources`));
+  },
+
+  async getReleaseHealth() {
+    return handleResponse(await fetch(`${API_BASE}/releases/health`));
+  },
+  async getReleaseSource(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}`)); },
+  async createReleaseSource(data) { return handleResponse(await fetch(`${API_BASE}/releases/sources`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })); },
+  async updateReleaseSource(id, data) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })); },
+  async deleteReleaseSource(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}`, { method: 'DELETE' })); },
+  async toggleReleaseSource(id, enabled) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/${enabled ? 'enable' : 'disable'}`, { method: 'POST' })); },
+  async syncReleaseSource(id, options = {}) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(options) })); },
+  async previewReleaseSource(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/preview`)); },
+  async getReleaseSourceStatus(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/status`)); },
+  async getReleaseSourceJobs(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/jobs`)); },
+  async getReleaseSourceAssets(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/assets`)); },
+  async retryReleaseTask(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/retry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })); },
 };
 
 export default api;

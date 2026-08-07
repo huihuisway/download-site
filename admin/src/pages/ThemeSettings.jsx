@@ -65,6 +65,7 @@ function ThemeSettings() {
               key={theme.id}
               className="card relative !p-0 cursor-pointer text-left transition-colors"
               aria-pressed={isActive}
+              aria-label={`${theme.name}${isActive ? '（当前主题）' : ''}`}
               onClick={() => handleSelect(theme.id)}
             >
               {/* Preview strip */}

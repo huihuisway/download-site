@@ -93,7 +93,7 @@ function Dashboard() {
           <h2 className="page-title">数据概览</h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>文件下载站运行状态一览</p>
         </div>
-        <button className="btn-primary" onClick={handleSync} disabled={syncing}>
+        <button type="button" className="btn-primary" onClick={handleSync} disabled={syncing} aria-busy={syncing}>
           <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
           {syncing ? '同步中...' : '同步目录'}
         </button>
