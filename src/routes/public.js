@@ -18,7 +18,7 @@ const {
 } = require('../utils/public-paths');
 
 // 新增顶层路由或静态挂载点时必须同步登记，否则会被文件详情页的 catch-all 吞掉
-const RESERVED_ROOTS = new Set(['admin', 'auth', 'api', 'd', 'category', 'css', 'fonts', 'js']);
+const RESERVED_ROOTS = new Set(['admin', 'auth', 'api', 'd', 'category', 'css', 'fonts', 'js', 'privacy', 'terms']);
 const RESERVED_EXACT_PATHS = new Set(['favicon.svg']);
 
 // Cloud theme helpers
@@ -261,7 +261,28 @@ router.get('/d/*', downloadLimiter, (req, res, next) => {
   );
 });
 
-// 文件页面
+// 法律协议页面必须在文件详情 catch-all 之前注册，并列入保留路径
+router.get('/privacy', (req, res) => {
+  const siteInfo = themeService.getSiteInfo();
+  const privacyContent = fs.readFileSync(path.join(__dirname, '..', 'views', 'partials', 'privacy-policy.ejs'), 'utf-8');
+  return res.render('legal', {
+    title: '隐私政策',
+    siteInfo,
+    legalContent: privacyContent,
+  });
+});
+
+router.get('/terms', (req, res) => {
+  const siteInfo = themeService.getSiteInfo();
+  const termsContent = fs.readFileSync(path.join(__dirname, '..', 'views', 'partials', 'terms-of-service.ejs'), 'utf-8');
+  return res.render('legal', {
+    title: '服务使用协议',
+    siteInfo,
+    legalContent: termsContent,
+  });
+});
+
+// 文件详情页 catch-all
 router.get('*', (req, res, next) => {
   // req.path 保留百分号编码，需解码后匹配 DB 中的原始路径；
   // 非法编码（文件名本身含 %）按原样回退匹配

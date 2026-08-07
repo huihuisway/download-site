@@ -15,6 +15,8 @@ const DEFAULT_SITE_INFO = {
   footer_text: 'Powered by Node.js',
   footer_links: JSON.stringify([
     { label: '管理后台', url: '/admin' },
+    { label: '隐私政策', url: '/privacy' },
+    { label: '服务使用协议', url: '/terms' },
   ]),
   icp_number: '',
   police_number: '',
@@ -37,7 +39,22 @@ const getSettingsArray = () => {
         key, value, updated_at: new Date().toISOString(),
       })),
     ];
+    db._save();
+    return db.data.settings;
   }
+
+  // 检查并补充缺失的默认设置
+  const existingKeys = new Set(db.data.settings.map(s => s.key));
+  const missingDefaults = Object.entries(DEFAULT_SITE_INFO).filter(([key]) => !existingKeys.has(key));
+
+  if (missingDefaults.length > 0) {
+    const now = new Date().toISOString();
+    db.data.settings.push(...missingDefaults.map(([key, value]) => ({
+      key, value, updated_at: now,
+    })));
+    db._save();
+  }
+
   return db.data.settings;
 };
 
