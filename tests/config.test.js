@@ -8,6 +8,7 @@ const ORIGINAL_ENV = {
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
   OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID,
   OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET,
+  ADMIN_ALLOWED_EMAILS: process.env.ADMIN_ALLOWED_EMAILS,
 };
 
 const restoreEnv = () => {
@@ -32,6 +33,7 @@ describe('config 校验', () => {
     // 显式设为占位值，避免机器上存在 .env 时 dotenv 回填导致结果不确定
     process.env.OAUTH_CLIENT_ID = 'your_client_id';
     process.env.OAUTH_CLIENT_SECRET = 'your_client_secret';
+    process.env.ADMIN_ALLOWED_EMAILS = 'admin@example.com';
   });
 
   afterEach(() => {

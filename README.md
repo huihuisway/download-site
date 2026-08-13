@@ -193,7 +193,7 @@ GET    /api/admin/releases/health
 | `SESSION_SECRET` | **必填**：≥32 字符随机串，生产环境使用默认值会拒绝启动 |
 | `SESSION_MAX_AGE` | 会话有效期毫秒数，默认 1 天 |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | 本地管理员登录（论坛未上线时的方案） |
-| `ADMIN_ALLOWED_EMAILS` | 后台邮箱白名单（逗号分隔）。留空则任意 OAuth 用户可进后台 |
+| `ADMIN_ALLOWED_EMAILS` | 后台邮箱白名单（逗号分隔）。生产环境必填 |
 | `OAUTH_*` | OAuth 2.0 端点与凭据，见 `.env.example` |
 | `ALLOWED_EXTENSIONS` | 上传和 Releases 资产扩展名白名单（逗号分隔） |
 | `GITHUB_TOKEN` | GitHub API 只读 Token，仅从环境变量读取，不通过后台 API 保存或返回 |
@@ -227,7 +227,7 @@ pm2 save
 pm2 startup
 ```
 
-> ⚠️ **必须保持 `instances: 1`**：JSON 文件数据库与文件式 Session 都不是多进程安全的，
+> ⚠️ **必须保持 `instances: 1` 且使用 `exec_mode: fork`**：JSON 文件数据库与文件式 Session 都不是多进程安全的，
 > 提高实例数会导致数据互相覆盖。需要横向扩展时应先迁移到 SQLite/Redis。
 
 ## 技术栈

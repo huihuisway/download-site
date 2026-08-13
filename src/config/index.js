@@ -106,6 +106,10 @@ const validateConfig = () => {
     fatal.push('SESSION_SECRET 长度不足 32 字符，请使用更长的随机字符串');
   }
 
+  if (config.isProduction && config.admin.allowedEmails.length === 0) {
+    fatal.push('Production requires ADMIN_ALLOWED_EMAILS OAuth admin allowlist');
+  }
+
   return { fatal, warnings };
 };
 
