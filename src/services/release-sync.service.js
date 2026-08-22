@@ -74,7 +74,10 @@ const download = async (asset, destination) => {
   let response; let written = 0;
   const hash = crypto.createHash('sha256');
   try {
-    response = await requestAsset(asset.url || asset.api_url || asset.browser_download_url, { Accept: 'application/octet-stream', 'User-Agent': 'download-site-release-sync', ...(config.releaseSync.token ? { Authorization: `Bearer ${config.releaseSync.token}` } : {}) });
+    // Prefer the browser download endpoint. The API asset endpoint can return
+    // a 524 from an intermediary before it reaches GitHub's asset CDN.
+    const assetUrl = asset.browser_download_url || asset.api_url || asset.url;
+    response = await requestAsset(assetUrl, { Accept: 'application/octet-stream', 'User-Agent': 'download-site-release-sync', ...(config.releaseSync.token ? { Authorization: `Bearer ${config.releaseSync.token}` } : {}) });
     await new Promise((resolve, reject) => {
       const stream = fs.createWriteStream(tmp, { flags: 'wx' });
       const fail = (error) => { response.destroy(); stream.destroy(); reject(error); };
@@ -116,7 +119,7 @@ const syncRelease = async (source, options = {}) => {
     const downloaded = [];
     for (const asset of assets) {
       const safeName = sanitizeFilename(asset.name); const destination = path.join(versionDir, safeName); let result = { skipped: true };
-      if (!fs.existsSync(destination)) result = await download({ ...asset, url: asset.url || asset.api_url || asset.browser_download_url }, destination);
+      if (!fs.existsSync(destination)) result = await download({ ...asset, url: asset.browser_download_url || asset.api_url || asset.url }, destination);
       const stat = await fsp.stat(destination); const relativePath = path.relative(config.downloadDir, destination).replace(/\\/g, '/');
       upsertFile(source, release, { ...asset, name: safeName }, relativePath, stat, result.sha256 || null); downloaded.push({ name: safeName, ...result });
     }
