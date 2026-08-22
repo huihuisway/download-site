@@ -41,10 +41,20 @@ const selectAssets = (release, source) => (Array.isArray(release.assets) ? relea
   .filter((asset) => matches(asset.name, source?.asset_include_pattern))
   .filter((asset) => !source?.asset_exclude_pattern || !matches(asset.name, source.asset_exclude_pattern));
 
+// GitHub may redirect release assets to either the legacy object host or the
+// newer release-assets host. Keep this explicit allowlist to prevent following
+// an arbitrary redirect while accepting both GitHub delivery endpoints.
+const ALLOWED_ASSET_HOSTS = new Set([
+  'api.github.com',
+  'github.com',
+  'objects.githubusercontent.com',
+  'release-assets.githubusercontent.com',
+]);
+
 const requestAsset = (url, headers, redirects = 0) => new Promise((resolve, reject) => {
   let parsed;
   try { parsed = new URL(url); } catch { return reject(new Error('资产 URL 无效')); }
-  const allowedHost = ['api.github.com', 'github.com', 'objects.githubusercontent.com'].includes(parsed.hostname);
+  const allowedHost = ALLOWED_ASSET_HOSTS.has(parsed.hostname);
   if (parsed.protocol !== 'https:' || !allowedHost || redirects > 3) return reject(new Error('资产重定向地址不被允许'));
   const request = https.get(parsed, { headers }, (response) => {
     if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
