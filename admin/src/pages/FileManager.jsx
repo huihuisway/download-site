@@ -262,7 +262,13 @@ function FileManager() {
                             <FileIcon name={file.file_name} />
                             <span className="font-medium cursor-pointer min-w-0 break-words" style={{ color: 'var(--text)' }} onDoubleClick={() => startEdit(file, 'name')} title="双击重命名">{file.file_name}</span>
                           </div>
-                          {file.description ? (
+                          {editingId === file.id && editType === 'description' ? (
+                            <div className="flex items-center gap-1.5 ml-6 mt-1">
+                              <input className="input-field !py-1 !text-sm flex-1" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveEdit()} placeholder="输入描述" autoFocus />
+                              <button onClick={saveEdit} style={{ color: 'var(--primary)' }} title="保存"><Check className="w-4 h-4 shrink-0" /></button>
+                              <button onClick={() => setEditingId(null)} style={{ color: 'var(--text-muted)' }} title="取消"><X className="w-4 h-4 shrink-0" /></button>
+                            </div>
+                          ) : file.description ? (
                             <p className="text-xs mt-0.5 ml-6 truncate max-w-xs" style={{ color: 'var(--text-muted)' }}>{file.description}</p>
                           ) : (
                             <button onClick={() => startEdit(file, 'description')} className="text-[11px] ml-6 mt-0.5" style={{ color: 'var(--text-muted)' }}>+ 添加描述</button>
