@@ -136,6 +136,11 @@ jobs:
           SOURCE_REF: ${{ steps.upstream.outputs.source_ref }}
         run: |
           set -euo pipefail
+          # Mindustry v160.5 points its wrapper at Gradle 9, but its Android
+          # Gradle Plugin 8.2.2 cannot build against that release.  Keep this
+          # compatibility pin local to the ephemeral Actions checkout.
+          sed -i -E 's#gradle-[0-9.]+-bin\.zip#gradle-8.2.1-bin.zip#' gradle/wrapper/gradle-wrapper.properties
+          grep -Fq 'gradle-8.2.1-bin.zip' gradle/wrapper/gradle-wrapper.properties
           chmod +x ./gradlew
           ./gradlew --no-daemon pack
           version_number="${SOURCE_REF#v}"
