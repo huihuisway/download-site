@@ -94,6 +94,11 @@ jobs:
       - name: Set up Android SDK
         if: steps.existing.outputs.exists != 'true'
         uses: android-actions/setup-android@v3
+        with:
+          # `tools` was removed from current Android SDK repositories.  The
+          # action's historical default still requests it, so set the only
+          # baseline package we need explicitly.
+          packages: platform-tools
 
       - name: Install Android SDK platform
         if: steps.existing.outputs.exists != 'true'
