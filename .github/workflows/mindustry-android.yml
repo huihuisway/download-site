@@ -135,7 +135,7 @@ jobs:
         env:
           SOURCE_REF: ${{ steps.upstream.outputs.source_ref }}
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           chmod +x ./gradlew
           ./gradlew --no-daemon pack
           version_number="${SOURCE_REF#v}"
