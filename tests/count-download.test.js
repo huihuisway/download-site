@@ -115,7 +115,8 @@ describe('POST /count-download', () => {
     const response = await request(server, '/count-download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId: 'nonexistent-id-999' }),
+      // 路由只接受正整数 ID；使用不存在的有效 ID 验证 no-op 分支。
+      body: JSON.stringify({ fileId: '999999' }),
     });
 
     assert.strictEqual(response.statusCode, 200);

@@ -34,6 +34,9 @@ describe('config 校验', () => {
     process.env.OAUTH_CLIENT_ID = 'your_client_id';
     process.env.OAUTH_CLIENT_SECRET = 'your_client_secret';
     process.env.ADMIN_ALLOWED_EMAILS = 'admin@example.com';
+    // 此组用本地管理员模式覆盖 OAuth 缺失场景，避免生产配置的登录方式门禁干扰各断言。
+    process.env.ADMIN_USERNAME = 'test-admin';
+    process.env.ADMIN_PASSWORD = 'test-admin-password-with-at-least-32-chars';
   });
 
   afterEach(() => {
