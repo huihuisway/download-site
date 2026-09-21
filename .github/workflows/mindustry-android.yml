@@ -186,6 +186,14 @@ jobs:
           set -euo pipefail
           apk="$RUNNER_TEMP/Mindustry-MDT-Android-${SOURCE_REF}.apk"
           cp android/build/outputs/apk/release/android-release.apk "$apk"
+          build_tools="$ANDROID_HOME/build-tools/36.0.0"
+          apk_badging="$($build_tools/aapt dump badging "$apk")"
+          apk_package="$(printf '%s\n' "$apk_badging" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          apk_version_code="$(printf '%s\n' "$apk_badging" | sed -n "s/^package: .*versionCode='\([^']*\)'.*/\1/p")"
+          expected_version_code="$(grep '^androidBuildCode=' core/assets/version.properties | cut -d '=' -f 2)"
+          [ "$apk_package" = 'io.anuke.mindustry.mdt' ]
+          [ "$apk_version_code" = "$expected_version_code" ]
+          "$build_tools/apksigner" verify --verbose --print-certs "$apk"
           sha256sum "$apk" > "$apk.sha256"
           source_commit="$(git rev-parse HEAD)"
           if [ "$source_commit" != "$EXPECTED_SOURCE_COMMIT" ]; then
@@ -197,9 +205,9 @@ jobs:
             "source_repository": "Anuken/Mindustry",
             "source_tag": "$SOURCE_REF",
             "source_commit": "$source_commit",
-            "android_version_code": $(grep '^androidBuildCode=' core/assets/version.properties | cut -d '=' -f 2),
+            "android_version_code": $apk_version_code,
             "build_type": "MDT community release",
-            "application_id": "io.anuke.mindustry.mdt",
+            "application_id": "$apk_package",
             "signing": "MDT-managed signing certificate; not signed by Anuken"
           }
           EOF
