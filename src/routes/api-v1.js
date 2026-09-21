@@ -5,6 +5,17 @@ const { apiLimiter } = require('../middleware/rateLimit');
 const fileService = require('../services/file.service');
 const statsService = require('../services/stats.service');
 const { db } = require('../db');
+const { buildManifest } = require('../services/mindustry-index.service');
+
+// 下载索引公开、无 API Key；仍经 IP 限流，便于启动器直接消费。
+router.get('/mindustry/manifest.json', apiLimiter, (req, res) => {
+  try {
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
+    res.json(buildManifest());
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Mindustry manifest 暂时不可用' } });
+  }
+});
 
 // 所有 API v1 路由需要 API Key 认证；认证后按 Key 限流
 router.use(apiKeyAuth);

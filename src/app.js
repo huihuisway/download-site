@@ -30,6 +30,7 @@ const { loginLimiter } = require('./middleware/rateLimit');
 const { syncDirectory } = require('./services/sync.service');
 const { renderThemeError } = require('./utils/render-theme');
 const { startReleaseScheduler, stopReleaseScheduler } = require('./services/release-scheduler');
+const releaseSourceService = require('./services/release-source.service');
 
 const app = express();
 const appVersion = getAppVersion();
@@ -40,9 +41,9 @@ const renderError = (res, status, title, message) => renderThemeError(res, statu
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// 信任反向代理（Cloudflare 等），使 req.secure / X-Forwarded-Proto 生效
-// 必须在 session 中间件之前设置，否则 secure cookie 无法在代理后正常下发
-app.set('trust proxy', true);
+// 只信任明确数量的反向代理，避免公网客户端伪造 X-Forwarded-* 头。
+// 必须在 session 中间件之前设置，否则 secure cookie 无法在代理后正常下发。
+app.set('trust proxy', Number.isInteger(config.trustProxyHops) ? config.trustProxyHops : 1);
 
 // 为每个请求生成 CSP nonce，供模板中的内联 <script> 使用
 app.use((req, res, next) => {
@@ -57,9 +58,8 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       // 内联脚本靠 nonce 放行；未带 nonce 的注入脚本会被拦截
       scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
-      // 主题模板含大段内联 <style> 与 style 属性，暂需 unsafe-inline
-      // （样式注入风险远低于脚本注入）
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      // 前台模板和管理 SPA 均只加载外部样式表，禁止行内样式。
+      styleSrc: ["'self'"],
       fontSrc: ["'self'"],
       imgSrc: ["'self'", 'data:'],
       connectSrc: ["'self'"],
@@ -190,6 +190,8 @@ const startServer = async () => {
 
   // 运行数据库迁移
   runMigrations();
+  const seededSources = releaseSourceService.ensureMindustrySources();
+  if (seededSources.length) console.log(`[init] 已添加 ${seededSources.length} 个 Mindustry Release 来源`);
 
   // 启动时自动同步目录
   console.log('[init] 正在同步文件目录...');

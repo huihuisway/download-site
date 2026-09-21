@@ -1,0 +1,74 @@
+<%- include('partials/head', { title, currentTheme, siteInfo }) %>
+<main class="page-wrap mindustry-page">
+  <header class="mindustry-heading">
+    <p class="mindustry-eyebrow">PUBLIC RELEASE INDEX</p>
+    <h1>Mindustry 版本下载</h1>
+    <p>按平台整理的正式版与预发布版本。启动器可直接读取公开 JSON 清单。</p>
+    <a class="mindustry-manifest-link" href="/api/v1/mindustry/manifest.json">查看 manifest.json</a>
+  </header>
+
+  <% const platformNames = { android: 'Android', windows: 'Windows', linux: 'Linux', macos: 'macOS', desktop: '桌面 / JAR', server: '服务器', advanced: '高级文件' }; %>
+  <% if (!manifest.games.length) { %>
+    <section class="mindustry-empty">版本清单暂时为空。配置并运行 GitHub Release 同步后会自动出现在这里。</section>
+  <% } %>
+
+  <% manifest.games.forEach(function(game) { %>
+    <section class="mindustry-game" aria-labelledby="game-<%= game.id %>">
+      <h2 id="game-<%= game.id %>"><%= game.name %></h2>
+      <div class="mindustry-game-repos"><%= game.repositories.join(' · ') %></div>
+
+      <% const stableReleases = game.releases.filter(function(release) { return release.channel === 'stable'; }); %>
+      <% if (stableReleases.length) { %>
+        <div class="mindustry-release-list">
+          <% stableReleases.forEach(function(release, releaseIndex) { %>
+            <article class="mindustry-release">
+              <div class="mindustry-release-heading">
+                <div><span class="mindustry-badge is-stable">正式版</span> <strong><%= release.tag %></strong></div>
+                <time><%= release.published_at ? formatDate(release.published_at) : '' %></time>
+              </div>
+              <% const featuredAssets = release.assets.filter(function(asset) { return asset.platform !== 'advanced'; }); %>
+              <% if (featuredAssets.length) { %>
+                <div class="mindustry-download-grid">
+                  <% featuredAssets.forEach(function(asset) { %>
+                    <div class="mindustry-asset">
+                      <a class="mindustry-download" href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">
+                        <span><%= platformNames[asset.platform] || asset.platform %></span>
+                        <small><%= asset.file_name %> · <%= formatFileSize(asset.size) %></small>
+                      </a>
+                      <% if (asset.sha256) { %>
+                        <div class="mindustry-asset-hash"><code>SHA-256 <%= asset.sha256 %></code><button class="sha-copy" type="button" data-copy-text="<%= asset.sha256 %>">复制</button><span class="sha-copy-status" aria-live="polite"></span></div>
+                      <% } %>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } else { %><p class="mindustry-no-assets">暂无可展示的正式包。</p><% } %>
+              <% const advancedAssets = release.assets.filter(function(asset) { return asset.platform === 'advanced'; }); %>
+              <% if (advancedAssets.length) { %>
+                <details class="mindustry-advanced">
+                  <summary>高级文件 / 构建依赖（<%= advancedAssets.length %>）</summary>
+                  <ul><% advancedAssets.forEach(function(asset) { %><li><a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= asset.file_name %></a><span><%= formatFileSize(asset.size) %></span></li><% }); %></ul>
+                </details>
+              <% } %>
+            </article>
+          <% }); %>
+        </div>
+      <% } else { %><p class="mindustry-no-assets">暂无已同步的正式版。</p><% } %>
+
+      <% const prereleaseReleases = game.releases.filter(function(release) { return release.channel === 'prerelease'; }); %>
+      <% if (prereleaseReleases.length) { %>
+        <details class="mindustry-prereleases">
+          <summary>预发布版本（<%= prereleaseReleases.length %>）</summary>
+          <div class="mindustry-release-list">
+            <% prereleaseReleases.forEach(function(release) { %>
+              <article class="mindustry-release is-prerelease">
+                <div class="mindustry-release-heading"><div><span class="mindustry-badge is-prerelease">预发布</span> <strong><%= release.tag %></strong></div><time><%= release.published_at ? formatDate(release.published_at) : '' %></time></div>
+                <ul class="mindustry-prerelease-files"><% release.assets.forEach(function(asset) { %><li><a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= platformNames[asset.platform] || asset.platform %> · <%= asset.file_name %></a><span><%= formatFileSize(asset.size) %></span></li><% }); %></ul>
+              </article>
+            <% }); %>
+          </div>
+        </details>
+      <% } %>
+    </section>
+  <% }); %>
+</main>
+<%- include('partials/footer') %>

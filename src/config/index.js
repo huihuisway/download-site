@@ -7,9 +7,8 @@ const config = {
   port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   isProduction: process.env.NODE_ENV === 'production',
-
-  // 下载域名：未配置时保持相对路径，生产可指向独立 CDN 域名
-  downloadBaseUrl: process.env.DOWNLOAD_BASE_URL ? process.env.DOWNLOAD_BASE_URL.replace(/\/+$/, '') : '',
+  // Number of trusted reverse-proxy hops; do not trust arbitrary forwarded headers.
+  trustProxyHops: process.env.TRUST_PROXY_HOPS === undefined ? 1 : Number(process.env.TRUST_PROXY_HOPS),
 
   // 文件存储
   downloadDir: path.resolve(process.env.DOWNLOAD_DIR || './downloads'),
@@ -20,6 +19,7 @@ const config = {
   releaseSync: {
     enabled: process.env.RELEASE_SYNC_ENABLED === 'true' || process.env.RELEASE_SYNC_ENABLED === '1',
     repository: process.env.GITHUB_REPOSITORY || '',
+    mindustryAndroidRepository: process.env.MINDUSTRY_ANDROID_RELEASE_REPOSITORY || '',
     token: process.env.GITHUB_TOKEN || '',
     interval: Math.max(5 * 60 * 1000, parseInt(process.env.RELEASE_SYNC_INTERVAL_MS || process.env.RELEASE_SYNC_INTERVAL, 10) || 60 * 60 * 1000),
     requestTimeout: Math.max(1000, parseInt(process.env.RELEASE_SYNC_REQUEST_TIMEOUT_MS || process.env.RELEASE_SYNC_TIMEOUT, 10) || 30 * 1000),
@@ -53,8 +53,8 @@ const config = {
   },
 
   // 上传白名单
-  // 推荐完整取值：.zip,.iso,.pdf,.txt,.png,.jpg,.jpeg,.gz,.tar,.7z,.doc,.docx,.xlsx,.md,.jar
-  allowedExtensions: (process.env.ALLOWED_EXTENSIONS || '.zip,.pdf,.txt,.png,.jpg,.jar')
+  // 推荐完整取值：.zip,.iso,.pdf,.txt,.png,.jpg,.jpeg,.gz,.tar,.7z,.doc,.docx,.xlsx,.md,.jar,.apk
+  allowedExtensions: (process.env.ALLOWED_EXTENSIONS || '.zip,.pdf,.txt,.png,.jpg,.jar,.apk')
     .split(',')
     .map((ext) => ext.trim().toLowerCase()),
 
@@ -69,6 +69,20 @@ const config = {
   logLevel: process.env.LOG_LEVEL || 'info',
 };
 
+const isPlaceholderValue = (value) => typeof value !== 'string'
+  || !value.trim()
+  || /^your[_-]/i.test(value.trim())
+  || /change[_-]?me|placeholder|example\.(com|org|net|invalid)/i.test(value);
+
+const isHttpsUrl = (value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password && !isPlaceholderValue(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
 /**
  * 校验配置安全性。
  * 返回 { fatal, warnings }：fatal 在生产环境应拒绝启动（由调用方执行 process.exit），
@@ -78,6 +92,12 @@ const validateConfig = () => {
   const fatal = [];
   const warnings = [];
 
+  if (!Number.isInteger(config.trustProxyHops) || config.trustProxyHops < 0 || config.trustProxyHops > 10) {
+    const message = 'TRUST_PROXY_HOPS 必须是 0 到 10 之间的整数，并与实际反向代理层数一致';
+    if (config.isProduction) fatal.push(message);
+    else warnings.push(message);
+  }
+
   const required = ['oauth.authorizeUrl', 'oauth.tokenUrl', 'oauth.clientId', 'oauth.clientSecret', 'oauth.callbackUrl'];
   const missing = [];
   for (const key of required) {
@@ -86,13 +106,21 @@ const validateConfig = () => {
     for (const part of parts) {
       value = value?.[part];
     }
-    if (!value || value.startsWith('your_') || value.includes('example.com')) {
+    if (isPlaceholderValue(value)) {
       missing.push(key);
     }
   }
   if (missing.length > 0) {
     warnings.push(`以下 OAuth 配置项未正确设置: ${missing.join(', ')}`);
   }
+  const oauthUrls = [config.oauth.authorizeUrl, config.oauth.tokenUrl, config.oauth.userinfoUrl, config.oauth.callbackUrl];
+  const oauthUrlsValid = oauthUrls.every(isHttpsUrl);
+  if (!oauthUrlsValid) warnings.push('OAuth 端点和回调地址必须是有效的 HTTPS URL');
+  const oauthConfigured = missing.length === 0 && oauthUrlsValid;
+  const localUsernameConfigured = Boolean(config.admin.username);
+  const localPasswordConfigured = Boolean(config.admin.password);
+  const localAdminConfigured = localUsernameConfigured && localPasswordConfigured;
+  const oauthLoginActive = oauthConfigured && !localAdminConfigured;
 
   // 未配置任何登录方式时后台将不可用
   if (missing.length > 0 && !(config.admin.username && config.admin.password)) {
@@ -106,8 +134,27 @@ const validateConfig = () => {
     fatal.push('SESSION_SECRET 长度不足 32 字符，请使用更长的随机字符串');
   }
 
-  if (config.isProduction && config.admin.allowedEmails.length === 0) {
-    fatal.push('Production requires ADMIN_ALLOWED_EMAILS OAuth admin allowlist');
+  if (config.isProduction && oauthLoginActive && config.admin.allowedEmails.length === 0) {
+    fatal.push('配置 MindAuth OAuth 时必须设置 ADMIN_ALLOWED_EMAILS 白名单');
+  }
+
+  if (config.isProduction) {
+    if (localUsernameConfigured !== localPasswordConfigured) {
+      fatal.push('ADMIN_USERNAME 和 ADMIN_PASSWORD 必须同时设置或同时留空');
+    }
+    if (localAdminConfigured && (config.admin.password.length < 16 || isPlaceholderValue(config.admin.password))) {
+      fatal.push('生产环境 ADMIN_PASSWORD 至少需要 16 个字符，且不能使用占位值');
+    }
+    if (!oauthLoginActive && !localAdminConfigured) {
+      fatal.push('生产环境必须配置完整 MindAuth OAuth，或配置强密码本地管理员');
+    }
+    if (oauthLoginActive) {
+      const invalidEmails = config.admin.allowedEmails.filter((email) => (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        || /@example\.(com|org|net|invalid)$/i.test(email)
+      ));
+      if (invalidEmails.length) fatal.push('ADMIN_ALLOWED_EMAILS 包含无效地址或示例占位地址');
+    }
   }
 
   return { fatal, warnings };

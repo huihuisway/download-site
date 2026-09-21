@@ -11,6 +11,7 @@ const { formatFileSize, formatDate, formatNumber } = require('../utils/format');
 const { ensureInSandbox } = require('../utils/filename');
 const { downloadLimiter, countDownloadLimiter } = require('../middleware/rateLimit');
 const { renderThemeError } = require('../utils/render-theme');
+const { buildManifest } = require('../services/mindustry-index.service');
 const {
   normalizePublicFilePath,
   buildFilePageUrl,
@@ -18,7 +19,7 @@ const {
 } = require('../utils/public-paths');
 
 // 新增顶层路由或静态挂载点时必须同步登记，否则会被文件详情页的 catch-all 吞掉
-const RESERVED_ROOTS = new Set(['admin', 'auth', 'api', 'd', 'category', 'css', 'fonts', 'js', 'privacy', 'terms']);
+const RESERVED_ROOTS = new Set(['admin', 'auth', 'api', 'd', 'category', 'css', 'fonts', 'js', 'privacy', 'terms', 'mindustry']);
 const RESERVED_EXACT_PATHS = new Set(['favicon.svg']);
 
 // Cloud theme helpers
@@ -132,7 +133,7 @@ router.use((req, res, next) => {
   res.locals.getFileExt = getFileExt;
   res.locals.getFileIconClass = getFileIconClass;
   res.locals.buildFilePageUrl = buildFilePageUrl;
-  res.locals.buildFileDownloadUrl = (filePath) => buildFileDownloadUrl(filePath, config.downloadBaseUrl);
+  res.locals.buildFileDownloadUrl = buildFileDownloadUrl;
   res.locals.buildCategoryHref = folderTreeService.buildCategoryHref;
   res.locals.currentTheme = themeService.getTheme();
   res.locals.siteInfo = themeService.getSiteInfo();
@@ -207,15 +208,32 @@ router.get(['/category', '/category/*'], (req, res) => {
   });
 });
 
+router.get('/mindustry', (req, res) => {
+  const siteInfo = themeService.getSiteInfo();
+  return res.render('mindustry', {
+    title: `Mindustry 版本下载 - ${siteInfo.site_name}`,
+    currentTheme: themeService.getTheme(),
+    siteInfo,
+    manifest: buildManifest(),
+  });
+});
+
 // 前端下载计数上报（EdgeOne 等 CDN 缓存 /d/* 后，源站 res.on('finish') 不再触发，
 // 由前端 JS 在用户点击下载按钮时主动上报；源站计数保留用于直链下载场景）
 router.post('/count-download', countDownloadLimiter, (req, res) => {
   const { fileId } = req.body || {};
-  if (!fileId || (typeof fileId !== 'string' && typeof fileId !== 'number')) {
+  const numericId = typeof fileId === 'number'
+    ? fileId
+    : (typeof fileId === 'string' && /^\d+$/.test(fileId) ? Number(fileId) : NaN);
+  if (!Number.isSafeInteger(numericId) || numericId <= 0) {
     return res.status(400).json({ error: '缺少 fileId 参数' });
   }
   try {
-    statsService.recordDownload(fileId);
+    statsService.recordDownload(numericId, {
+      client_name: req.body?.client_name || req.body?.clientName,
+      client_version: req.body?.client_version || req.body?.clientVersion,
+      platform: req.body?.platform,
+    });
     res.json({ success: true });
   } catch (err) {
     console.error('[count-download] 计数失败:', err.message);
@@ -235,22 +253,28 @@ router.get('/d/*', downloadLimiter, (req, res, next) => {
   // 计数策略：完整下载或下载工具的首个分片(bytes=0-)才计数；
   // 中段分片与 304 协商缓存不计数
   res.on('finish', () => {
+    if (req.query.tracked === '1') return;
     const range = req.headers.range;
     const isFullDownload = res.statusCode === 200 && !range;
     const isFirstChunk = res.statusCode === 206 && /^bytes=0-/.test(range || '');
     if (isFullDownload || isFirstChunk) {
       try {
-        statsService.recordDownload(resolved.file.id);
+        statsService.recordDownload(resolved.file.id, { client_name: 'direct-link', client_version: 'unknown', platform: 'other' });
       } catch (err) {
         console.error('[download] 下载计数失败:', err.message);
       }
     }
   });
 
+  const downloadHeaders = { 'Content-Type': resolved.file.mime_type || 'application/octet-stream' };
+  if (resolved.file.source_id && resolved.file.release_id) {
+    downloadHeaders['Cache-Control'] = 'public, max-age=31536000, immutable';
+  }
+
   return res.download(
     resolved.fullPath,
     resolved.file.file_name,
-    { headers: { 'Content-Type': resolved.file.mime_type || 'application/octet-stream' } },
+    { headers: downloadHeaders },
     (err) => {
       if (!err) return;
       console.error('[download] 文件传输错误:', err.message);
@@ -308,7 +332,7 @@ router.get('*', (req, res, next) => {
     title: `${resolved.file.file_name} - ${siteInfo.site_name}`,
     file: resolved.file,
     publicFilePath: resolved.publicFilePath,
-    downloadUrl: buildFileDownloadUrl(resolved.file.file_path, config.downloadBaseUrl),
+    downloadUrl: buildFileDownloadUrl(resolved.file.file_path),
     parentHref: folderTreeService.buildCategoryHref(parentPath),
   });
 });

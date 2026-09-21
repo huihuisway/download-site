@@ -58,6 +58,9 @@ const normalize = (input, partial = false) => {
   return value;
 };
 
+const MDT_ANDROID_ASSET_PATTERN = '^Mindustry-MDT-Android-v?[0-9]+(\\.[0-9]+){0,2}\\.apk$';
+const MINDUSTRY_REPOSITORIES = new Set(['anuken/mindustry', 'anuken/mindustry-classic', 'anuken/mindustryclassic']);
+
 const publicSource = (source) => {
   if (!source) return source;
   const { config: _config, ...safe } = source;
@@ -157,6 +160,96 @@ const health = () => {
   return { ok: failed.length === 0, sources: sources.length, enabled: sources.filter((s) => s.enabled).length, failed: failed.length };
 };
 
+const ensureMindustrySources = () => {
+  ensureStore();
+  let updated = false;
+  const defaults = [
+    {
+      name: 'Mindustry 官方版本', owner: 'Anuken', repo: 'Mindustry',
+      target_category: 'Mindustry', include_prerelease: true,
+      config: { game_id: 'mindustry', game_name: 'Mindustry', sync_latest_channels: ['stable', 'prerelease'] },
+    },
+    {
+      name: 'Mindustry Classic 官方版本', owner: 'Anuken', repo: 'Mindustry-Classic',
+      target_category: 'Mindustry', include_prerelease: true,
+      config: { game_id: 'mindustry-classic', game_name: 'Mindustry Classic', sync_latest_channels: ['stable', 'prerelease'] },
+    },
+  ];
+  // Correct an earlier seed typo without leaving a broken, enabled source behind.
+  const legacyClassic = db.data.release_sources.find((item) => item.owner?.toLowerCase() === 'anuken' && item.repo?.toLowerCase() === 'mindustryclassic');
+  const canonicalClassic = db.data.release_sources.find((item) => item.owner?.toLowerCase() === 'anuken' && item.repo?.toLowerCase() === 'mindustry-classic');
+  if (legacyClassic && !canonicalClassic) {
+    legacyClassic.repo = 'Mindustry-Classic';
+    legacyClassic.name = 'Mindustry Classic 官方版本';
+    legacyClassic.status = 'idle';
+    legacyClassic.last_error = null;
+    legacyClassic.last_sync_at = null;
+    legacyClassic.updated_at = now();
+    updated = true;
+  } else if (legacyClassic) {
+    const migrationMessage = '仓库名称已更正为 Anuken/Mindustry-Classic';
+    if (legacyClassic.enabled !== false || legacyClassic.last_error !== migrationMessage || legacyClassic.status === 'error') {
+      legacyClassic.enabled = false;
+      legacyClassic.status = 'idle';
+      legacyClassic.last_error = migrationMessage;
+      legacyClassic.last_sync_at = null;
+      legacyClassic.updated_at = now();
+      updated = true;
+    }
+  }
+  const androidRepository = String(require('../config').config.releaseSync.mindustryAndroidRepository || '').trim();
+  if (/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(androidRepository)) {
+    const [owner, repo] = androidRepository.split('/');
+    if (!MINDUSTRY_REPOSITORIES.has(`${owner}/${repo}`.toLowerCase())) {
+      defaults.push({
+        name: 'Mindustry MDT Android 稳定版', owner, repo,
+        target_category: 'Mindustry', include_prerelease: false,
+        asset_include_pattern: MDT_ANDROID_ASSET_PATTERN,
+        config: { game_id: 'mindustry', game_name: 'Mindustry', sync_latest_only: true },
+      });
+    }
+  }
+  const created = [];
+  for (const source of defaults) {
+    const repositoryKey = `${source.owner}/${source.repo}`.toLowerCase();
+    const current = db.data.release_sources.find((item) => `${item.owner}/${item.repo}`.toLowerCase() === repositoryKey);
+    if (current) {
+      const nextConfig = { ...(current.config || {}), ...source.config };
+      if (JSON.stringify(current.config || {}) !== JSON.stringify(nextConfig)
+        || current.include_prerelease !== source.include_prerelease
+        || current.target_category !== source.target_category) {
+        current.config = nextConfig;
+        current.include_prerelease = source.include_prerelease;
+        current.target_category = source.target_category;
+        current.updated_at = now();
+        updated = true;
+      }
+      continue;
+    }
+    created.push(create({ ...source, type: 'github', enabled: true, sync_interval_ms: 60 * 60 * 1000 }));
+  }
+  if (/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(androidRepository)) {
+    const [owner, repo] = androidRepository.split('/');
+    const androidSource = db.data.release_sources.find((item) => `${item.owner}/${item.repo}`.toLowerCase() === `${owner}/${repo}`.toLowerCase());
+    const sourceRepository = `${androidSource?.owner || ''}/${androidSource?.repo || ''}`.toLowerCase();
+    if (androidSource && !MINDUSTRY_REPOSITORIES.has(sourceRepository)) {
+      const { sync_latest_channels: _channels, ...configWithoutChannels } = androidSource.config || {};
+      const nextConfig = { ...configWithoutChannels, game_id: 'mindustry', game_name: 'Mindustry', sync_latest_only: true };
+      if (JSON.stringify(androidSource.config || {}) !== JSON.stringify(nextConfig)
+        || androidSource.include_prerelease !== false
+        || androidSource.asset_include_pattern !== MDT_ANDROID_ASSET_PATTERN) {
+        androidSource.config = nextConfig;
+        androidSource.include_prerelease = false;
+        androidSource.asset_include_pattern = MDT_ANDROID_ASSET_PATTERN;
+        androidSource.updated_at = now();
+        updated = true;
+      }
+    }
+  }
+  if (updated) db._save();
+  return created;
+};
+
 const preview = (source, releases = []) => ({
   source_id: source.id,
   owner: source.owner,
@@ -225,4 +318,4 @@ const call = async (method, sourceView, payload) => {
   return {};
 };
 
-module.exports = { list, get, create, update, remove, setEnabled, jobs, health, sync, call, createJob, normalize };
+module.exports = { list, get, create, update, remove, setEnabled, jobs, health, sync, call, createJob, normalize, ensureMindustrySources };

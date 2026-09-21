@@ -5,10 +5,12 @@ const crypto = require('crypto');
 const https = require('https');
 const { config } = require('../config');
 const { db } = require('../db');
-const { getLatestRelease } = require('./github-release.service');
+const { getLatestRelease, getReleases } = require('./github-release.service');
 const { sanitizeFilename, isAllowedExtension, ensureInSandbox } = require('../utils/filename');
+const { metadataForAsset, gameForSource } = require('./mindustry-assets.service');
 
 let running = false;
+let batchRunning = false;
 
 const ensureStores = () => {
   if (!Array.isArray(db.data.release_sync)) db.data.release_sync = [];
@@ -93,35 +95,60 @@ const download = async (asset, destination) => {
 
 const upsertFile = (source, release, asset, relativePath, stat, sha256) => {
   const existing = db.data.download_logs.find((item) => item.file_path === relativePath);
-  const values = { file_name: asset.name, file_path: relativePath, category: path.posix.dirname(relativePath), file_size: stat.size, mime_type: require('./sync.service').guessMimeType(asset.name), sha256, file_mtime: stat.mtime.toISOString(), source_id: sourceIdOf(source), release_id: release.id, approval_status: 'approved' };
+  const repository = repositoryOf(source);
+  const mindustryMetadata = metadataForAsset(source, release, asset, repository) || {};
+  const values = { file_name: asset.name, file_path: relativePath, category: path.posix.dirname(relativePath), file_size: stat.size, mime_type: require('./sync.service').guessMimeType(asset.name), sha256: sha256 || existing?.sha256 || null, file_mtime: stat.mtime.toISOString(), source_id: sourceIdOf(source), release_id: release.id, approval_status: 'approved', ...mindustryMetadata };
   if (existing) Object.assign(existing, values, { updated_at: now() });
   else db.data.download_logs.push({ id: db.data._nextId++, download_count: 0, created_at: now(), updated_at: now(), ...values });
 };
 
 const syncRelease = async (source, options = {}) => {
   ensureStores();
-  if (running) return { skipped: true, reason: 'already-running' };
+  if (running || (batchRunning && !options._fromBatch)) return { skipped: true, reason: 'already-running' };
   running = true;
+  const requestedRelease = options.release;
+  const jobOptions = { ...options };
+  delete jobOptions.release;
+  delete jobOptions._fromBatch;
   const repository = repositoryOf(source); let release; let job;
   if (source) {
-    job = { id: db.data._nextReleaseJobId++, source_id: source.id, type: options.retry ? 'retry' : 'sync', status: 'running', payload: options, created_at: now(), started_at: now(), finished_at: null, error: null };
+    job = { id: db.data._nextReleaseJobId++, source_id: source.id, type: options.retry ? 'retry' : 'sync', status: 'running', payload: jobOptions, created_at: now(), started_at: now(), finished_at: null, error: null };
     db.data.release_jobs.push(job); source.status = 'running'; source.last_sync_at = now(); event(source, null, 'sync_started', { job_id: job.id });
   }
   try {
-    release = await getLatestRelease(repository, { includePrerelease: source?.include_prerelease, includeDraft: source?.include_draft });
+    release = requestedRelease || await getLatestRelease(repository, {
+      includePrerelease: source?.include_prerelease,
+      includeDraft: source?.include_draft,
+      asset_include_pattern: source?.asset_include_pattern,
+      asset_exclude_pattern: source?.asset_exclude_pattern,
+    });
     if (!release) return { skipped: true, reason: 'no-release' };
     const existing = releaseRecord(source, release.id);
     if (existing?.status === 'published') return { skipped: true, release: release.tag_name };
-    const safeTag = sanitizeFilename(String(release.tag_name || release.id));
-    const base = source?.target_category || `github/${repository}`;
+    const game = gameForSource(source, repository);
+    const assets = selectAssets(release, source);
+    if (!assets.length) throw new Error('Release 没有符合条件的资产');
+    const detectedVersion = game ? metadataForAsset(source, release, assets[0], repository)?.version_tag : null;
+    const safeTag = sanitizeFilename(String(detectedVersion || release.tag_name || release.id));
+    const channel = game ? (metadataForAsset(source, release, { name: '' }, repository)?.release_channel || 'stable') : null;
+    const base = game
+      ? path.join('Mindustry', game.game_id === 'mindustry-classic' ? 'Classic' : 'Main', channel === 'stable' ? 'Stable' : 'Prerelease')
+      : (source?.target_category || `github/${repository}`);
     const versionDir = path.join(config.downloadDir, base, safeTag); ensureInSandbox(versionDir); await fsp.mkdir(versionDir, { recursive: true });
-    const assets = selectAssets(release, source); if (!assets.length) throw new Error('Release 没有符合条件的资产');
     const downloaded = [];
     for (const asset of assets) {
-      const safeName = sanitizeFilename(asset.name); const destination = path.join(versionDir, safeName); let result = { skipped: true };
+      const safeName = sanitizeFilename(asset.name);
+      const assetMeta = metadataForAsset(source, release, { ...asset, name: safeName }, repository);
+      const assetDir = game
+        ? path.join(versionDir, assetMeta.platform === 'advanced' ? 'Advanced' : assetMeta.platform)
+        : versionDir;
+      await fsp.mkdir(assetDir, { recursive: true });
+      const destination = path.join(assetDir, safeName); let result = { skipped: true };
       if (!fs.existsSync(destination)) result = await download({ ...asset, url: asset.browser_download_url || asset.api_url || asset.url }, destination);
       const stat = await fsp.stat(destination); const relativePath = path.relative(config.downloadDir, destination).replace(/\\/g, '/');
-      upsertFile(source, release, { ...asset, name: safeName }, relativePath, stat, result.sha256 || null); downloaded.push({ name: safeName, ...result });
+      let digest = result.sha256 || db.data.download_logs.find((item) => item.file_path === relativePath)?.sha256 || null;
+      if (!digest) digest = await require('./checksum.service').computeChecksum(destination);
+      upsertFile(source, release, { ...asset, name: safeName }, relativePath, stat, digest); downloaded.push({ name: safeName, sha256: digest, ...result });
     }
     const record = { id: existing?.id || db.data.release_sync.length + 1, source_id: sourceIdOf(source), repository, release_id: release.id, tag_name: release.tag_name, status: 'published', prerelease: Boolean(release.prerelease), draft: Boolean(release.draft), published_at: release.published_at || release.created_at, synced_at: now(), error: null };
     if (existing) Object.assign(existing, record); else db.data.release_sync.push(record);
@@ -139,9 +166,91 @@ const syncRelease = async (source, options = {}) => {
   } finally { running = false; }
 };
 
-const sync = (source, payload) => syncRelease(source, payload);
+const sync = async (source, payload = {}) => {
+  if (batchRunning || running) return { skipped: true, reason: 'already-running' };
+  batchRunning = true;
+  try {
+    const repository = repositoryOf(source);
+    const releaseOptions = {
+      includePrerelease: source?.include_prerelease,
+      includeDraft: source?.include_draft,
+      asset_include_pattern: source?.asset_include_pattern,
+      asset_exclude_pattern: source?.asset_exclude_pattern,
+    };
+    const latestChannels = Array.isArray(source?.config?.sync_latest_channels)
+      ? [...new Set(source.config.sync_latest_channels.filter((channel) => channel === 'stable' || channel === 'prerelease'))]
+      : [];
+    let releases;
+    if (latestChannels.length) {
+      releases = (await Promise.all(latestChannels.map((channel) => getLatestRelease(repository, {
+        ...releaseOptions,
+        includePrerelease: true,
+        prereleaseOnly: channel === 'prerelease',
+      })))).filter(Boolean);
+    } else if (source?.config?.sync_latest_only) {
+      releases = [await getLatestRelease(repository, releaseOptions)].filter(Boolean);
+    } else {
+      releases = await getReleases(repository, releaseOptions);
+    }
+    const game = gameForSource(source, repository);
+    const pending = [];
+    for (const release of releases) {
+      if (!release) continue;
+      const existing = releaseRecord(source, release.id);
+      if (existing?.status === 'published') {
+        if (game) {
+          for (const asset of selectAssets(release, source)) {
+            const file = db.data.download_logs.find((item) => String(item.source_id) === String(sourceIdOf(source))
+              && String(item.release_id) === String(release.id)
+              && item.file_name === sanitizeFilename(asset.name));
+            if (file) Object.assign(file, metadataForAsset(source, release, asset, repository));
+          }
+        }
+        continue;
+      }
+      pending.push(release);
+    }
+    if (game) db._scheduleSave();
+    const results = [];
+    const errors = [];
+    for (const release of pending) {
+      try {
+        results.push(await syncRelease(source, { ...payload, release, _fromBatch: true }));
+      } catch (error) {
+        errors.push({ tag: release.tag_name, error: error.message });
+      }
+      if (source) source.status = 'running';
+    }
+    const summary = {
+      repository,
+      discovered: releases.length,
+      pending: pending.length,
+      synced: results.filter((result) => result?.synced).length,
+      skipped: results.filter((result) => result?.skipped).length,
+      failed: errors.length,
+      errors,
+    };
+    if (errors.length) {
+      const error = new Error(`${errors.length} 个 Release 同步失败`);
+      error.summary = summary;
+      throw error;
+    }
+    return summary;
+  } finally {
+    batchRunning = false;
+    if (source?.status === 'running') source.status = 'idle';
+  }
+};
 const status = (source) => ({ source_id: source.id, status: source.status, last_sync_at: source.last_sync_at, last_success_at: source.last_success_at, last_error: source.last_error });
 const assets = (source) => { ensureStores(); return { source_id: source.id, assets: db.data.release_sync.filter((item) => String(item.source_id) === String(source.id)) }; };
-const retry = (source, payload = {}) => syncRelease(source, { ...payload, retry: true });
-const preview = async (source) => { const release = await getLatestRelease(`${source.owner}/${source.repo}`, { includePrerelease: source.include_prerelease, includeDraft: source.include_draft }); return { source_id: source.id, release, assets: selectAssets(release || {}, source) }; };
+const retry = (source, payload = {}) => sync(source, { ...payload, retry: true });
+const preview = async (source) => {
+  const release = await getLatestRelease(`${source.owner}/${source.repo}`, {
+    includePrerelease: source.include_prerelease,
+    includeDraft: source.include_draft,
+    asset_include_pattern: source.asset_include_pattern,
+    asset_exclude_pattern: source.asset_exclude_pattern,
+  });
+  return { source_id: source.id, release, assets: selectAssets(release || {}, source) };
+};
 module.exports = { syncRelease, sync, validAsset, status, assets, retry, preview, download, selectAssets };

@@ -11,7 +11,9 @@ const run = async () => {
   const now = Date.now();
   for (const source of sources) {
     const interval = source.sync_interval_ms || config.releaseSync.interval;
-    const last = Date.parse(source.last_sync_at || source.created_at || 0);
+    // Never-synced sources should run on the first scheduler pass, including
+    // sources just seeded during startup. created_at is not a sync timestamp.
+    const last = Date.parse(source.last_sync_at || 0);
     if (last && now - last < interval) continue;
     if (sourceLocks.has(source.id)) {
       results.push({ source_id: source.id, skipped: true, reason: 'source-locked' });
