@@ -78,7 +78,7 @@ jobs:
 
       - name: Check out official Mindustry source
         if: steps.existing.outputs.exists != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Anuken/Mindustry
           ref: ${{ steps.upstream.outputs.source_commit }}
@@ -86,7 +86,7 @@ jobs:
 
       - name: Set up JDK 17
         if: steps.existing.outputs.exists != 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -135,7 +135,7 @@ jobs:
         env:
           SOURCE_REF: ${{ steps.upstream.outputs.source_ref }}
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           chmod +x ./gradlew
           ./gradlew --no-daemon pack
           version_number="${SOURCE_REF#v}"
@@ -165,10 +165,8 @@ jobs:
             printf '\nandroidBuildCode=%s\n' "$version_code" >> "$version_properties"
           fi
           sed -i 's/applicationId "io.anuke.mindustry"/applicationId "io.anuke.mindustry.mdt"/' android/build.gradle
-          sed -i 's/"io.anuke.mindustry"/"io.anuke.mindustry.mdt"/g' android/AndroidManifest.xml
           sed -i 's#<string name="app_name">Mindustry</string>#<string name="app_name">Mindustry MDT</string>#' android/res/values/strings.xml
           grep -Fq 'applicationId "io.anuke.mindustry.mdt"' android/build.gradle
-          grep -Fq 'io.anuke.mindustry.mdt' android/AndroidManifest.xml
           grep -Fq '<string name="app_name">Mindustry MDT</string>' android/res/values/strings.xml
           ./gradlew --no-daemon android:assembleRelease -Pbuildversion="$SOURCE_REF" -PversionType=official
 
