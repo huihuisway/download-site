@@ -1,0 +1,224 @@
+name: Build Mindustry Android
+
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Official stable release tag, for example v160.4; empty uses the latest stable release
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mindustry-android-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve official stable release
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REF_INPUT: ${{ inputs.source_ref }}
+        run: |
+          set -euo pipefail
+          source_ref="$SOURCE_REF_INPUT"
+          if [ -z "$source_ref" ]; then
+            source_ref="$(gh api repos/Anuken/Mindustry/releases/latest --jq .tag_name)"
+          fi
+          if [[ ! "$source_ref" =~ ^v?[0-9]+(\.[0-9]+){0,2}$ ]]; then
+            echo "::error::Expected a stable numeric release tag such as v160.4"
+            exit 1
+          fi
+          release_json="$RUNNER_TEMP/mindustry-upstream-release.json"
+          gh api "repos/Anuken/Mindustry/releases/tags/$source_ref" > "$release_json"
+          if ! jq -e '.draft == false and .prerelease == false' "$release_json" >/dev/null; then
+            echo "::error::The selected Mindustry release must be published and stable"
+            exit 1
+          fi
+          canonical_tag="$(jq -r .tag_name "$release_json")"
+          if [ "$canonical_tag" != "$source_ref" ]; then
+            echo "::error::The requested tag did not resolve to the same release tag"
+            exit 1
+          fi
+          source_commit="$(gh api "repos/Anuken/Mindustry/commits/$source_ref" --jq .sha)"
+          if [[ ! "$source_commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Could not resolve the stable release tag to a commit SHA"
+            exit 1
+          fi
+          echo "source_ref=$source_ref" >> "$GITHUB_OUTPUT"
+          echo "source_commit=$source_commit" >> "$GITHUB_OUTPUT"
+          echo "release_tag=mdt-mindustry-android-$source_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether this build was already published
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.upstream.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          error_file="$RUNNER_TEMP/release-check-error.txt"
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" >/dev/null 2>"$error_file"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release $RELEASE_TAG already exists; keeping published version immutable."
+          else
+            if grep -q 'HTTP 404' "$error_file"; then
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+            else
+              cat "$error_file" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Check out official Mindustry source
+        if: steps.existing.outputs.exists != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: Anuken/Mindustry
+          ref: ${{ steps.upstream.outputs.source_commit }}
+          path: upstream
+
+      - name: Set up JDK 17
+        if: steps.existing.outputs.exists != 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        if: steps.existing.outputs.exists != 'true'
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK platform
+        if: steps.existing.outputs.exists != 'true'
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Prepare persistent MDT signing key
+        if: steps.existing.outputs.exists != 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MINDUSTRY_ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.MINDUSTRY_ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.MINDUSTRY_ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.MINDUSTRY_ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for secret_name in KEYSTORE_BASE64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!secret_name}" ]; then
+              echo "::error::Configure the $secret_name signing secret before publishing Android builds"
+              exit 1
+            fi
+          done
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mindustry-release.jks"
+          chmod 600 "$RUNNER_TEMP/mindustry-release.jks"
+          {
+            echo "CI=true"
+            echo "ORG_GRADLE_PROJECT_RELEASE_STORE_FILE=$RUNNER_TEMP/mindustry-release.jks"
+            echo "ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD=$STORE_PASSWORD"
+            echo "ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS=$KEY_ALIAS"
+            echo "ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        if: steps.existing.outputs.exists != 'true'
+        working-directory: upstream
+        env:
+          SOURCE_REF: ${{ steps.upstream.outputs.source_ref }}
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew --no-daemon pack
+          version_number="${SOURCE_REF#v}"
+          IFS='.' read -r version_major version_minor version_patch <<< "$version_number"
+          version_minor="${version_minor:-0}"
+          version_patch="${version_patch:-0}"
+          version_major=$((10#$version_major))
+          version_minor=$((10#$version_minor))
+          version_patch=$((10#$version_patch))
+          if (( version_major > 2099 || version_minor > 999 || version_patch > 999 )); then
+            echo "::error::Release version is too large to encode as an Android versionCode"
+            exit 1
+          fi
+          version_code=$((version_major * 1000000 + version_minor * 1000 + version_patch))
+          if (( version_code < 1 )); then
+            echo "::error::Android versionCode must be positive"
+            exit 1
+          fi
+          version_properties="core/assets/version.properties"
+          if [ ! -f "$version_properties" ]; then
+            echo "::error::Mindustry build did not generate $version_properties"
+            exit 1
+          fi
+          if grep -q '^androidBuildCode=' "$version_properties"; then
+            sed -i "s/^androidBuildCode=.*/androidBuildCode=$version_code/" "$version_properties"
+          else
+            printf '\nandroidBuildCode=%s\n' "$version_code" >> "$version_properties"
+          fi
+          sed -i 's/applicationId "io.anuke.mindustry"/applicationId "io.anuke.mindustry.mdt"/' android/build.gradle
+          sed -i 's/"io.anuke.mindustry"/"io.anuke.mindustry.mdt"/g' android/AndroidManifest.xml
+          sed -i 's#<string name="app_name">Mindustry</string>#<string name="app_name">Mindustry MDT</string>#' android/res/values/strings.xml
+          grep -Fq 'applicationId "io.anuke.mindustry.mdt"' android/build.gradle
+          grep -Fq 'io.anuke.mindustry.mdt' android/AndroidManifest.xml
+          grep -Fq '<string name="app_name">Mindustry MDT</string>' android/res/values/strings.xml
+          ./gradlew --no-daemon android:assembleRelease -Pbuildversion="$SOURCE_REF" -PversionType=official
+
+      - name: Prepare APK, checksum, and build provenance
+        if: steps.existing.outputs.exists != 'true'
+        id: package
+        working-directory: upstream
+        env:
+          SOURCE_REF: ${{ steps.upstream.outputs.source_ref }}
+          EXPECTED_SOURCE_COMMIT: ${{ steps.upstream.outputs.source_commit }}
+        run: |
+          set -euo pipefail
+          apk="$RUNNER_TEMP/Mindustry-MDT-Android-${SOURCE_REF}.apk"
+          cp android/build/outputs/apk/release/android-release.apk "$apk"
+          sha256sum "$apk" > "$apk.sha256"
+          source_commit="$(git rev-parse HEAD)"
+          if [ "$source_commit" != "$EXPECTED_SOURCE_COMMIT" ]; then
+            echo "::error::Checked out source commit does not match the resolved release tag commit"
+            exit 1
+          fi
+          cat > "$RUNNER_TEMP/mindustry-build.json" <<EOF
+          {
+            "source_repository": "Anuken/Mindustry",
+            "source_tag": "$SOURCE_REF",
+            "source_commit": "$source_commit",
+            "android_version_code": $(grep '^androidBuildCode=' core/assets/version.properties | cut -d '=' -f 2),
+            "build_type": "MDT community release",
+            "application_id": "io.anuke.mindustry.mdt",
+            "signing": "MDT-managed signing certificate; not signed by Anuken"
+          }
+          EOF
+          echo "apk=$apk" >> "$GITHUB_OUTPUT"
+          echo "sha256=$apk.sha256" >> "$GITHUB_OUTPUT"
+          echo "provenance=$RUNNER_TEMP/mindustry-build.json" >> "$GITHUB_OUTPUT"
+          echo "Source: Anuken/Mindustry@$SOURCE_REF ($source_commit)" >> "$GITHUB_STEP_SUMMARY"
+          echo "SHA-256: $(cut -d ' ' -f 1 "$apk.sha256")" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish versioned GitHub Release
+        if: steps.existing.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.upstream.outputs.release_tag }}
+          SOURCE_REF: ${{ steps.upstream.outputs.source_ref }}
+          APK: ${{ steps.package.outputs.apk }}
+          SHA256_FILE: ${{ steps.package.outputs.sha256 }}
+          PROVENANCE: ${{ steps.package.outputs.provenance }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/release-notes.md" <<EOF
+          MDT community Android build from the official Anuken/Mindustry stable source tag \`$SOURCE_REF\`.
+
+          This APK is signed with the MDT-managed certificate. It is not signed by Anuken and cannot update or install over the official-signature app. The APK SHA-256 and source commit are attached to this release.
+          EOF
+          gh release create "$RELEASE_TAG" "$APK" "$SHA256_FILE" "$PROVENANCE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Mindustry Android $SOURCE_REF (MDT community build)" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
