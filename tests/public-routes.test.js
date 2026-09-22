@@ -200,6 +200,13 @@ describe('public routes', () => {
     assert.match(category.body, /\/docs\/a\.txt/);
   });
 
+  it('Mindustry 公开清单应经过匿名 API 限流后正常返回', async () => {
+    const response = await request(server, '/api/v1/mindustry/manifest.json');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.headers['cache-control'], /max-age=300/);
+    assert.ok(Array.isArray(JSON.parse(response.body).games));
+  });
+
   it('后台静态资源应返回正确 MIME，缺失资源不得回退到 HTML', async () => {
     const adminIndex = await request(server, '/admin');
     const assetPath = adminIndex.body.match(/<script type="module"[^>]+src="([^"]+\.js)"/)?.[1];
