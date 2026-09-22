@@ -112,7 +112,8 @@ describe('config 校验', () => {
 
   it('完整 OAuth 未设置后台邮箱白名单时应阻止生产启动', () => {
     process.env.SESSION_SECRET = 'a'.repeat(64);
-    delete process.env.ADMIN_ALLOWED_EMAILS;
+    // 空值阻止 dotenv 在模块重载时从部署环境的 .env 回填白名单。
+    process.env.ADMIN_ALLOWED_EMAILS = '';
     const { validateConfig } = loadConfigModule();
     const { fatal } = validateConfig();
     assert.ok(fatal.some((msg) => msg.includes('ADMIN_ALLOWED_EMAILS')));
