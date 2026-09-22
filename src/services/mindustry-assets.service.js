@@ -34,11 +34,13 @@ const metadataForAsset = (source, release, asset, repository) => {
   if (!game) return null;
   const upstreamVersion = String(asset.name || '').match(/^Mindustry-MDT-Android-(v?[0-9]+(?:\.[0-9]+){0,2})\.apk$/i)?.[1];
   const releaseTag = String(release.tag_name || release.name || release.id);
+  const buildName = typeof release.name === 'string' && release.name.trim() ? release.name : null;
   return {
     ...game,
     source_repository: repository,
     version_tag: upstreamVersion || releaseTag,
     release_tag: releaseTag,
+    build_name: buildName,
     release_channel: releaseChannel(release),
     published_at: release.published_at || release.created_at || null,
     release_url: release.html_url || null,

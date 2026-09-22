@@ -6,7 +6,7 @@
 
 ## 一、认证
 
-所有 API 请求必须在 HTTP Header 中携带有效的 API Key：
+除公开 Mindustry manifest 外，`/api/v1` 请求必须在 HTTP Header 中携带有效的 API Key：
 
 ```
 Authorization: Bearer dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -25,7 +25,66 @@ Authorization: Bearer dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ---
 
-## 二、通用约定
+## 二、公开 Mindustry 版本清单
+
+### 获取版本索引
+
+```http
+GET /api/v1/mindustry/manifest.json
+```
+
+此接口无需登录或 API Key，按客户端 IP 限流，响应公开缓存 5 分钟。下载 URL 是相对当前站点的 `/d/...` 地址。
+
+```json
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-19T00:00:00.000Z",
+  "games": [{
+    "id": "mindustry",
+    "name": "Mindustry",
+    "repositories": ["Anuken/Mindustry"],
+    "releases": [{
+      "tag": "v160.4",
+      "build_name": "v8 Build 152.2 - Beta",
+      "channel": "stable",
+      "published_at": "2026-09-18T00:00:00Z",
+      "source_repository": "Anuken/Mindustry",
+      "release_url": "https://github.com/Anuken/Mindustry/releases/tag/v160.4",
+      "assets": [{
+        "file_id": 42,
+        "file_name": "Mindustry.jar",
+        "size": 12345678,
+        "sha256": "…",
+        "platform": "desktop",
+        "type": "desktop",
+        "download_url": "/d/Mindustry/Main/Stable/v160.4/desktop/Mindustry.jar"
+      }]
+    }]
+  }]
+}
+```
+
+`build_name` 是 GitHub Release 的 `name`，未设置名称时为 `null`。`channel` 为 `stable` 或 `prerelease`。`platform` 可能为 `android`、`windows`、`linux`、`macos`、`desktop`、`server` 或 `advanced`。SHA-256 在计算完成前为 `null`。
+
+### 匿名下载统计
+
+```http
+POST /count-download
+Content-Type: application/json
+```
+
+```json
+{
+  "fileId": 42,
+  "client_name": "Example Launcher",
+  "client_version": "1.2.0",
+  "platform": "windows"
+}
+```
+
+此接口无需 API Key，按 IP 限流。`client_name`、`client_version` 和 `platform` 是调用方提供的分析字段，只用于展示和统计，不是认证凭据；事件记录不保存 IP，最多保留 90 天。若同时上报并下载，请在 manifest 下载地址上加 `?tracked=1`，避免源站重复计数。平台值支持 `android`、`windows`、`linux`、`macos`、`desktop`、`advanced`、`server`、`web`、`other`。
+
+## 三、通用约定
 
 ### 请求格式
 
@@ -82,8 +141,8 @@ Authorization: Bearer dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 | `repo` | string | GitHub 仓库名 |
 | `enabled` | boolean | 是否参与自动同步 |
 | `target_category` | string | 下载站目标目录 |
-| `asset_include_pattern` | string | 可选的资产名称包含规则 |
-| `asset_exclude_pattern` | string | 可选的资产名称排除规则 |
+| `asset_include_pattern` | string | 可选的资产名称包含正则表达式；Release 中至少一个资产匹配才纳入同步 |
+| `asset_exclude_pattern` | string | 可选的资产名称排除正则表达式 |
 | `include_prerelease` | boolean | 是否允许 prerelease，默认允许 |
 | `include_draft` | boolean | 是否允许 draft，默认不允许 |
 | `sync_interval_ms` | number | 可选周期，范围 5 分钟至 7 天 |
@@ -108,8 +167,8 @@ DELETE /api/admin/releases/sources/:id
   "repo": "my-app",
   "enabled": true,
   "target_category": "github/example/my-app",
-  "asset_include_pattern": "MyApp-*",
-  "asset_exclude_pattern": "*-debug*"
+  "asset_include_pattern": "^MyApp-.*\\.apk$",
+  "asset_exclude_pattern": "-debug"
 }
 ```
 
@@ -129,7 +188,7 @@ POST /api/admin/releases/sources/:id/retry
 GET  /api/admin/releases/health
 ```
 
-`sync` 会选择最新的非 Draft Release，正式版和 prerelease 均可。资产必须通过扩展名白名单、`MAX_FILE_SIZE`、源码包排除和文件名规则；成功后自动公开。文件写入版本隔离目录：
+`sync` 会读取符合来源设置且至少包含一个匹配资产的非 Draft Release，逐个同步尚未成功发布的版本；失败记录会在后续同步重试。普通来源可分页同步历史版本；Mindustry 主线和 Classic 各只读取最新正式版与最新预发布版，MDT Android 来源只读取最新稳定上游版本对应 Release。正式版和 prerelease 是否纳入由来源设置决定。资产还必须通过扩展名白名单、`MAX_FILE_SIZE`、源码包排除和文件名规则；成功后自动公开。Mindustry 主线和 Classic 使用平台分类目录，其他来源写入：
 
 ```text
 downloads/{target_category}/{tag}/{asset}

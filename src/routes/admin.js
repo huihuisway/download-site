@@ -15,11 +15,13 @@ router.get('/stats', (req, res) => {
     const dashboard = statsService.getDashboardStats();
     const topFiles = statsService.getTopFiles(10);
     const categoryStats = statsService.getCategoryStats();
+    const downloadClientStats = statsService.getDownloadClientStats();
 
     res.json({
       dashboard,
       topFiles,
       categoryStats,
+      downloadClientStats,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

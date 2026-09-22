@@ -26,15 +26,15 @@
   </div>
 
   <% if (parentPath) { %>
-    <div style="margin-bottom: 0.75rem;">
+    <div class="mi-category-parent">
       <a href="<%= buildCategoryHref(parentPath) %>">← 返回上一级</a>
     </div>
   <% } %>
 
-  <h2 style="margin-bottom: 1rem;"><%= currentPath === 'root' ? '根目录' : currentPath %></h2>
+  <h2 class="mi-category-title"><%= currentPath === 'root' ? '根目录' : currentPath %></h2>
 
   <% if (directories.length > 0) { %>
-    <div class="mi-cat-list" style="margin-bottom: 1rem;">
+    <div class="mi-cat-list mi-cat-list-spaced">
       <% directories.forEach(function(dir) { %>
         <span class="mi-cat-item"><a href="<%= buildCategoryHref(dir.path) %>"><%= dir.name %></a> <% if (dir.isEmpty) { %><span class="mi-count">(空)</span><% } %></span>
       <% }); %>

@@ -23,16 +23,16 @@
     <main class="ed-main">
       <h1 class="ed-page-title"><%= file.file_name %></h1>
       <% if (file.description) { %>
-        <div class="ed-file-desc" style="margin-bottom: 16px;"><%= file.description %></div>
+        <div class="ed-file-desc ed-file-desc-detail"><%= file.description %></div>
       <% } %>
-      <div class="ed-file-meta" style="display: grid; gap: 8px; margin-bottom: 20px;">
+      <div class="ed-file-meta ed-file-meta-detail">
         <div>路径：<code><%= publicFilePath %></code></div>
         <div>大小：<%= formatFileSize(file.file_size) %></div>
         <div>下载：<%= formatNumber(file.download_count) %> 次</div>
         <% if (file.last_download_at) { %><div>最后下载：<%= formatDate(file.last_download_at) %></div><% } %>
-        <% if (file.sha256) { %><div>SHA256：<span class="ed-file-sha"><%= file.sha256 %></span></div><% } %>
+        <% if (file.sha256) { %><div class="sha-row">SHA256：<span class="ed-file-sha"><%= file.sha256 %></span> <button class="sha-copy" type="button" data-copy-text="<%= file.sha256 %>">复制</button><span class="sha-copy-status" aria-live="polite"></span></div><% } %>
       </div>
-      <a href="<%= downloadUrl %>" class="ed-file-name ed-primary-action" style="color: var(--primary);" data-track="download">下载文件</a>
+      <a href="<%= downloadUrl %>" class="ed-file-name ed-primary-action" data-track="download">下载文件</a>
     </main>
   </div>
 </div>

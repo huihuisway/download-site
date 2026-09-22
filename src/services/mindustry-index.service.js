@@ -29,6 +29,7 @@ const buildManifest = () => {
     if (!game.releases.has(releaseKey)) {
       game.releases.set(releaseKey, {
         tag: file.version_tag,
+        build_name: file.build_name || null,
         channel,
         published_at: file.published_at || null,
         source_repository: file.source_repository || null,
@@ -45,6 +46,7 @@ const buildManifest = () => {
       release.source_repository = file.source_repository;
       release.release_url = file.release_url || release.release_url;
       release.published_at = file.published_at || release.published_at;
+      release.build_name = file.build_name || release.build_name;
     }
     release.assets.push({
       file_id: file.id,

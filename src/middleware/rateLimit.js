@@ -1,12 +1,20 @@
-const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
+const { rateLimit } = require('express-rate-limit');
+const ipaddr = require('ipaddr.js');
 const { config } = require('../config');
 
-// app.set('trust proxy', true) 会触发 v7 的 ERR_ERL_PERMISSIVE_TRUST_PROXY
-// 校验，需显式关闭；反向代理(Cloudflare)场景下 req.ip 即为真实客户端 IP
+// express-rate-limit v7 does not export ipKeyGenerator. Normalize IPv6
+// addresses to /56 so clients cannot bypass limits by rotating interface IDs.
+const ipRateLimitKey = (ip) => {
+  const address = ipaddr.process(ip);
+  if (address.kind() !== 'ipv6') return address.toString();
+  const networkBytes = address.toByteArray();
+  networkBytes.fill(0, 7);
+  return ipaddr.fromByteArray(networkBytes).toNormalizedString();
+};
+
 const common = {
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  validate: { trustProxy: false },
 };
 
 // 本地登录：15 分钟窗口，防密码爆破（只统计失败尝试）
@@ -23,7 +31,7 @@ const apiLimiter = rateLimit({
   ...common,
   windowMs: 60 * 1000,
   limit: config.rateLimit.apiMax,
-  keyGenerator: (req) => (req.apiKey ? `key:${req.apiKey.id}` : ipKeyGenerator(req.ip)),
+  keyGenerator: (req) => (req.apiKey ? `key:${req.apiKey.id}` : `ip:${ipRateLimitKey(req.ip)}`),
   handler: (req, res) =>
     res.status(429).json({
       success: false,
@@ -47,4 +55,4 @@ const countDownloadLimiter = rateLimit({
   message: { error: '请求过于频繁，请稍后再试' },
 });
 
-module.exports = { loginLimiter, apiLimiter, downloadLimiter, countDownloadLimiter };
+module.exports = { loginLimiter, apiLimiter, downloadLimiter, countDownloadLimiter, ipRateLimitKey };

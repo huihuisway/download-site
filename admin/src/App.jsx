@@ -16,8 +16,8 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div style={{ color: 'var(--text-muted)' }}>加载中...</div>
+      <div className="min-h-screen flex items-center justify-center" data-admin-style="bg">
+        <div data-admin-style="text-muted">加载中...</div>
       </div>
     );
   }

@@ -72,10 +72,10 @@ function Layout({ user, children }) {
   );
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+    <div className="min-h-screen flex flex-col" data-admin-style="bg text">
       {/* Dev Banner */}
       {isDev && (
-        <div className="text-center py-1.5 text-xs font-semibold" style={{ background: 'rgba(255,193,7,0.18)', color: '#f59e0b' }}>
+        <div className="text-center py-1.5 text-xs font-semibold" data-admin-style="dev-banner">
           开发模式 — 测试账户 dev-admin，无需 OAuth 登录
         </div>
       )}
@@ -84,20 +84,20 @@ function Layout({ user, children }) {
         {/* Sidebar */}
         <aside
           className={`fixed inset-y-0 left-0 z-40 w-[min(84vw,280px)] flex flex-col transform transition-transform duration-200 md:static md:w-[200px] md:translate-x-0 ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}`}
-          style={{ background: 'var(--card)', borderRight: '1px solid var(--border)' }}
+          data-admin-style="surface border-right"
         >
           {/* Logo */}
-          <div className="p-5" style={{ borderBottom: '1px solid var(--border-light)' }}>
+          <div className="p-5" data-admin-style="border-bottom-light">
             <div className="flex items-center gap-2.5">
               <div
                 className="w-8 h-8 flex items-center justify-center"
-                style={{ background: 'var(--primary)' }}
+                data-admin-style="bg-primary"
               >
                 <span className="text-white font-bold text-sm">D</span>
               </div>
               <div>
-                <h1 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>下载站管理</h1>
-                <p className="text-[11px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                <h1 className="text-sm font-semibold" data-admin-style="text">下载站管理</h1>
+                <p className="text-[11px] flex items-center gap-1" data-admin-style="text-muted">
                   {user?.username || '管理员'}
                   {isDev && (
                     <span className="badge-info !py-0 !px-1.5 !text-[10px]">dev</span>
@@ -118,15 +118,10 @@ function Layout({ user, children }) {
                   end={item.end}
                   onClick={() => setMobileNavOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
+                    `admin-nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
                       isActive ? 'font-semibold' : ''
                     }`
                   }
-                  style={({ isActive }) => ({
-                    borderLeft: isActive ? '2px solid var(--primary)' : '2px solid transparent',
-                    background: isActive ? 'var(--muted)' : 'transparent',
-                    color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                  })}
                 >
                   {() => (
                     <>
@@ -140,24 +135,18 @@ function Layout({ user, children }) {
           </nav>
 
           {/* Bottom Actions */}
-          <div className="p-3 space-y-0.5" style={{ borderTop: '1px solid var(--border-light)' }}>
+          <div className="p-3 space-y-0.5" data-admin-style="border-top-light">
             <ThemeToggle />
             <a
               href="/"
-              className="flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-150"
-              style={{ color: 'var(--text-secondary)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--muted)'; e.currentTarget.style.color = 'var(--text)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              className="admin-return-link flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-150"
             >
               <ArrowLeft className="w-4 h-4" />
               返回前台
             </a>
             <a
               href="/auth/logout"
-              className="flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-150"
-              style={{ color: 'var(--error)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--error-bg)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              className="admin-logout-link flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-150"
             >
               <LogOut className="w-4 h-4" />
               退出登录
@@ -179,7 +168,7 @@ function Layout({ user, children }) {
           {/* Top Bar */}
           <div
             className="h-14 flex items-center gap-3 px-4 md:px-6"
-            style={{ borderBottom: '1px solid var(--border)', background: 'var(--card)' }}
+            data-admin-style="border-bottom surface"
           >
             <button
               type="button"
@@ -190,12 +179,12 @@ function Layout({ user, children }) {
             >
               {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <h2 className="text-page font-semibold min-w-0 truncate" style={{ color: 'var(--text)' }}>
+            <h2 className="text-page font-semibold min-w-0 truncate" data-admin-style="text">
               {currentPage?.label || '管理后台'}
             </h2>
           </div>
 
-          <main className="flex-1 p-4 md:p-6 overflow-auto min-w-0" style={{ background: 'var(--bg)' }}>
+          <main className="flex-1 p-4 md:p-6 overflow-auto min-w-0" data-admin-style="bg">
             {children}
           </main>
         </div>

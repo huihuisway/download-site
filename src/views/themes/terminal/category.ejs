@@ -16,7 +16,7 @@
       <% if (ancestors.length > 0) { %>
         <div class="term-nav-separator"></div>
         <% ancestors.forEach(function(crumb) { %>
-          <a href="<%= buildCategoryHref(crumb.path) %>" class="term-nav-item term-nav-path" style="padding-left: calc(var(--space-2) + <%= crumb.path.split('/').length - 1 %> * var(--tree-indent));"><%= crumb.name %></a>
+          <a href="<%= buildCategoryHref(crumb.path) %>" class="term-nav-item term-nav-path" data-depth="<%= Math.min(crumb.path.split('/').length - 1, 8) %>"><%= crumb.name %></a>
         <% }); %>
       <% } %>
     </aside>

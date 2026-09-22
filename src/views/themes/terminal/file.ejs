@@ -21,15 +21,15 @@
         <div class="term-section-header">
           <span class="label">$ stat <%= file.file_name %></span>
         </div>
-        <div class="term-file" style="cursor: default;">
+        <div class="term-file term-file-static">
           <div class="term-file-name"><%= file.file_name %></div>
           <% if (file.description) { %><div class="term-file-desc">// <%= file.description %></div><% } %>
-          <div class="term-file-meta" style="display: grid; gap: 8px;">
+          <div class="term-file-meta term-file-meta-stacked">
             <span>路径: <code><%= publicFilePath %></code></span>
             <span>大小: <%= formatFileSize(file.file_size) %></span>
             <span>下载: <%= formatNumber(file.download_count) %> 次</span>
             <% if (file.last_download_at) { %><span>最近下载: <%= formatDate(file.last_download_at) %></span><% } %>
-            <% if (file.sha256) { %><span>sha256: <span class="term-sha"><%= file.sha256 %></span></span><% } %>
+            <% if (file.sha256) { %><span class="term-sha-row">sha256: <span class="term-sha"><%= file.sha256 %></span> <button class="sha-copy" type="button" data-copy-text="<%= file.sha256 %>">复制</button><span class="sha-copy-status" aria-live="polite"></span></span><% } %>
           </div>
         </div>
       </div>

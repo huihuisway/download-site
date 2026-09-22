@@ -65,10 +65,9 @@ function FolderPicker({ categories, value, onChange, placeholder = '选择目录
         const isSelected = value === path;
 
         return (
-          <div key={path}>
+          <div key={path} className={depth > 0 ? 'ml-4' : ''}>
             <div
               className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              style={{ paddingLeft: `${depth * 16 + 12}px` }}
               onClick={() => selectFolder(path)}
             >
               {hasChildren ? (
@@ -86,13 +85,13 @@ function FolderPicker({ categories, value, onChange, placeholder = '选择目录
                 <div className="w-4.5" />
               )}
 
-              <FolderTree className="w-4 h-4" style={{ color: 'var(--primary)' }} />
-              <span className="flex-1 text-sm" style={{ color: isSelected ? 'var(--primary)' : 'var(--text)' }}>
+              <FolderTree className="w-4 h-4" data-admin-style="text-primary" />
+              <span className="flex-1 text-sm" data-admin-style={isSelected ? 'text-primary' : 'text'}>
                 {name}
               </span>
 
               {isSelected && (
-                <Check className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+                <Check className="w-4 h-4" data-admin-style="text-primary" />
               )}
             </div>
 
@@ -118,18 +117,18 @@ function FolderPicker({ categories, value, onChange, placeholder = '选择目录
       {isOpen && (
         <div
           className="absolute z-50 w-full mt-1 border rounded-md shadow-lg overflow-auto max-h-64"
-          style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+          data-admin-style="surface border"
         >
           {/* 根目录选项 */}
           <div
             className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border-b"
             onClick={() => selectFolder('')}
           >
-            <FolderTree className="w-4 h-4" style={{ color: 'var(--primary)' }} />
-            <span className="flex-1 text-sm" style={{ color: value === '' ? 'var(--primary)' : 'var(--text)' }}>
+            <FolderTree className="w-4 h-4" data-admin-style="text-primary" />
+            <span className="flex-1 text-sm" data-admin-style={value === '' ? 'text-primary' : 'text'}>
               根目录
             </span>
-            {value === '' && <Check className="w-4 h-4" style={{ color: 'var(--primary)' }} />}
+            {value === '' && <Check className="w-4 h-4" data-admin-style="text-primary" />}
           </div>
 
           {/* 目录树 */}

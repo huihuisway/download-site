@@ -101,8 +101,8 @@ function Categories() {
     const isEmpty = category.file_count === 0 && !hasChildren;
 
     return (
-      <div style={{ marginLeft: `min(${depth * 1.5}rem, 1rem)` }}>
-        <div className="card !p-4 mb-2 group" style={{ borderLeft: '3px solid var(--primary)' }}>
+      <div className={depth > 0 ? 'ml-4' : ''}>
+        <div className="card !p-4 mb-2 group" data-admin-style="accent-left">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               {hasChildren && (
@@ -125,7 +125,7 @@ function Categories() {
                     }}
                     autoFocus
                   />
-                  <button onClick={() => handleRename(category.category)} className="btn-ghost !p-1.5" style={{ color: 'var(--primary)' }}>
+                  <button onClick={() => handleRename(category.category)} className="btn-ghost !p-1.5" data-admin-style="text-primary">
                     <Check className="w-4 h-4" />
                   </button>
                   <button onClick={() => setRenamingPath(null)} className="btn-ghost !p-1.5">
@@ -134,9 +134,9 @@ function Categories() {
                 </div>
               ) : (
                 <>
-                  <FolderTree className="w-5 h-5" style={{ color: 'var(--primary)' }} />
-                  <span className="font-semibold min-w-0 break-words" style={{ color: 'var(--text)' }}>{category.category.split('/').pop()}</span>
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <FolderTree className="w-5 h-5" data-admin-style="text-primary" />
+                  <span className="font-semibold min-w-0 break-words" data-admin-style="text">{category.category.split('/').pop()}</span>
+                  <span className="text-xs" data-admin-style="text-muted">
                     {isEmpty ? '空' : `${category.file_count} 个文件`}
                   </span>
                 </>
@@ -159,7 +159,7 @@ function Categories() {
                   <button
                     onClick={() => handleDelete(category.category, false)}
                     className="btn-ghost !p-1.5"
-                    style={{ color: 'var(--error)' }}
+                    data-admin-style="text-error"
                     title="删除空目录"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -168,7 +168,7 @@ function Categories() {
                   <button
                     onClick={() => handleDelete(category.category, true)}
                     className="btn-ghost !p-1.5"
-                    style={{ color: 'var(--error)' }}
+                    data-admin-style="text-error"
                     title="递归删除"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -196,11 +196,11 @@ function Categories() {
     <div className="space-y-6">
       <div>
         <h2 className="page-title">目录管理</h2>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>管理文件目录结构</p>
+        <p className="text-sm mt-1" data-admin-style="text-secondary">管理文件目录结构</p>
       </div>
 
       <div className="card !p-5">
-        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>创建新目录</h3>
+        <h3 className="text-sm font-semibold mb-3" data-admin-style="text">创建新目录</h3>
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             type="text"
@@ -217,13 +217,13 @@ function Categories() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16" style={{ color: 'var(--text-muted)' }}>
+        <div className="flex items-center justify-center py-16" data-admin-style="text-muted">
           <RefreshCw className="w-5 h-5 animate-spin mr-2" /> 加载中...
         </div>
       ) : categories.length === 0 ? (
         <div className="card text-center py-16">
-          <FolderTree className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
-          <p style={{ color: 'var(--text-muted)' }}>暂无目录</p>
+          <FolderTree className="w-12 h-12 mx-auto mb-3" data-admin-style="text-muted icon-muted" />
+          <p data-admin-style="text-muted">暂无目录</p>
         </div>
       ) : (
         <div>

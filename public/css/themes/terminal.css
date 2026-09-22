@@ -48,7 +48,19 @@ body, .term-header, .term-main, .term-sidebar, .term-footer {
 .term-section-header .label { font-size: 0.8125rem; font-weight: 600; color: var(--warning, #ffc107); }
 .term-section-header .count { font-size: 11px; color: var(--text-muted); }
 
-.term-file { display: block; padding: var(--space-1) var(--space-2); transition: background var(--transition-fast); text-decoration: none; }
+.term-file { min-height: 44px; display: flex; flex-direction: column; justify-content: center; padding: var(--space-2) var(--space-2); transition: background var(--transition-fast); text-decoration: none; }
+.term-file-static { cursor: default; }
+.term-file-meta-stacked { display: grid; gap: 8px; }
+.term-admin-link { margin-top: var(--space-4); border-top: 1px solid var(--border); padding-top: var(--space-2); }
+.term-nav-path[data-depth="0"] { padding-left: calc(var(--space-2) + 0 * var(--tree-indent)); }
+.term-nav-path[data-depth="1"] { padding-left: calc(var(--space-2) + 1 * var(--tree-indent)); }
+.term-nav-path[data-depth="2"] { padding-left: calc(var(--space-2) + 2 * var(--tree-indent)); }
+.term-nav-path[data-depth="3"] { padding-left: calc(var(--space-2) + 3 * var(--tree-indent)); }
+.term-nav-path[data-depth="4"] { padding-left: calc(var(--space-2) + 4 * var(--tree-indent)); }
+.term-nav-path[data-depth="5"] { padding-left: calc(var(--space-2) + 5 * var(--tree-indent)); }
+.term-nav-path[data-depth="6"] { padding-left: calc(var(--space-2) + 6 * var(--tree-indent)); }
+.term-nav-path[data-depth="7"] { padding-left: calc(var(--space-2) + 7 * var(--tree-indent)); }
+.term-nav-path[data-depth="8"] { padding-left: calc(var(--space-2) + 8 * var(--tree-indent)); }
 .term-file:hover { background: var(--bg-hover); }
 .term-file-name { font-size: 13px; color: var(--primary); font-weight: 500; }
 .term-folder-link .term-file-name {
@@ -107,6 +119,8 @@ body, .term-header, .term-main, .term-sidebar, .term-footer {
 .term-error { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; }
 .term-error-code { font-size: 3rem; font-weight: 700; color: var(--error, #f44336); }
 .term-error-prompt { font-size: 1rem; color: var(--text-muted); margin-top: var(--space-3); }
+.term-error-prompt-dollar { color: var(--primary); }
+.term-error-return { margin-top: var(--space-4); }
 
 @media (max-width: 768px) {
   .term-header-inner { align-items: flex-start; flex-wrap: wrap; gap: var(--space-2); }

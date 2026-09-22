@@ -17,13 +17,14 @@ describe('Mindustry release assets', () => {
   it('将 MDT APK 映射到上游游戏版本并保留社区来源', () => {
     const metadata = metadataForAsset(
       { config: { game_id: 'mindustry', game_name: 'Mindustry' } },
-      { id: 4, tag_name: 'mdt-mindustry-android-v160.4', prerelease: false, published_at: '2026-09-20T00:00:00Z' },
+      { id: 4, tag_name: 'mdt-mindustry-android-v160.4', name: 'v160.4 Community Android', prerelease: false, published_at: '2026-09-20T00:00:00Z' },
       { name: 'Mindustry-MDT-Android-v160.4.apk' },
       'mdtbbs/download-site',
     );
 
     assert.strictEqual(metadata.version_tag, 'v160.4');
     assert.strictEqual(metadata.release_tag, 'mdt-mindustry-android-v160.4');
+    assert.strictEqual(metadata.build_name, 'v160.4 Community Android');
     assert.strictEqual(metadata.source_repository, 'mdtbbs/download-site');
     assert.strictEqual(metadata.release_channel, 'stable');
     assert.strictEqual(releaseChannel({ tag_name: 'v160.5-BE', prerelease: true }), 'prerelease');

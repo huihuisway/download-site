@@ -71,6 +71,14 @@ describe('Content-Security-Policy', () => {
     assert.match(csp, /object-src 'none'/);
   });
 
+  it('管理后台的样式策略也不应放行 unsafe-inline', async () => {
+    const res = await request(server, '/admin');
+    const csp = res.headers['content-security-policy'];
+    assert.ok(csp, '后台应返回 Content-Security-Policy 头');
+    assert.match(csp, /style-src 'self'/);
+    assert.doesNotMatch(csp, /style-src [^;]*'unsafe-inline'/);
+  });
+
   it('页面内联脚本的 nonce 应与响应头一致', async () => {
     const res = await request(server, '/');
     const csp = res.headers['content-security-policy'];

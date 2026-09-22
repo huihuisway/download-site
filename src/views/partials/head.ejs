@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="<%= siteInfo.site_description %>">
+  <meta name="app-version" content="<%= appVersion %>">
   <title><%= title %></title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <% if (currentTheme === 'terminal') { %>
@@ -26,5 +27,6 @@
   <link rel="stylesheet" href="/css/clean-blue-tokens.css">
   <link rel="stylesheet" href="/css/clean-blue-base.css">
   <link rel="stylesheet" href="/css/themes/<%= currentTheme %>.css">
+  <script src="/js/file-actions.js" defer></script>
 </head>
 <body>

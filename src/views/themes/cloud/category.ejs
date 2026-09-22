@@ -24,15 +24,15 @@
 </div>
 <div class="cl-content page-wrap">
   <% if (parentPath) { %>
-    <div style="margin-bottom: 0.75rem;">
+    <div class="cl-category-parent">
       <a href="<%= buildCategoryHref(parentPath) %>">← 返回上一级</a>
     </div>
   <% } %>
 
-  <h2 style="margin-bottom: 1rem;"><%= currentPath === 'root' ? '根目录' : currentPath %></h2>
+  <h2 class="cl-category-title"><%= currentPath === 'root' ? '根目录' : currentPath %></h2>
 
   <% if (directories.length > 0) { %>
-    <div class="cl-card" style="margin-bottom: 1rem;">
+    <div class="cl-card cl-category-card">
       <table class="cl-table">
         <tbody>
           <% directories.forEach(function(dir) { %>
@@ -41,12 +41,12 @@
                 <div class="cl-file-name-cell">
                   <span class="cl-file-icon cl-icon-folder" aria-hidden="true"></span>
                   <div>
-                    <div class="cl-file-name"><a href="<%= buildCategoryHref(dir.path) %>" style="color: inherit; text-decoration: none;"><%= dir.name %></a></div>
-                    <% if (dir.isEmpty) { %><div class="cl-file-desc" style="color: var(--text-muted);">(空)</div><% } %>
+                    <div class="cl-file-name"><a href="<%= buildCategoryHref(dir.path) %>" class="cl-row-link"><%= dir.name %></a></div>
+                    <% if (dir.isEmpty) { %><div class="cl-file-desc cl-empty-label">(空)</div><% } %>
                   </div>
                 </div>
               </td>
-              <td class="cl-muted" style="text-align:right"><a href="<%= buildCategoryHref(dir.path) %>" class="cl-dl-btn">进入</a></td>
+              <td class="cl-muted cl-action-cell"><a href="<%= buildCategoryHref(dir.path) %>" class="cl-dl-btn">进入</a></td>
             </tr>
           <% }); %>
         </tbody>
@@ -61,7 +61,7 @@
   <% } else { %>
     <div class="cl-card">
       <table class="cl-table">
-        <thead><tr><th>文件名</th><th style="width:100px">大小</th><th style="width:80px">下载</th><th style="width:100px">操作</th></tr></thead>
+        <thead><tr><th>文件名</th><th class="cl-size-col">大小</th><th class="cl-download-col">下载</th><th class="cl-action-col">操作</th></tr></thead>
         <tbody>
           <% files.forEach(function(file) { %>
             <tr>
@@ -69,7 +69,7 @@
                 <div class="cl-file-name-cell">
                   <span class="cl-file-icon cl-icon-<%= getFileIconClass(file.file_name) %>"><%= getFileExt(file.file_name) %></span>
                   <div>
-                    <div class="cl-file-name"><a href="<%= buildFilePageUrl(file.file_path) %>" style="color: inherit; text-decoration: none;"><%= file.file_name %></a></div>
+                    <div class="cl-file-name"><a href="<%= buildFilePageUrl(file.file_path) %>" class="cl-row-link"><%= file.file_name %></a></div>
                     <% if (file.description) { %><div class="cl-file-desc"><%= file.description %></div><% } %>
                   </div>
                 </div>

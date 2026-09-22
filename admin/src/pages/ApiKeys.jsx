@@ -52,8 +52,8 @@ function ApiKeys() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="page-title">API Key 管理</h2>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            创建 API Key 供第三方程序调用 <code className="text-xs" style={{ color: 'var(--primary)' }}>/api/v1/*</code> 接口
+          <p className="text-sm mt-1" data-admin-style="text-secondary">
+            创建 API Key 供第三方程序调用 <code className="text-xs" data-admin-style="text-primary">/api/v1/*</code> 接口
           </p>
         </div>
         <button className="btn-primary" onClick={() => setShowCreate(true)}>
@@ -63,20 +63,20 @@ function ApiKeys() {
 
       {/* Created Key Alert */}
       {createdKey && (
-        <div className="card !p-4" style={{ borderColor: 'var(--primary)', borderWidth: '1px' }}>
+        <div className="card !p-4" data-admin-style="border-primary">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold" style={{ color: 'var(--success)' }}>Key 创建成功！请立即复制保存</span>
+            <span className="text-sm font-semibold" data-admin-style="text-success">Key 创建成功！请立即复制保存</span>
             <button className="btn-ghost !p-1" onClick={() => setCreatedKey(null)}><EyeOff className="w-4 h-4" /></button>
           </div>
           <div className="flex items-center gap-2">
-            <code className="flex-1 px-3 py-2 text-sm font-mono" style={{ background: 'var(--muted)', color: 'var(--text)' }}>
+            <code className="flex-1 px-3 py-2 text-sm font-mono" data-admin-style="bg-muted text">
               {createdKey.key}
             </code>
             <button className="btn-secondary !px-3" onClick={() => copyKey(createdKey.key)}>
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-xs mt-2" data-admin-style="text-muted">
             ⚠️ 此 Key 仅显示一次，关闭后将无法再次查看完整值
           </p>
         </div>
@@ -84,26 +84,26 @@ function ApiKeys() {
 
       {/* Create Dialog */}
       {showCreate && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowCreate(false)}>
-          <div className="w-full max-w-md mx-4" style={{ background: 'var(--card)', boxShadow: 'var(--shadow-modal)' }} onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-              <h3 className="font-semibold text-lg" style={{ color: 'var(--text)' }}>创建 API Key</h3>
+        <div className="fixed inset-0 flex items-center justify-center z-50" data-admin-style="overlay" onClick={() => setShowCreate(false)}>
+          <div className="w-full max-w-md mx-4" data-admin-style="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-4 flex items-center justify-between" data-admin-style="border-bottom">
+              <h3 className="font-semibold text-lg" data-admin-style="text">创建 API Key</h3>
               <button onClick={() => setShowCreate(false)} className="btn-ghost !p-1.5">×</button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Key 名称</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" data-admin-style="text-secondary">Key 名称</label>
                 <input type="text" className="input-field" placeholder="例如：CI/CD 部署、监控脚本" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>权限</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" data-admin-style="text-secondary">权限</label>
                 <select className="input-field" value={newPerm} onChange={(e) => setNewPerm(e.target.value)}>
                   <option value="read">只读（read）— 仅查询文件列表和分类</option>
                   <option value="write">读写（write）— 查询 + 上传/删除/目录操作</option>
                 </select>
               </div>
             </div>
-            <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+            <div className="px-6 py-4 flex justify-end gap-3" data-admin-style="border-top">
               <button className="btn-secondary" onClick={() => setShowCreate(false)}>取消</button>
               <button className="btn-primary" onClick={handleCreate} disabled={creating || !newName.trim()}>
                 {creating ? '创建中...' : '创建'}
@@ -115,13 +115,13 @@ function ApiKeys() {
 
       {/* Key List */}
       {loading ? (
-        <div className="flex items-center justify-center py-16" style={{ color: 'var(--text-muted)' }}>
+        <div className="flex items-center justify-center py-16" data-admin-style="text-muted">
           <RefreshCw className="w-5 h-5 animate-spin mr-2" /> 加载中...
         </div>
       ) : keys.length === 0 ? (
         <div className="card text-center py-16">
-          <Key className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
-          <p style={{ color: 'var(--text-muted)' }}>暂无 API Key，点击上方"创建 Key"开始</p>
+          <Key className="w-12 h-12 mx-auto mb-3" data-admin-style="text-muted icon-muted" />
+          <p data-admin-style="text-muted">暂无 API Key，点击上方"创建 Key"开始</p>
         </div>
       ) : (
         <div className="card !p-0 overflow-hidden">
@@ -141,15 +141,15 @@ function ApiKeys() {
             <tbody>
               {keys.map((k) => (
                 <tr key={k.id}>
-                  <td className="font-medium" style={{ color: 'var(--text)' }}>{k.name}</td>
-                  <td><code className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{k.key_preview}</code></td>
+                  <td className="font-medium" data-admin-style="text">{k.name}</td>
+                  <td><code className="text-xs font-mono" data-admin-style="text-muted">{k.key_preview}</code></td>
                   <td>
                     <span className={k.permission === 'write' ? 'badge-info' : 'badge-neutral'}>
                       {k.permission === 'write' ? '读写' : '只读'}
                     </span>
                   </td>
-                  <td className="text-xs" style={{ color: 'var(--text-muted)' }}>{new Date(k.created_at).toLocaleDateString('zh-CN')}</td>
-                  <td className="text-xs" style={{ color: 'var(--text-muted)' }}>{k.last_used_at ? new Date(k.last_used_at).toLocaleString('zh-CN') : '从未使用'}</td>
+                  <td className="text-xs" data-admin-style="text-muted">{new Date(k.created_at).toLocaleDateString('zh-CN')}</td>
+                  <td className="text-xs" data-admin-style="text-muted">{k.last_used_at ? new Date(k.last_used_at).toLocaleString('zh-CN') : '从未使用'}</td>
                   <td>
                     <span className={k.is_active ? 'badge-success' : 'badge-error'}>
                       {k.is_active ? '有效' : '已撤销'}
@@ -157,7 +157,7 @@ function ApiKeys() {
                   </td>
                   <td className="text-right">
                     {k.is_active && (
-                      <button onClick={() => handleRevoke(k.id, k.name)} className="btn-ghost !p-1.5" style={{ color: 'var(--error)' }} title="撤销">
+                      <button onClick={() => handleRevoke(k.id, k.name)} className="btn-ghost !p-1.5" data-admin-style="text-error" title="撤销">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}

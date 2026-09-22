@@ -106,6 +106,8 @@ const syncDirectory = async () => {
         });
         updated++;
         needsChecksum.push(file.file_path);
+      } else if (!existing.sha256) {
+        needsChecksum.push(file.file_path);
       }
     }
 
@@ -182,5 +184,5 @@ module.exports = {
   getAllPhysicalFiles,
   getAllDbRecords,
   guessMimeType,
+  scheduleChecksumComputation,
 };
-

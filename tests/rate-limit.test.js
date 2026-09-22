@@ -72,6 +72,15 @@ describe('rate limiting', () => {
     if (server) server.close();
   });
 
+  it('自定义 API 限流键应规范化 IPv6 /56 且折叠 IPv4 映射地址', () => {
+    const { ipRateLimitKey } = require('../src/middleware/rateLimit');
+    assert.strictEqual(
+      ipRateLimitKey('2001:db8:1234:5600::1'),
+      ipRateLimitKey('2001:db8:1234:567f::9'),
+    );
+    assert.strictEqual(ipRateLimitKey('::ffff:192.0.2.8'), '192.0.2.8');
+  });
+
   it('连续错误登录超过限制应返回 429', async () => {
     const first = await postLogin(server, 'wrong-1');
     const second = await postLogin(server, 'wrong-2');

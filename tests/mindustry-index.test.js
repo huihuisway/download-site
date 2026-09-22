@@ -30,6 +30,7 @@ describe('Mindustry public manifest', () => {
       source_repository: 'Anuken/Mindustry',
       version_tag: 'v160.4',
       release_tag: 'v160.4',
+      build_name: 'v8 Build 152.2 - Beta',
       release_channel: 'stable',
       published_at: '2026-09-10T00:00:00Z',
       release_url: 'https://github.com/Anuken/Mindustry/releases/tag/v160.4',
@@ -79,6 +80,7 @@ describe('Mindustry public manifest', () => {
     assert.ok(game);
     const release = game.releases.find((entry) => entry.tag === 'v160.4' && entry.channel === 'stable');
     assert.ok(release);
+    assert.strictEqual(release.build_name, 'v8 Build 152.2 - Beta');
     assert.deepStrictEqual(new Set(release.source_repositories), new Set(['Anuken/Mindustry', 'mdtbbs/download-site']));
     assert.strictEqual(release.assets.length, 2);
     assert.ok(release.assets.every((asset) => /^[a-f0-9]{64}$/.test(asset.sha256)));

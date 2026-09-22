@@ -4,7 +4,7 @@ const multer = require('multer');
 const { config } = require('../config');
 const { db } = require('../db');
 const { sanitizeFilename, isAllowedExtension, ensureInSandbox } = require('../utils/filename');
-const { guessMimeType } = require('./sync.service');
+const { guessMimeType, scheduleChecksumComputation } = require('./sync.service');
 const folderTreeService = require('./folder-tree.service');
 
 const getUploadFolderPath = (req) => {
@@ -75,9 +75,9 @@ const uploadFiles = (req, res, extraFields = {}) => {
 
     const insertStmt = db.prepare(`
       INSERT OR REPLACE INTO download_logs
-        (file_name, file_path, category, file_size, mime_type, file_mtime, uploaded_by, approval_status, approval_source, approval_resource_id)
+        (file_name, file_path, category, file_size, mime_type, file_mtime, sha256, uploaded_by, approval_status, approval_source, approval_resource_id)
       VALUES
-        (@file_name, @file_path, @category, @file_size, @mime_type, @file_mtime, @uploaded_by, @approval_status, @approval_source, @approval_resource_id)
+        (@file_name, @file_path, @category, @file_size, @mime_type, @file_mtime, NULL, @uploaded_by, @approval_status, @approval_source, @approval_resource_id)
     `);
 
     const results = [];
@@ -96,6 +96,7 @@ const uploadFiles = (req, res, extraFields = {}) => {
           file_size: stat.size,
           mime_type: mime,
           file_mtime: stat.mtime.toISOString(),
+          sha256: null,
           uploaded_by: uploadedBy,
           approval_status: extraFields.approval_status || null,
           approval_source: extraFields.approval_source || null,
@@ -113,6 +114,7 @@ const uploadFiles = (req, res, extraFields = {}) => {
 
     insertTransaction();
     folderTreeService.invalidateFolderCache();  // 上传可能创建了新目录
+    scheduleChecksumComputation(results.map((file) => file.file_path));
 
     return res.json({
       message: `成功上传 ${results.length} 个文件`,
@@ -436,4 +438,3 @@ module.exports = {
   deleteCategory,
   getCategories,
 };
-

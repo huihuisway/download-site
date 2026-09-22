@@ -29,12 +29,29 @@
 .cl-card { background: var(--card); border: 1px solid var(--border); padding: 0; margin-bottom: var(--space-4); }
 .cl-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .cl-table th { padding: var(--space-2) var(--space-3); font-size: 12px; font-weight: 600; color: var(--text-secondary); text-align: left; text-transform: uppercase; letter-spacing: 0.04em; background: var(--muted); border-bottom: 1px solid var(--border); }
+.cl-action-col { width: 100px; }
+.cl-size-col { width: 100px; }
+.cl-download-col { width: 80px; }
 .cl-table td { padding: var(--space-3); border-bottom: 1px solid var(--border-light); font-size: 0.875rem; min-width: 0; }
 .cl-table tr:hover td { background: var(--bg-hover); }
 .cl-file-name-cell > div:last-child { min-width: 0; }
 .cl-file-name, .cl-file-desc { overflow-wrap: anywhere; word-break: break-word; }
 
 .cl-file-name-cell { display: flex; align-items: center; gap: var(--space-3); }
+.cl-file-name-detail { align-items: flex-start; margin-bottom: 20px; }
+.cl-file-name-large { font-size: 24px; }
+.cl-row-link { color: inherit; text-decoration: none; }
+.cl-empty-label { color: var(--text-muted); }
+.cl-breadcrumb-file { margin-bottom: 16px; }
+.cl-file-card { padding: 24px; }
+.cl-file-meta-detail { display: grid; gap: 8px; margin-bottom: 20px; }
+.cl-category-parent { margin-bottom: 0.75rem; }
+.cl-category-title { margin-bottom: 1rem; }
+.cl-category-card { margin-bottom: 1rem; }
+.cl-action-cell { text-align: right; }
+.cl-error-centered { margin: 15vh auto; text-align: center; }
+.cl-error-title { font-size: 1.5rem; font-weight: 700; color: var(--text); margin-bottom: var(--space-3); }
+.cl-error-message { color: var(--text-secondary); margin-bottom: var(--space-5); }
 .cl-file-icon {
   width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
   font-size: 10px; font-weight: 700; text-transform: uppercase; flex-shrink: 0;
@@ -95,8 +112,8 @@
   .cl-breadcrumb { overflow-wrap: anywhere; }
   .cl-file-name-cell { min-width: 0; }
   .cl-file-name { font-size: 0.875rem; }
-  .cl-card[style*="padding"] { padding: var(--space-4) !important; }
-  .cl-card .cl-file-name[style*="font-size"] { font-size: 1.25rem !important; }
+  .cl-file-card { padding: var(--space-4); }
+  .cl-file-name-large { font-size: 1.25rem; }
   .cl-table th:nth-child(3), .cl-table td:nth-child(3),
   .cl-table th:nth-child(5), .cl-table td:nth-child(5) { display: none; }
 }

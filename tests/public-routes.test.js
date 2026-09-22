@@ -74,6 +74,30 @@ describe('public routes', () => {
       'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run('my file (1).txt', 'docs/my file (1).txt', 'docs', 11, 0, 'spaced', 'text/plain');
 
+    const mindustryPath = 'Mindustry/Main/Stable/v160.4/desktop/Mindustry.jar';
+    fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, path.dirname(mindustryPath)), { recursive: true });
+    fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, mindustryPath), 'Mindustry release');
+    db.prepare(
+      'INSERT INTO download_logs (file_name, file_path, category, file_size, download_count, description, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run('Mindustry.jar', mindustryPath, 'Mindustry/Main/Stable/v160.4/desktop', 17, 0, 'Mindustry release', 'application/java-archive');
+    const mindustryFile = db.data.download_logs.find((file) => file.file_path === mindustryPath);
+    Object.assign(mindustryFile, {
+      sha256: 'a'.repeat(64),
+      approval_status: 'approved',
+      game_id: 'mindustry',
+      game_name: 'Mindustry',
+      source_repository: 'Anuken/Mindustry',
+      version_tag: 'v160.4',
+      release_tag: 'v160.4',
+      build_name: 'v8 Build 152.2 - Beta',
+      release_channel: 'stable',
+      published_at: '2026-09-10T00:00:00Z',
+      release_url: 'https://github.com/Anuken/Mindustry/releases/tag/v160.4',
+      platform: 'desktop',
+      asset_type: 'desktop',
+    });
+    db._save();
+
     const app = require('../src/app');
     server = await new Promise((resolve) => {
       const instance = app.listen(0, () => resolve(instance));
@@ -198,6 +222,24 @@ describe('public routes', () => {
 
     assert.doesNotMatch(category.body, /\/download\/1/);
     assert.match(category.body, /\/docs\/a\.txt/);
+  });
+
+  it('Mindustry 页面和 JSON 清单公开可访问且清单带短缓存', async () => {
+    const page = await request(server, '/mindustry');
+    assert.strictEqual(page.statusCode, 200);
+    assert.match(page.body, /Mindustry 版本下载/);
+    assert.match(page.body, /v8 Build 152\.2 - Beta/);
+
+    const response = await request(server, '/api/v1/mindustry/manifest.json');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.headers['cache-control'], /max-age=300/);
+    const manifest = JSON.parse(response.body);
+    const game = manifest.games.find((item) => item.id === 'mindustry');
+    const release = game.releases.find((item) => item.tag === 'v160.4' && item.channel === 'stable');
+    assert.ok(release);
+    assert.strictEqual(release.build_name, 'v8 Build 152.2 - Beta');
+    assert.strictEqual(release.assets[0].sha256, 'a'.repeat(64));
+    assert.strictEqual(release.assets[0].download_url, '/d/Mindustry/Main/Stable/v160.4/desktop/Mindustry.jar');
   });
 
   it('后台静态资源应返回正确 MIME，缺失资源不得回退到 HTML', async () => {

@@ -53,6 +53,43 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   font-weight: 600;
 }
 
+.sha-row, .term-sha-row, .mindustry-asset-hash { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.sha-copy { min-height: 32px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 0.75rem; }
+.sha-copy:hover { border-color: var(--primary); color: var(--primary); }
+.sha-copy-status { color: var(--success); font-size: 0.75rem; }
+.clipboard-fallback { position: fixed; opacity: 0; pointer-events: none; }
+
+.mindustry-page { max-width: 1040px; padding-top: var(--space-8); padding-bottom: var(--space-10); }
+.mindustry-heading { margin-bottom: var(--space-7); }
+.mindustry-heading h1 { margin: var(--space-2) 0; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+.mindustry-heading p { color: var(--text-secondary); }
+.mindustry-eyebrow { color: var(--primary) !important; font-size: 0.75rem; letter-spacing: 0.12em; font-weight: 700; }
+.mindustry-manifest-link { display: inline-flex; margin-top: var(--space-3); }
+.mindustry-game { margin: 0 0 var(--space-8); padding: var(--space-5); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.mindustry-game h2 { font-size: 1.35rem; }
+.mindustry-game-repos { margin: var(--space-1) 0 var(--space-4); color: var(--text-muted); font-size: 0.8rem; }
+.mindustry-release-list { display: grid; gap: var(--space-4); }
+.mindustry-release { padding: var(--space-4); border: 1px solid var(--border-light); border-radius: var(--radius); }
+.mindustry-release-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+.mindustry-release-heading time { color: var(--text-muted); font-size: 0.8rem; }
+.mindustry-build-name { margin-left: var(--space-2); color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; }
+.mindustry-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+.mindustry-badge.is-stable { color: var(--success); background: var(--success-bg); }
+.mindustry-badge.is-prerelease { color: var(--warning); background: var(--warning-bg); }
+.mindustry-download-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); }
+.mindustry-asset { min-width: 0; padding: var(--space-3); background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius); }
+.mindustry-download { min-height: 48px; display: flex; flex-direction: column; justify-content: center; gap: 2px; font-weight: 700; }
+.mindustry-download small { color: var(--text-muted); font-size: 0.72rem; font-weight: 400; overflow-wrap: anywhere; }
+.mindustry-asset-hash { margin-top: var(--space-2); font-size: 0.72rem; }
+.mindustry-asset-hash code { font-size: 0.68rem; }
+.mindustry-advanced, .mindustry-prereleases { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border-light); }
+.mindustry-advanced summary, .mindustry-prereleases summary { cursor: pointer; color: var(--text-secondary); font-weight: 600; }
+.mindustry-advanced ul, .mindustry-prerelease-files { list-style: none; margin-top: var(--space-2); }
+.mindustry-advanced li, .mindustry-prerelease-files li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--border-light); }
+.mindustry-advanced li span, .mindustry-prerelease-files li span { color: var(--text-muted); font-size: 0.8rem; }
+.mindustry-empty, .mindustry-no-assets { padding: var(--space-4); color: var(--text-muted); }
+@media (max-width: 600px) { .mindustry-page { padding-top: var(--space-5); } .mindustry-game { padding: var(--space-3); } .mindustry-release { padding: var(--space-3); } }
+
 /* 动态文件名、路径和哈希不能撑开页面 */
 code, pre, [class*="path"], [class*="filename"], [class*="file-name"], [class*="sha"] {
   max-width: 100%;
@@ -456,3 +493,175 @@ select.input {
     transition: none !important;
   }
 }
+  .dl-error-wrap {
+    min-height: calc(100vh - var(--header-height) - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6) var(--space-4);
+  }
+  .dl-error-card {
+    max-width: 480px;
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    padding: 0;
+    text-align: center;
+    overflow: hidden;
+  }
+  .dl-error-icon-bar {
+    padding: var(--space-6) var(--space-6) 0;
+    display: flex;
+    justify-content: center;
+  }
+  .dl-error-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid;
+  }
+  .dl-error-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  /* Pending — amber */
+  .dl-error-icon.is-pending {
+    border-color: var(--warning);
+    background: var(--warning-bg);
+    color: #b45309;
+  }
+  [data-theme="dark"] .dl-error-icon.is-pending { color: #fbbf24; }
+
+  /* Rejected — red */
+  .dl-error-icon.is-rejected {
+    border-color: var(--error);
+    background: var(--error-bg);
+    color: #dc2626;
+  }
+  [data-theme="dark"] .dl-error-icon.is-rejected { color: #f87171; }
+
+  /* Not found — gray */
+  .dl-error-icon.is-not-found {
+    border-color: var(--border);
+    background: var(--muted);
+    color: var(--text-muted);
+  }
+
+  /* Generic error */
+  .dl-error-icon.is-generic {
+    border-color: var(--info);
+    background: var(--info-bg);
+    color: var(--info);
+  }
+
+  .dl-error-body {
+    padding: var(--space-5) var(--space-6) var(--space-6);
+  }
+  .dl-error-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 var(--space-2);
+    line-height: 1.4;
+  }
+  .dl-error-file {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--muted);
+    border: 1px solid var(--border);
+    padding: var(--space-1) var(--space-3);
+    margin-bottom: var(--space-4);
+    word-break: break-all;
+    max-width: 100%;
+  }
+  .dl-error-msg {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-5);
+  }
+  .dl-error-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: var(--space-1) var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+  .dl-error-status.is-pending {
+    background: var(--warning-bg);
+    color: #b45309;
+    border: 1px solid var(--warning-border);
+  }
+  [data-theme="dark"] .dl-error-status.is-pending { color: #fbbf24; }
+
+  .dl-error-status.is-rejected {
+    background: var(--error-bg);
+    color: #dc2626;
+    border: 1px solid var(--error-border);
+  }
+  [data-theme="dark"] .dl-error-status.is-rejected { color: #f87171; }
+
+  .dl-error-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .dl-error-status.is-pending .dl-error-status-dot {
+    animation: dl-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes dl-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .dl-error-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+  .dl-error-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-5);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+  .dl-error-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--bg-hover);
+  }
+  .dl-error-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .dl-error-btn.is-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .dl-error-btn.is-primary:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: #fff;
+  }

@@ -24,6 +24,7 @@
 .mi-table tr:hover td { background: var(--bg-hover); }
 .mi-table .mi-mono { font-family: var(--font-mono); }
 .mi-table .mi-right { text-align: right; }
+.mi-table .mi-label-cell { width: 160px; }
 
 .mi-filename { font-family: var(--font-mono); color: var(--primary); text-decoration: none; }
 .mi-primary-action { border: 1px solid var(--primary); background: var(--primary); color: #fff; }
@@ -69,6 +70,12 @@
 .mi-section { font-size: 0.875rem; font-weight: 600; color: var(--text); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); margin-top: var(--space-4); }
 
 .mi-cat-list { display: flex; flex-wrap: wrap; gap: var(--space-2); font-size: 0.8125rem; padding: var(--space-2) 0; }
+.mi-category-parent { margin-bottom: 0.75rem; }
+.mi-category-title { margin-bottom: 1rem; }
+.mi-cat-list-spaced { margin-bottom: 1rem; }
+.mi-download-wrap { margin-top: 16px; }
+.mi-error-return { margin-top: var(--space-4); }
+.mi-error-return a { color: var(--primary); }
 .mi-cat-item a { color: var(--primary); }
 .mi-cat-item .mi-count { color: var(--text-muted); font-size: 11px; }
 .mi-cat-sep { color: var(--border); }
@@ -83,6 +90,6 @@
 @media (max-width: 768px) {
   .mi-header-inner { flex-wrap: wrap; gap: var(--space-2); height: auto; min-height: 40px; padding: var(--space-2) 0; }
   .mi-title, .mi-nav-link { overflow-wrap: anywhere; }
-  .mi-table td:first-child { width: auto !important; }
+  .mi-table td:first-child { width: auto; }
   .mi-table th:nth-child(4), .mi-table td:nth-child(4) { display: none; }
 }

@@ -8,7 +8,7 @@
   </div>
 </div>
 <div class="cl-content page-wrap">
-  <div class="cl-breadcrumb" style="margin-bottom: 16px;">
+  <div class="cl-breadcrumb cl-breadcrumb-file">
     <a href="/">全部文件</a>
     <% if (file.category) { %>
       / <a href="<%= buildCategoryHref(file.category) %>"><%= file.category %></a>
@@ -16,22 +16,22 @@
     / <span><%= file.file_name %></span>
   </div>
 
-  <div class="cl-card" style="padding: 24px;">
-    <div class="cl-file-name-cell" style="margin-bottom: 20px; align-items: flex-start;">
+  <div class="cl-card cl-file-card">
+    <div class="cl-file-name-cell cl-file-name-detail">
       <span class="cl-file-icon cl-icon-<%= getFileIconClass(file.file_name) %>"><%= getFileExt(file.file_name) %></span>
       <div>
-        <div class="cl-file-name" style="font-size: 24px;"><%= file.file_name %></div>
+        <div class="cl-file-name cl-file-name-large"><%= file.file_name %></div>
         <% if (file.description) { %><div class="cl-file-desc"><%= file.description %></div><% } %>
       </div>
     </div>
 
-    <div class="cl-muted" style="display: grid; gap: 8px; margin-bottom: 20px;">
+    <div class="cl-muted cl-file-meta-detail">
       <div>路径：<code><%= publicFilePath %></code></div>
       <div>分类：<%= file.category %></div>
       <div>大小：<%= formatFileSize(file.file_size) %></div>
       <div>下载：<%= formatNumber(file.download_count) %></div>
       <% if (file.last_download_at) { %><div>最后下载：<%= formatDate(file.last_download_at) %></div><% } %>
-      <% if (file.sha256) { %><div>SHA256：<code><%= file.sha256 %></code></div><% } %>
+      <% if (file.sha256) { %><div class="sha-row">SHA256：<code><%= file.sha256 %></code> <button class="sha-copy" type="button" data-copy-text="<%= file.sha256 %>">复制</button><span class="sha-copy-status" aria-live="polite"></span></div><% } %>
     </div>
 
     <a href="<%= downloadUrl %>" class="cl-dl-btn cl-primary-action" data-track="download">立即下载</a>

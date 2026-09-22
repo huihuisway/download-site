@@ -24,6 +24,14 @@
 > **SQLite 迁移列为未来工作**，届时可回到本文的相关章节。当前架构说明见
 > [../CLAUDE.md](../CLAUDE.md) 与 [../README.md](../README.md)。
 
+### 当前 Mindustry 版本索引补充
+
+- 启动时补齐 `Anuken/Mindustry` 和 `Anuken/Mindustry-Classic` 两个来源，各同步最新正式版与最新预发布版；MDT Android 来源只同步最新稳定上游版本对应的 APK。Classic 上游仓库目前归档且没有 GitHub Release 资产，所以自动来源暂时不会产生下载项；不伪造官方二进制。普通自定义来源仍支持分页同步历史 Release。
+- Mindustry 文件按 Main/Classic、Stable/Prerelease 和平台目录保存；构建依赖在版本页折叠展示。
+- MDT Android 稳定 APK 由 `.github/workflows/mindustry-android.yml` 从 Anuken 最新稳定 tag 构建并以 MDT 签名发布。下载站对该 Android 来源只同步最新对应 Release，不回填整个历史 APK 列表。
+- `/api/v1/mindustry/manifest.json` 和 `/mindustry` 是公开索引入口。Manifest 下载地址使用站点相对路径，客户端按 manifest 来源域名解析。
+- SHA-256 在 Release 导入和普通文件同步/上传时计算并保存；下载事件可带客户端名、版本和平台，仅作分析，最多保留 90 天。
+
 ---
 
 ## 一、项目概述
@@ -505,44 +513,15 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name d.file.mdtbbs.cn;
-
-    # 下载域名只允许下载路由，交由 CDN 缓存成功响应
-    location ^~ /d/ {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Range $http_range;
-        proxy_set_header If-Range $http_if_range;
-        proxy_set_header If-None-Match $http_if_none_match;
-        proxy_set_header If-Modified-Since $http_if_modified_since;
-        proxy_buffering off;
-        gzip off;
-    }
-
-    location / {
-        return 404;
-    }
-}
-
-server {
-    listen 443 ssl http2;
     server_name file.mdtbbs.cn;
 
     ssl_certificate     /etc/letsencrypt/live/file.mdtbbs.cn/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/file.mdtbbs.cn/privkey.pem;
 
-    # 下载文件使用独立域名 d.file.mdtbbs.cn；路径发布后不要覆盖，才能安全使用 CDN 长缓存
-    # 生产环境设置 DOWNLOAD_BASE_URL=https://d.file.mdtbbs.cn
-    # /d/* 必须透传 Range/ETag/Last-Modified，且不经过 gzip
-
-
+    # /d/* 由本站直接响应；Release 版本文件自身带一年 immutable Cache-Control
     gzip_types text/plain text/css application/json application/javascript;
 
-    # Gzip 压缩（下载域名 server 已显式关闭）
+    # Gzip 压缩
     gzip on;
     location /css/ {
         alias /path/to/download-site/public/css/;
@@ -606,7 +585,7 @@ SESSION_SECRET=your_random_secret_key_here    # 建议 openssl rand -hex 32 生�
 SESSION_MAX_AGE=86400000                      # 24 小时 (ms)
 
 # ===== 上传白名单 =====
-ALLOWED_EXTENSIONS=.zip,.iso,.pdf,.txt,.png,.jpg,.jpeg,.gz,.tar,.7z,.doc,.docx,.xlsx,.md
+ALLOWED_EXTENSIONS=.zip,.iso,.pdf,.txt,.png,.jpg,.jpeg,.gz,.tar,.7z,.doc,.docx,.xlsx,.md,.apk
 
 # ===== 日志 =====
 LOG_LEVEL=info

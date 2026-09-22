@@ -23,7 +23,7 @@
           <% stableReleases.forEach(function(release, releaseIndex) { %>
             <article class="mindustry-release">
               <div class="mindustry-release-heading">
-                <div><span class="mindustry-badge is-stable">正式版</span> <strong><%= release.tag %></strong></div>
+                <div><span class="mindustry-badge is-stable">正式版</span> <strong><%= release.tag %></strong><% if (release.build_name) { %><span class="mindustry-build-name"><%= release.build_name %></span><% } %></div>
                 <time><%= release.published_at ? formatDate(release.published_at) : '' %></time>
               </div>
               <% const featuredAssets = release.assets.filter(function(asset) { return asset.platform !== 'advanced'; }); %>
@@ -61,7 +61,7 @@
           <div class="mindustry-release-list">
             <% prereleaseReleases.forEach(function(release) { %>
               <article class="mindustry-release is-prerelease">
-                <div class="mindustry-release-heading"><div><span class="mindustry-badge is-prerelease">预发布</span> <strong><%= release.tag %></strong></div><time><%= release.published_at ? formatDate(release.published_at) : '' %></time></div>
+                <div class="mindustry-release-heading"><div><span class="mindustry-badge is-prerelease">预发布</span> <strong><%= release.tag %></strong><% if (release.build_name) { %><span class="mindustry-build-name"><%= release.build_name %></span><% } %></div><time><%= release.published_at ? formatDate(release.published_at) : '' %></time></div>
                 <ul class="mindustry-prerelease-files"><% release.assets.forEach(function(asset) { %><li><a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= platformNames[asset.platform] || asset.platform %> · <%= asset.file_name %></a><span><%= formatFileSize(asset.size) %></span></li><% }); %></ul>
               </article>
             <% }); %>

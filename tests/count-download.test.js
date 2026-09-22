@@ -115,7 +115,7 @@ describe('POST /count-download', () => {
     const response = await request(server, '/count-download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId: 'nonexistent-id-999' }),
+      body: JSON.stringify({ fileId: '999999' }),
     });
 
     assert.strictEqual(response.statusCode, 200);
@@ -123,10 +123,11 @@ describe('POST /count-download', () => {
     assert.strictEqual(json.success, true);
   });
 
-  it('文件详情页应包含 data-track="download" 属性和计数脚本', async () => {
+  it('文件详情页应包含下载追踪标记并加载外置计数脚本', async () => {
     const response = await request(server, '/test.txt');
     assert.strictEqual(response.statusCode, 200);
     assert.match(response.body, /data-track="download"/);
-    assert.match(response.body, /\/count-download/);
+    assert.match(response.body, /data-download-tracking/);
+    assert.match(response.body, /\/js\/file-actions\.js/);
   });
 });

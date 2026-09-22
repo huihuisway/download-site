@@ -25,7 +25,7 @@
 
     <main class="ed-main">
       <% if (parentPath) { %>
-        <a href="<%= buildCategoryHref(parentPath) %>" class="ed-nav-item" style="margin-bottom: 1rem; display: inline-block;">← 返回上一级</a>
+        <a href="<%= buildCategoryHref(parentPath) %>" class="ed-nav-item ed-parent-link">← 返回上一级</a>
       <% } %>
 
       <h1 class="ed-page-title"><%= currentPath === 'root' ? '根目录' : currentPath %></h1>
@@ -49,7 +49,7 @@
       <% } else { %>
         <% files.forEach(function(file) { %>
           <div class="ed-file-entry">
-            <a href="<%= buildFilePageUrl(file.file_path) %>" class="ed-file-name" style="color: var(--primary);"><%= file.file_name %></a>
+            <a href="<%= buildFilePageUrl(file.file_path) %>" class="ed-file-name ed-file-link"><%= file.file_name %></a>
             <% if (file.description) { %>
               <div class="ed-file-desc"><%= file.description %></div>
             <% } %>

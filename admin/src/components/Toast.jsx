@@ -29,8 +29,8 @@ export function ToastProvider({ children }) {
         {toasts.map((toast) => {
           const Icon = icons[toast.type] || Info;
           return (
-            <div key={toast.id} role={toast.type === 'error' ? 'alert' : 'status'} className="flex items-start gap-3 border px-4 py-3 text-sm shadow-lg" style={{ background: 'var(--card)', borderColor: toast.type === 'error' ? 'var(--error)' : 'var(--border)', color: 'var(--text)' }}>
-              <Icon className="mt-0.5 h-4 w-4 shrink-0" style={{ color: toast.type === 'success' ? 'var(--success)' : toast.type === 'error' ? 'var(--error)' : 'var(--primary)' }} />
+            <div key={toast.id} role={toast.type === 'error' ? 'alert' : 'status'} className="admin-toast flex items-start gap-3 border px-4 py-3 text-sm shadow-lg" data-type={toast.type}>
+              <Icon className="admin-toast-icon mt-0.5 h-4 w-4 shrink-0" data-type={toast.type} />
               <span className="min-w-0 flex-1 break-words">{toast.message}</span>
               <button type="button" className="btn-ghost !p-0.5" aria-label="关闭提示" onClick={() => dismiss(toast.id)}>
                 <X className="h-4 w-4" />

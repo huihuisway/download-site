@@ -13,7 +13,7 @@
   <% } else { %>
     <div class="cl-card">
       <table class="cl-table">
-        <thead><tr><th>文件夹</th><th style="width:100px">操作</th></tr></thead>
+        <thead><tr><th>文件夹</th><th class="cl-action-col">操作</th></tr></thead>
         <tbody>
           <% directories.forEach(function(dir) { %>
             <tr>
@@ -21,8 +21,8 @@
                 <div class="cl-file-name-cell">
                   <span class="cl-file-icon cl-icon-folder" aria-hidden="true"></span>
                   <div>
-                    <div class="cl-file-name"><a href="<%= buildCategoryHref(dir.path) %>" style="color: inherit; text-decoration: none;"><%= dir.name %></a></div>
-                    <% if (dir.isEmpty) { %><div class="cl-file-desc" style="color: var(--text-muted);">(空)</div><% } %>
+                    <div class="cl-file-name"><a href="<%= buildCategoryHref(dir.path) %>" class="cl-row-link"><%= dir.name %></a></div>
+                    <% if (dir.isEmpty) { %><div class="cl-file-desc cl-empty-label">(空)</div><% } %>
                   </div>
                 </div>
               </td>

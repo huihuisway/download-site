@@ -126,7 +126,22 @@ const getFileByPath = (filePath) => {
   return db.prepare('SELECT * FROM download_logs WHERE file_path = ?').get(filePath);
 };
 
-const recordDownload = (fileId) => {
+const cleanTelemetryText = (value, fallback, maxLength = 80) => {
+  if (typeof value !== 'string') return fallback;
+  const normalized = [...value]
+    .filter((character) => {
+      const code = character.codePointAt(0);
+      return code > 0x1f && code !== 0x7f;
+    })
+    .join('')
+    .trim()
+    .slice(0, maxLength);
+  return normalized || fallback;
+};
+
+const recordDownloadWithMetadata = (fileId, metadata = {}) => {
+  const file = getFileById(Number(fileId));
+  if (!file) return false;
   // 原子递增，避免竞态条件
   db.prepare(`
     UPDATE download_logs
@@ -136,9 +151,48 @@ const recordDownload = (fileId) => {
     WHERE id = @id
   `).run({
     ts: new Date().toISOString(),
-    id: fileId,
+    id: Number(fileId),
   });
+  if (!Array.isArray(db.data.download_events)) db.data.download_events = [];
+  const platforms = new Set(['android', 'windows', 'linux', 'macos', 'desktop', 'server', 'advanced', 'web', 'other']);
+  const platform = cleanTelemetryText(metadata.platform, 'other', 24).toLowerCase();
+  const event = {
+    file_id: file.id,
+    file_name: file.file_name,
+    client_name: cleanTelemetryText(metadata.client_name, 'direct-link'),
+    client_version: cleanTelemetryText(metadata.client_version, 'unknown', 40),
+    platform: platforms.has(platform) ? platform : 'other',
+    created_at: new Date().toISOString(),
+  };
+  const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  db.data.download_events = db.data.download_events
+    .filter((item) => Date.parse(item.created_at) >= cutoff)
+    .slice(-24999);
+  db.data.download_events.push(event);
+  db._scheduleSave();
+  return true;
 };
+
+const getDownloadClientStats = () => {
+  const events = Array.isArray(db.data.download_events) ? db.data.download_events : [];
+  const since = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const recent = events.filter((event) => Date.parse(event.created_at) >= since);
+  const byClient = new Map();
+  const byPlatform = new Map();
+  for (const event of recent) {
+    const clientKey = `${event.client_name}@${event.client_version}`;
+    byClient.set(clientKey, (byClient.get(clientKey) || 0) + 1);
+    byPlatform.set(event.platform, (byPlatform.get(event.platform) || 0) + 1);
+  }
+  return {
+    period_days: 30,
+    total: recent.length,
+    clients: [...byClient].map(([client, count]) => ({ client, count })).sort((a, b) => b.count - a.count).slice(0, 20),
+    platforms: [...byPlatform].map(([platform, count]) => ({ platform, count })).sort((a, b) => b.count - a.count),
+  };
+};
+
+const recordDownload = (fileId, metadata) => recordDownloadWithMetadata(fileId, metadata);
 
 module.exports = {
   getDashboardStats,
@@ -149,4 +203,5 @@ module.exports = {
   getFileById,
   getFileByPath,
   recordDownload,
+  getDownloadClientStats,
 };
