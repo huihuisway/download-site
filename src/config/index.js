@@ -14,6 +14,8 @@ const config = {
   downloadDir: path.resolve(process.env.DOWNLOAD_DIR || './downloads'),
   dbPath: path.resolve(process.env.DB_PATH || './data/stats.db'),
   maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || MAX_FILE_SIZE,
+  // 下载链接和公开清单使用独立下载域名，避免把来源站地址写入 API 响应。
+  downloadBaseUrl: process.env.DOWNLOAD_BASE_URL || '',
 
   // GitHub Releases 自动同步
   releaseSync: {

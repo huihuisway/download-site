@@ -14,6 +14,7 @@ const ORIGINAL_ENV = {
   OAUTH_CALLBACK_URL: process.env.OAUTH_CALLBACK_URL,
   ADMIN_ALLOWED_EMAILS: process.env.ADMIN_ALLOWED_EMAILS,
   TRUST_PROXY_HOPS: process.env.TRUST_PROXY_HOPS,
+  DOWNLOAD_BASE_URL: process.env.DOWNLOAD_BASE_URL,
 };
 
 const restoreEnv = () => {
@@ -43,6 +44,7 @@ describe('config 校验', () => {
     process.env.OAUTH_USERINFO_URL = 'https://auth.mdtbbs.cn/api/userinfo';
     process.env.OAUTH_CALLBACK_URL = 'https://file.mdtbbs.cn/auth/callback';
     process.env.ADMIN_ALLOWED_EMAILS = 'admin@mdtbbs.cn';
+    process.env.DOWNLOAD_BASE_URL = 'https://d.file.mdtbbs.cn';
   });
 
   afterEach(() => {

@@ -56,6 +56,8 @@ describe('auth middleware', () => {
   describe('requireAuth', () => {
     it('已登录且未配置白名单的用户应通过', () => {
       process.env.NODE_ENV = 'production';
+      // 保持变量存在但为空，避免 dotenv 在模块加载时从真实 .env 回填白名单。
+      process.env.ADMIN_ALLOWED_EMAILS = '';
       const { requireAuth } = loadAuthModule();
       const req = {
         session: { user: { id: 1, username: 'test', email: 'user@example.com', authProvider: 'oauth' } },
