@@ -9,6 +9,7 @@ const ORIGINAL_ENV = {
   OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID,
   OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET,
   ADMIN_ALLOWED_EMAILS: process.env.ADMIN_ALLOWED_EMAILS,
+  DOWNLOAD_BASE_URL: process.env.DOWNLOAD_BASE_URL,
 };
 
 const restoreEnv = () => {
@@ -34,6 +35,7 @@ describe('config 校验', () => {
     process.env.OAUTH_CLIENT_ID = 'your_client_id';
     process.env.OAUTH_CLIENT_SECRET = 'your_client_secret';
     process.env.ADMIN_ALLOWED_EMAILS = 'admin@example.com';
+    process.env.DOWNLOAD_BASE_URL = 'https://d.file.mdtbbs.cn';
     // 此组用本地管理员模式覆盖 OAuth 缺失场景，避免生产配置的登录方式门禁干扰各断言。
     process.env.ADMIN_USERNAME = 'test-admin';
     process.env.ADMIN_PASSWORD = 'test-admin-password-with-at-least-32-chars';
@@ -49,6 +51,11 @@ describe('config 校验', () => {
     const { fatal } = validateConfig();
     assert.ok(fatal.length > 0);
     assert.ok(fatal.some((msg) => msg.includes('SESSION_SECRET')));
+  });
+
+  it('应读取下载域名配置', () => {
+    const { config } = loadConfigModule();
+    assert.strictEqual(config.downloadBaseUrl, 'https://d.file.mdtbbs.cn');
   });
 
   it('SESSION_SECRET 过短时应属于 fatal', () => {
