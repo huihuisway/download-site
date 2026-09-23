@@ -3,6 +3,7 @@ const path = require('path');
 const { db } = require('../db');
 const { config } = require('../config');
 const { buildFileDownloadUrl } = require('../utils/public-paths');
+const { classifyAsset } = require('./mindustry-assets.service');
 
 const GAME_DETAILS = {
   mindustry: { name: 'Mindustry', repositories: ['Anuken/Mindustry'] },
@@ -72,7 +73,49 @@ const buildManifest = () => {
       }))
       .sort((a, b) => String(b.published_at || '').localeCompare(String(a.published_at || '')) || b.tag.localeCompare(a.tag)),
   }));
-  return { schema_version: 1, generated_at: new Date().toISOString(), games: result };
+
+  // 普通玩家用的 Android APK 和桌面 ZIP 存在历史资源目录中，不一定属于 GitHub Release 同步记录。
+  const packages = new Map();
+  for (const file of records) {
+    const match = String(file.file_path || '').match(/^Mindustry\/(v\d+)\/build-(\d+(?:\.\d+)*?)-stable\/([^/]+)$/i);
+    if (!match || ['pending', 'rejected'].includes(file.approval_status)) continue;
+    const root = path.resolve(config.downloadDir);
+    const fullPath = path.resolve(root, file.file_path);
+    if ((fullPath !== root && !fullPath.startsWith(`${root}${path.sep}`)) || !fs.existsSync(fullPath)) continue;
+    let stat;
+    try { stat = fs.statSync(fullPath); } catch { continue; }
+    if (!stat.isFile()) continue;
+    const platform = classifyAsset(file.file_name).platform;
+    if (!['android', 'windows', 'linux', 'macos'].includes(platform)) continue;
+    const key = `${match[1].toLowerCase()}:${match[2]}`;
+    if (!packages.has(key)) packages.set(key, { game_version: match[1].toLowerCase(), build: match[2], assets: [] });
+    packages.get(key).assets.push({
+      file_id: file.id,
+      file_name: file.file_name,
+      size: Number(file.file_size) || stat.size,
+      platform,
+      download_url: buildFileDownloadUrl(file.file_path),
+    });
+  }
+
+  const compareBuilds = (a, b) => {
+    const majorDiff = Number(b.game_version.slice(1)) - Number(a.game_version.slice(1));
+    if (majorDiff) return majorDiff;
+    const left = a.build.split('.').map(Number);
+    const right = b.build.split('.').map(Number);
+    for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+      const diff = (right[i] || 0) - (left[i] || 0);
+      if (diff) return diff;
+    }
+    return 0;
+  };
+  const featuredDownloads = [...packages.values()].sort(compareBuilds)[0] || null;
+  if (featuredDownloads) {
+    featuredDownloads.assets.sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform) || a.file_name.localeCompare(b.file_name));
+    featuredDownloads.build_name = `${featuredDownloads.game_version} Build ${featuredDownloads.build}`;
+  }
+
+  return { schema_version: 1, generated_at: new Date().toISOString(), games: result, featured_downloads: featuredDownloads };
 };
 
 module.exports = { buildManifest };

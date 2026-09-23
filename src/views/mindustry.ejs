@@ -1,74 +1,100 @@
 <%- include('partials/head', { title, currentTheme, siteInfo }) %>
 <main class="page-wrap mindustry-page">
   <header class="mindustry-heading">
-    <p class="mindustry-eyebrow">PUBLIC RELEASE INDEX</p>
-    <h1>Mindustry 版本下载</h1>
-    <p>按平台整理的正式版与预发布版本。启动器可直接读取公开 JSON 清单。</p>
-    <a class="mindustry-manifest-link" href="/api/v1/mindustry/manifest.json">查看 manifest.json</a>
+    <p class="mindustry-eyebrow">像素工厂 · 选择你的设备</p>
+    <h1>Mindustry 下载</h1>
+    <p>手机安装 Android 版；电脑请选择 Windows、macOS 或 Linux 免安装版。下载后解压即可启动，不需要自己安装 Java。</p>
   </header>
 
-  <% const platformNames = { android: 'Android', windows: 'Windows', linux: 'Linux', macos: 'macOS', desktop: '桌面 / JAR', server: '服务器', advanced: '高级文件' }; %>
-  <% if (!manifest.games.length) { %>
-    <section class="mindustry-empty">版本清单暂时为空。配置并运行 GitHub Release 同步后会自动出现在这里。</section>
+  <% const itchDownloads = 'https://anuke.itch.io/mindustry'; %>
+  <% const platformNames = { android: 'Android 安装包', windows: 'Windows', linux: 'Linux', macos: 'macOS', desktop: 'Java 桌面版', server: '服务器文件', advanced: '构建依赖' }; %>
+  <% const mainGame = manifest.games.find(function(game) { return game.id === 'mindustry'; }); %>
+  <% const stableReleases = mainGame ? mainGame.releases.filter(function(release) { return release.channel === 'stable'; }) : []; %>
+  <% const latestRelease = stableReleases[0] || null; %>
+  <% const featuredDownloads = manifest.featured_downloads; %>
+  <% const featuredAssets = featuredDownloads ? featuredDownloads.assets : []; %>
+  <% const androidAsset = featuredAssets.find(function(asset) { return asset.platform === 'android'; }); %>
+  <% const windowsAsset = featuredAssets.find(function(asset) { return asset.platform === 'windows'; }); %>
+  <% const macosAsset = featuredAssets.find(function(asset) { return asset.platform === 'macos'; }); %>
+  <% const linuxAsset = featuredAssets.find(function(asset) { return asset.platform === 'linux'; }); %>
+
+  <p class="mindustry-device-status" id="mindustry-device-status" role="status" aria-live="polite">可以按设备选择对应版本下载。</p>
+  <section class="mindustry-platforms" aria-label="选择下载平台">
+    <article class="mindustry-platform-card" data-platform-card="android">
+      <div class="mindustry-platform-icon" aria-hidden="true">手机</div>
+      <div class="mindustry-platform-copy">
+        <h2>安卓手机 / 平板</h2>
+        <p>下载 APK 安装包。若系统提示风险，请确认来源后继续安装。</p>
+        <% if (androidAsset) { %>
+          <a class="mindustry-platform-download" href="<%= androidAsset.download_url %>" data-track="download" data-file-id="<%= androidAsset.file_id %>" data-platform="android" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">下载 Android APK <span><%= androidAsset.file_name %> · <%= formatFileSize(androidAsset.size) %></span></a>
+        <% } else { %>
+          <a class="mindustry-platform-download" data-platform="android" href="<%= itchDownloads %>" target="_blank" rel="noopener noreferrer">获取 Android 安装包 <span>打开官方页面，在下载列表选择 Android</span></a>
+          <small class="mindustry-platform-note">本站暂未找到 APK，暂时前往官方页面获取。</small>
+        <% } %>
+      </div>
+    </article>
+
+    <article class="mindustry-platform-card" data-platform-card="desktop">
+      <div class="mindustry-platform-icon" aria-hidden="true">电脑</div>
+      <div class="mindustry-platform-copy">
+        <h2>Windows / macOS / Linux</h2>
+        <p>选择电脑系统下载 ZIP，解压后即可运行，不需要单独下载 JAR 或安装 Java。</p>
+        <div class="mindustry-desktop-downloads">
+          <% if (windowsAsset) { %><a href="<%= windowsAsset.download_url %>" data-track="download" data-file-id="<%= windowsAsset.file_id %>" data-platform="windows" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">Windows <small><%= windowsAsset.file_name %> · <%= formatFileSize(windowsAsset.size) %></small></a><% } %>
+          <% if (macosAsset) { %><a href="<%= macosAsset.download_url %>" data-track="download" data-file-id="<%= macosAsset.file_id %>" data-platform="macos" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">macOS <small><%= macosAsset.file_name %> · <%= formatFileSize(macosAsset.size) %></small></a><% } %>
+          <% if (linuxAsset) { %><a href="<%= linuxAsset.download_url %>" data-track="download" data-file-id="<%= linuxAsset.file_id %>" data-platform="linux" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">Linux <small><%= linuxAsset.file_name %> · <%= formatFileSize(linuxAsset.size) %></small></a><% } %>
+          <% if (!windowsAsset && !macosAsset && !linuxAsset) { %><a data-platform="windows" href="<%= itchDownloads %>" target="_blank" rel="noopener noreferrer">前往官方页面下载桌面版</a><% } %>
+        </div>
+        <small class="mindustry-platform-note">本站资源版本：<%= featuredDownloads ? featuredDownloads.build_name : (latestRelease ? latestRelease.build_name || latestRelease.tag : '暂无') %></small>
+      </div>
+    </article>
+  </section>
+
+  <% if (featuredDownloads || latestRelease) { %>
+    <p class="mindustry-current-version">最新可运行版本：<strong><%= featuredDownloads ? featuredDownloads.build_name : latestRelease.build_name || latestRelease.tag %></strong></p>
   <% } %>
 
-  <% manifest.games.forEach(function(game) { %>
+  <% if (mainGame && (stableReleases.length || mainGame.releases.some(function(release) { return release.channel === 'prerelease'; }))) { %>
+    <details class="mindustry-more-downloads">
+      <summary>高级文件与历史版本</summary>
+      <p class="mindustry-more-intro">普通玩家通常不需要这些文件。Java 桌面版需要电脑已安装 Java；服务器包用于搭建联机服务器，构建依赖不是游戏本体。</p>
+      <% mainGame.releases.forEach(function(release, releaseIndex) { %>
+        <article class="mindustry-archive-release">
+          <h3><%= release.channel === 'prerelease' ? '预发布' : '正式版' %> · <%= release.build_name || release.tag %><% if (releaseIndex === 0) { %> <span>最新</span><% } %></h3>
+          <ul>
+            <% release.assets.filter(function(asset) { return asset.platform !== 'android'; }).forEach(function(asset) { %>
+              <li>
+                <a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= platformNames[asset.platform] || asset.platform %> · <%= asset.file_name %></a>
+                <span><%= formatFileSize(asset.size) %></span>
+              </li>
+            <% }); %>
+          </ul>
+        </article>
+      <% }); %>
+    </details>
+  <% } %>
+
+  <% manifest.games.filter(function(game) { return game.id !== 'mindustry'; }).forEach(function(game) { %>
     <section class="mindustry-game" aria-labelledby="game-<%= game.id %>">
       <h2 id="game-<%= game.id %>"><%= game.name %></h2>
-      <div class="mindustry-game-repos"><%= game.repositories.join(' · ') %></div>
-
-      <% const stableReleases = game.releases.filter(function(release) { return release.channel === 'stable'; }); %>
-      <% if (stableReleases.length) { %>
-        <div class="mindustry-release-list">
-          <% stableReleases.forEach(function(release, releaseIndex) { %>
-            <article class="mindustry-release">
-              <div class="mindustry-release-heading">
-                <div><span class="mindustry-badge is-stable">正式版</span> <strong><%= release.tag %></strong><% if (release.build_name) { %><span class="mindustry-build-name"><%= release.build_name %></span><% } %></div>
-                <time><%= release.published_at ? formatDate(release.published_at) : '' %></time>
-              </div>
-              <% const featuredAssets = release.assets.filter(function(asset) { return asset.platform !== 'advanced'; }); %>
-              <% if (featuredAssets.length) { %>
-                <div class="mindustry-download-grid">
-                  <% featuredAssets.forEach(function(asset) { %>
-                    <div class="mindustry-asset">
-                      <a class="mindustry-download" href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">
-                        <span><%= platformNames[asset.platform] || asset.platform %></span>
-                        <small><%= asset.file_name %> · <%= formatFileSize(asset.size) %></small>
-                      </a>
-                      <% if (asset.sha256) { %>
-                        <div class="mindustry-asset-hash"><code>SHA-256 <%= asset.sha256 %></code><button class="sha-copy" type="button" data-copy-text="<%= asset.sha256 %>">复制</button><span class="sha-copy-status" aria-live="polite"></span></div>
-                      <% } %>
-                    </div>
-                  <% }); %>
-                </div>
-              <% } else { %><p class="mindustry-no-assets">暂无可展示的正式包。</p><% } %>
-              <% const advancedAssets = release.assets.filter(function(asset) { return asset.platform === 'advanced'; }); %>
-              <% if (advancedAssets.length) { %>
-                <details class="mindustry-advanced">
-                  <summary>高级文件 / 构建依赖（<%= advancedAssets.length %>）</summary>
-                  <ul><% advancedAssets.forEach(function(asset) { %><li><a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= asset.file_name %></a><span><%= formatFileSize(asset.size) %></span></li><% }); %></ul>
-                </details>
-              <% } %>
-            </article>
-          <% }); %>
-        </div>
-      <% } else { %><p class="mindustry-no-assets">暂无已同步的正式版。</p><% } %>
-
-      <% const prereleaseReleases = game.releases.filter(function(release) { return release.channel === 'prerelease'; }); %>
-      <% if (prereleaseReleases.length) { %>
-        <details class="mindustry-prereleases">
-          <summary>预发布版本（<%= prereleaseReleases.length %>）</summary>
-          <div class="mindustry-release-list">
-            <% prereleaseReleases.forEach(function(release) { %>
-              <article class="mindustry-release is-prerelease">
-                <div class="mindustry-release-heading"><div><span class="mindustry-badge is-prerelease">预发布</span> <strong><%= release.tag %></strong><% if (release.build_name) { %><span class="mindustry-build-name"><%= release.build_name %></span><% } %></div><time><%= release.published_at ? formatDate(release.published_at) : '' %></time></div>
-                <ul class="mindustry-prerelease-files"><% release.assets.forEach(function(asset) { %><li><a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= platformNames[asset.platform] || asset.platform %> · <%= asset.file_name %></a><span><%= formatFileSize(asset.size) %></span></li><% }); %></ul>
-              </article>
-            <% }); %>
-          </div>
-        </details>
-      <% } %>
+      <div class="mindustry-release-list">
+        <% game.releases.forEach(function(release) { %>
+          <article class="mindustry-release">
+            <h3><%= release.channel === 'prerelease' ? '预发布' : '正式版' %> · <%= release.build_name || release.tag %></h3>
+            <ul class="mindustry-prerelease-files">
+              <% release.assets.forEach(function(asset) { %>
+                <li><a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= platformNames[asset.platform] || asset.platform %> · <%= asset.file_name %></a><span><%= formatFileSize(asset.size) %></span></li>
+              <% }); %>
+            </ul>
+          </article>
+        <% }); %>
+      </div>
     </section>
   <% }); %>
+
+  <footer class="mindustry-tech-links">
+    <a href="/api/v1/mindustry/manifest.json">开发者：查看 JSON 版本清单</a>
+  </footer>
 </main>
+<script src="/js/mindustry-download.js" defer></script>
 <%- include('partials/footer') %>
