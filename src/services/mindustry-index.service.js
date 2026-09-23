@@ -11,6 +11,24 @@ const GAME_DETAILS = {
 };
 const PLATFORM_ORDER = ['android', 'windows', 'linux', 'macos', 'desktop', 'server', 'advanced'];
 
+const compareVersionTags = (left, right) => {
+  const leftParts = String(left || '').match(/\d+|[a-z]+/gi) || [];
+  const rightParts = String(right || '').match(/\d+|[a-z]+/gi) || [];
+  for (let index = 0; index < Math.max(leftParts.length, rightParts.length); index += 1) {
+    const a = leftParts[index];
+    const b = rightParts[index];
+    if (a === undefined) return -1;
+    if (b === undefined) return 1;
+    const aNumber = /^\d+$/.test(a);
+    const bNumber = /^\d+$/.test(b);
+    if (aNumber && bNumber && Number(a) !== Number(b)) return Number(b) - Number(a);
+    if (aNumber !== bNumber) return aNumber ? -1 : 1;
+    const difference = a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    if (difference) return -difference;
+  }
+  return 0;
+};
+
 const buildManifest = () => {
   const games = new Map();
   const records = Array.isArray(db.data.download_logs) ? db.data.download_logs : [];
@@ -71,7 +89,7 @@ const buildManifest = () => {
         source_repositories: [...new Set(release.source_repositories)],
         assets: release.assets.sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform) || a.file_name.localeCompare(b.file_name)),
       }))
-      .sort((a, b) => String(b.published_at || '').localeCompare(String(a.published_at || '')) || b.tag.localeCompare(a.tag)),
+      .sort((a, b) => compareVersionTags(a.tag, b.tag) || String(b.published_at || '').localeCompare(String(a.published_at || ''))),
   }));
 
   // 普通玩家用的 Android APK 和桌面 ZIP 存在历史资源目录中，不一定属于 GitHub Release 同步记录。
@@ -118,4 +136,4 @@ const buildManifest = () => {
   return { schema_version: 1, generated_at: new Date().toISOString(), games: result, featured_downloads: featuredDownloads };
 };
 
-module.exports = { buildManifest };
+module.exports = { buildManifest, compareVersionTags };

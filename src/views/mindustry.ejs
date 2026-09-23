@@ -1,100 +1,144 @@
-<%- include('partials/head', { title, currentTheme, siteInfo }) %>
+<%- include('partials/head', { title, currentTheme, siteInfo, description, canonicalUrl }) %>
+<% const games = manifest && Array.isArray(manifest.games) ? manifest.games : []; %>
+<% const mainGame = games.find(function(game) { return game.id === 'mindustry'; }); %>
+<% const stableReleases = mainGame ? mainGame.releases.filter(function(release) { return release.channel === 'stable'; }) : []; %>
+<% const latestRelease = stableReleases[0] || (mainGame && mainGame.releases[0]) || null; %>
+<% const featuredDownloads = manifest && manifest.featured_downloads; %>
+<% const featuredMatchesLatest = Boolean(latestRelease && featuredDownloads && latestRelease.channel === 'stable' && latestRelease.tag.replace(/^v/i, '') === featuredDownloads.build); %>
+<% const latestAssets = latestRelease ? mergeFeaturedAssets(latestRelease, featuredDownloads) : (featuredDownloads ? featuredDownloads.assets.map(presentAsset) : []); %>
+<% const playerAssets = latestAssets.filter(isPlayerDownload); %>
+<% const defaultAsset = playerAssets.find(function(asset) { return asset.platform === 'windows'; }) || playerAssets.find(function(asset) { return asset.platform === 'desktop'; }) || playerAssets[0] || null; %>
+<% const versionName = featuredMatchesLatest ? featuredDownloads.build_name : (latestRelease ? latestRelease.build_name || latestRelease.tag : (featuredDownloads ? featuredDownloads.build_name : null)); %>
+<% const platformSummary = function(assets) { return [...new Set(assets.map(function(asset) { return presentAsset(asset).displayName; }))].join('、'); }; %>
 <main class="page-wrap mindustry-page">
+  <nav class="mindustry-breadcrumb" aria-label="面包屑导航"><a href="/">MDT File</a><span aria-hidden="true">/</span><span aria-current="page">Mindustry</span></nav>
+
   <header class="mindustry-heading">
-    <p class="mindustry-eyebrow">像素工厂 · 选择你的设备</p>
-    <h1>Mindustry 下载</h1>
-    <p>手机安装 Android 版；电脑请选择 Windows、macOS 或 Linux 免安装版。下载后解压即可启动，不需要自己安装 Java。</p>
+    <p class="mindustry-eyebrow">MDT File · 游戏版本镜像</p>
+    <h1>Mindustry</h1>
+    <p>像素工厂游戏版本下载中心</p>
   </header>
 
-  <% const itchDownloads = 'https://anuke.itch.io/mindustry'; %>
-  <% const platformNames = { android: 'Android 安装包', windows: 'Windows', linux: 'Linux', macos: 'macOS', desktop: 'Java 桌面版', server: '服务器文件', advanced: '构建依赖' }; %>
-  <% const mainGame = manifest.games.find(function(game) { return game.id === 'mindustry'; }); %>
-  <% const stableReleases = mainGame ? mainGame.releases.filter(function(release) { return release.channel === 'stable'; }) : []; %>
-  <% const latestRelease = stableReleases[0] || null; %>
-  <% const featuredDownloads = manifest.featured_downloads; %>
-  <% const featuredAssets = featuredDownloads ? featuredDownloads.assets : []; %>
-  <% const androidAsset = featuredAssets.find(function(asset) { return asset.platform === 'android'; }); %>
-  <% const windowsAsset = featuredAssets.find(function(asset) { return asset.platform === 'windows'; }); %>
-  <% const macosAsset = featuredAssets.find(function(asset) { return asset.platform === 'macos'; }); %>
-  <% const linuxAsset = featuredAssets.find(function(asset) { return asset.platform === 'linux'; }); %>
-
-  <p class="mindustry-device-status" id="mindustry-device-status" role="status" aria-live="polite">可以按设备选择对应版本下载。</p>
-  <section class="mindustry-platforms" aria-label="选择下载平台">
-    <article class="mindustry-platform-card" data-platform-card="android">
-      <div class="mindustry-platform-icon" aria-hidden="true">手机</div>
-      <div class="mindustry-platform-copy">
-        <h2>安卓手机 / 平板</h2>
-        <p>下载 APK 安装包。若系统提示风险，请确认来源后继续安装。</p>
-        <% if (androidAsset) { %>
-          <a class="mindustry-platform-download" href="<%= androidAsset.download_url %>" data-track="download" data-file-id="<%= androidAsset.file_id %>" data-platform="android" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">下载 Android APK <span><%= androidAsset.file_name %> · <%= formatFileSize(androidAsset.size) %></span></a>
-        <% } else { %>
-          <a class="mindustry-platform-download" data-platform="android" href="<%= itchDownloads %>" target="_blank" rel="noopener noreferrer">获取 Android 安装包 <span>打开官方页面，在下载列表选择 Android</span></a>
-          <small class="mindustry-platform-note">本站暂未找到 APK，暂时前往官方页面获取。</small>
-        <% } %>
-      </div>
-    </article>
-
-    <article class="mindustry-platform-card" data-platform-card="desktop">
-      <div class="mindustry-platform-icon" aria-hidden="true">电脑</div>
-      <div class="mindustry-platform-copy">
-        <h2>Windows / macOS / Linux</h2>
-        <p>选择电脑系统下载 ZIP，解压后即可运行，不需要单独下载 JAR 或安装 Java。</p>
-        <div class="mindustry-desktop-downloads">
-          <% if (windowsAsset) { %><a href="<%= windowsAsset.download_url %>" data-track="download" data-file-id="<%= windowsAsset.file_id %>" data-platform="windows" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">Windows <small><%= windowsAsset.file_name %> · <%= formatFileSize(windowsAsset.size) %></small></a><% } %>
-          <% if (macosAsset) { %><a href="<%= macosAsset.download_url %>" data-track="download" data-file-id="<%= macosAsset.file_id %>" data-platform="macos" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">macOS <small><%= macosAsset.file_name %> · <%= formatFileSize(macosAsset.size) %></small></a><% } %>
-          <% if (linuxAsset) { %><a href="<%= linuxAsset.download_url %>" data-track="download" data-file-id="<%= linuxAsset.file_id %>" data-platform="linux" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">Linux <small><%= linuxAsset.file_name %> · <%= formatFileSize(linuxAsset.size) %></small></a><% } %>
-          <% if (!windowsAsset && !macosAsset && !linuxAsset) { %><a data-platform="windows" href="<%= itchDownloads %>" target="_blank" rel="noopener noreferrer">前往官方页面下载桌面版</a><% } %>
+  <% if (!manifest) { %>
+    <section class="mindustry-state mindustry-state-error" role="alert">
+      <h2>暂时无法获取版本列表</h2>
+      <p>请稍后重试，也可以先浏览 Mindustry 文件目录。</p>
+      <div class="mindustry-state-actions"><a class="mindustry-secondary-link" href="/mindustry">重新加载</a><a class="mindustry-secondary-link" href="/category/Mindustry">浏览文件目录</a></div>
+    </section>
+  <% } else if (!mainGame || (!latestRelease && !featuredDownloads)) { %>
+    <section class="mindustry-state" role="status">
+      <h2>当前暂无可用版本</h2>
+      <p>版本清单暂时没有可下载的 Mindustry 版本。</p>
+      <a class="mindustry-secondary-link" href="/category/Mindustry">浏览文件目录</a>
+    </section>
+  <% } else { %>
+    <section class="mindustry-latest" aria-labelledby="mindustry-current-title">
+      <div class="mindustry-release-heading">
+        <div>
+          <p class="mindustry-section-kicker"><%= latestRelease && latestRelease.channel === 'stable' ? '最新稳定版' : '最新版本' %></p>
+          <h2 id="mindustry-current-title"><%= versionName || latestRelease.tag %></h2>
         </div>
-        <small class="mindustry-platform-note">本站资源版本：<%= featuredDownloads ? featuredDownloads.build_name : (latestRelease ? latestRelease.build_name || latestRelease.tag : '暂无') %></small>
+        <div class="mindustry-release-badges">
+          <span class="mindustry-badge"><%= latestRelease && latestRelease.channel === 'prerelease' ? '预发布' : '正式版' %></span>
+          <% if (featuredDownloads && featuredDownloads.game_version) { %><span class="mindustry-badge"><%= featuredDownloads.game_version %></span><% } %>
+          <% if (latestRelease && latestRelease.published_at) { %><time datetime="<%= latestRelease.published_at %>"><%= latestRelease.published_at.slice(0, 10) %></time><% } %>
+        </div>
       </div>
-    </article>
-  </section>
 
-  <% if (featuredDownloads || latestRelease) { %>
-    <p class="mindustry-current-version">最新可运行版本：<strong><%= featuredDownloads ? featuredDownloads.build_name : latestRelease.build_name || latestRelease.tag %></strong></p>
-  <% } %>
+      <% if (playerAssets.length) { %>
+        <div class="mindustry-download-panel">
+          <div class="mindustry-recommend-copy">
+            <p class="mindustry-section-kicker" id="mindustry-device-heading">推荐下载</p>
+            <h3 id="mindustry-recommend-name"><%= defaultAsset.displayName %></h3>
+            <p id="mindustry-recommend-meta"><%= defaultAsset.format %><% if (defaultAsset.fileSize) { %> · <%= formatFileSize(defaultAsset.fileSize) %><% } %><% if (defaultAsset.architecture) { %> · <%= defaultAsset.architecture %><% } %></p>
+            <span class="mindustry-device-status" id="mindustry-device-status" role="status" aria-live="polite">可按你的设备选择版本。</span>
+          </div>
+          <a class="mindustry-primary-download" id="mindustry-primary-download" href="<%= defaultAsset.downloadUrl %>" data-track="download" data-file-id="<%= defaultAsset.file_id || '' %>" data-platform="<%= defaultAsset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">下载 <%= defaultAsset.displayName %><span aria-hidden="true">↓</span></a>
+        </div>
 
-  <% if (mainGame && (stableReleases.length || mainGame.releases.some(function(release) { return release.channel === 'prerelease'; }))) { %>
-    <details class="mindustry-more-downloads">
-      <summary>高级文件与历史版本</summary>
-      <p class="mindustry-more-intro">普通玩家通常不需要这些文件。Java 桌面版需要电脑已安装 Java；服务器包用于搭建联机服务器，构建依赖不是游戏本体。</p>
-      <% mainGame.releases.forEach(function(release, releaseIndex) { %>
-        <article class="mindustry-archive-release">
-          <h3><%= release.channel === 'prerelease' ? '预发布' : '正式版' %> · <%= release.build_name || release.tag %><% if (releaseIndex === 0) { %> <span>最新</span><% } %></h3>
-          <ul>
-            <% release.assets.filter(function(asset) { return asset.platform !== 'android'; }).forEach(function(asset) { %>
-              <li>
-                <a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= platformNames[asset.platform] || asset.platform %> · <%= asset.file_name %></a>
-                <span><%= formatFileSize(asset.size) %></span>
-              </li>
+        <section class="mindustry-platform-section" aria-labelledby="mindustry-platform-heading">
+          <div class="mindustry-platform-section-heading"><h3 id="mindustry-platform-heading">选择其他平台</h3><span>仅显示当前版本实际提供的安装包</span></div>
+          <div class="mindustry-platform-selector" role="group" aria-label="选择推荐下载平台">
+            <% playerAssets.forEach(function(asset, index) { %>
+              <button class="mindustry-platform-option<%= asset.downloadUrl === defaultAsset.downloadUrl ? ' is-selected' : '' %>" type="button" data-asset-index="<%= index %>" aria-pressed="<%= asset.downloadUrl === defaultAsset.downloadUrl ? 'true' : 'false' %>">
+                <span><%= asset.displayName %></span><small><%= asset.format %><% if (asset.fileSize) { %> · <%= formatFileSize(asset.fileSize) %><% } %></small>
+              </button>
             <% }); %>
-          </ul>
-        </article>
-      <% }); %>
-    </details>
+          </div>
+        </section>
+
+        <details class="mindustry-file-details">
+          <summary>文件详情与校验信息</summary>
+          <div class="mindustry-asset-details">
+            <% latestAssets.forEach(function(asset) { %>
+              <section class="mindustry-asset-detail">
+                <h4><%= asset.displayName %> · <%= asset.format %></h4>
+                <dl>
+                  <dt>原始文件名</dt><dd><code><%= asset.originalFilename %></code></dd>
+                  <% if (asset.fileSize) { %><dt>文件大小</dt><dd><%= formatFileSize(asset.fileSize) %></dd><% } %>
+                  <% if (asset.checksum) { %><dt>SHA-256</dt><dd class="mindustry-copy-value"><code><%= asset.checksum %></code><button type="button" class="mindustry-copy-button" data-copy="<%= asset.checksum %>">复制</button><span class="mindustry-copy-status" aria-live="polite"></span></dd><% } %>
+                  <% if (asset.downloadUrl) { %><dt>下载地址</dt><dd class="mindustry-copy-value"><code><%= asset.downloadUrl %></code><button type="button" class="mindustry-copy-button" data-copy="<%= asset.downloadUrl %>">复制</button><span class="mindustry-copy-status" aria-live="polite"></span></dd><% } %>
+                  <% if (asset.source_repository) { %><dt>来源</dt><dd><%= asset.source_repository %></dd><% } %>
+                </dl>
+              </section>
+            <% }); %>
+          </div>
+        </details>
+      <% } else { %>
+        <div class="mindustry-state mindustry-state-inline" role="status"><p>当前版本暂无可下载文件。</p></div>
+      <% } %>
+    </section>
+
+    <section class="mindustry-history" aria-labelledby="mindustry-history-heading">
+      <div class="mindustry-history-heading"><div><p class="mindustry-section-kicker">版本归档</p><h2 id="mindustry-history-heading">所有版本</h2></div><span><%= mainGame.releases.length %> 个版本</span></div>
+      <% if (!mainGame.releases.length) { %>
+        <p class="mindustry-empty-history">当前暂无可用版本。</p>
+      <% } else { %>
+        <div class="mindustry-version-list">
+          <% mainGame.releases.forEach(function(release, releaseIndex) { %>
+            <% const releaseAssets = release === latestRelease ? latestAssets : release.assets.map(presentAsset); %>
+            <details class="mindustry-version-row">
+              <summary>
+                <span class="mindustry-version-main"><strong><%= release.build_name || release.tag %></strong><% if (releaseIndex === 0) { %><span class="mindustry-badge mindustry-badge-latest">最新</span><% } %></span>
+                <span class="mindustry-version-channel"><%= release.channel === 'prerelease' ? '预发布' : '正式版' %></span>
+                <span class="mindustry-version-date"><%= release.published_at ? release.published_at.slice(0, 10) : '日期未知' %></span>
+                <span class="mindustry-version-platforms"><%= releaseAssets.length ? platformSummary(releaseAssets) : '暂无文件' %></span>
+                <span class="mindustry-version-toggle" aria-hidden="true">查看文件</span>
+              </summary>
+              <div class="mindustry-version-files">
+                <% if (!releaseAssets.length) { %>
+                  <p class="mindustry-empty-history">当前版本暂无可下载文件。</p>
+                <% } else { %>
+                  <% releaseAssets.forEach(function(asset) { %>
+                    <article class="mindustry-version-file">
+                      <div><h3><%= asset.displayName %></h3><p><%= asset.format %><% if (asset.fileSize) { %> · <%= formatFileSize(asset.fileSize) %><% } %></p></div>
+                      <% if (asset.downloadUrl) { %><a href="<%= asset.downloadUrl %>" data-track="download" data-file-id="<%= asset.file_id || '' %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">下载<span class="mindustry-sr-only"> <%= asset.displayName %></span></a><% } %>
+                      <details class="mindustry-compact-details"><summary>文件详情</summary><dl><dt>原始文件名</dt><dd><code><%= asset.originalFilename %></code></dd><% if (asset.fileSize) { %><dt>大小</dt><dd><%= formatFileSize(asset.fileSize) %></dd><% } %><% if (asset.checksum) { %><dt>SHA-256</dt><dd class="mindustry-copy-value"><code><%= asset.checksum %></code><button type="button" class="mindustry-copy-button" data-copy="<%= asset.checksum %>">复制</button><span class="mindustry-copy-status" aria-live="polite"></span></dd><% } %><% if (asset.downloadUrl) { %><dt>下载地址</dt><dd class="mindustry-copy-value"><code><%= asset.downloadUrl %></code><button type="button" class="mindustry-copy-button" data-copy="<%= asset.downloadUrl %>">复制</button><span class="mindustry-copy-status" aria-live="polite"></span></dd><% } %><% if (asset.source_repository) { %><dt>来源</dt><dd><%= asset.source_repository %></dd><% } %></dl></details>
+                    </article>
+                  <% }); %>
+                <% } %>
+              </div>
+            </details>
+          <% }); %>
+        </div>
+      <% } %>
+    </section>
   <% } %>
 
-  <% manifest.games.filter(function(game) { return game.id !== 'mindustry'; }).forEach(function(game) { %>
-    <section class="mindustry-game" aria-labelledby="game-<%= game.id %>">
+  <% games.filter(function(game) { return game.id !== 'mindustry'; }).forEach(function(game) { %>
+    <section class="mindustry-secondary-game" aria-labelledby="game-<%= game.id %>">
       <h2 id="game-<%= game.id %>"><%= game.name %></h2>
-      <div class="mindustry-release-list">
-        <% game.releases.forEach(function(release) { %>
-          <article class="mindustry-release">
-            <h3><%= release.channel === 'prerelease' ? '预发布' : '正式版' %> · <%= release.build_name || release.tag %></h3>
-            <ul class="mindustry-prerelease-files">
-              <% release.assets.forEach(function(asset) { %>
-                <li><a href="<%= asset.download_url %>" data-track="download" data-file-id="<%= asset.file_id %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= platformNames[asset.platform] || asset.platform %> · <%= asset.file_name %></a><span><%= formatFileSize(asset.size) %></span></li>
-              <% }); %>
-            </ul>
-          </article>
-        <% }); %>
-      </div>
+      <% game.releases.forEach(function(release) { %><details><summary><%= release.build_name || release.tag %> · <%= release.channel === 'prerelease' ? '预发布' : '正式版' %></summary><ul><% release.assets.forEach(function(rawAsset) { const asset = presentAsset(rawAsset); %><li><a href="<%= asset.downloadUrl %>" data-track="download" data-file-id="<%= asset.file_id || '' %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>"><%= asset.displayName %> · <%= asset.originalFilename %></a></li><% }); %></ul></details><% }); %>
     </section>
   <% }); %>
 
-  <footer class="mindustry-tech-links">
-    <a href="/api/v1/mindustry/manifest.json">开发者：查看 JSON 版本清单</a>
+  <footer class="mindustry-advanced-links">
+    <p class="mindustry-section-kicker">高级功能</p>
+    <a href="/category/Mindustry">浏览原始文件目录</a>
+    <a href="/api/v1/mindustry/manifest.json">Manifest API</a>
+    <a href="https://mdtbbs.cn/" target="_blank" rel="noopener noreferrer">前往 MDTBBS 社区</a>
   </footer>
 </main>
+<script id="mindustry-assets-data" type="application/json"><%- JSON.stringify(playerAssets.map(function(asset) { return { platform: asset.platform, displayName: asset.displayName, format: asset.format, fileSize: asset.fileSize, architecture: asset.architecture, downloadUrl: asset.downloadUrl, fileId: asset.file_id || '' }; })).replace(/</g, '\\u003c') %></script>
 <script src="/js/mindustry-download.js" defer></script>
 <%- include('partials/footer') %>

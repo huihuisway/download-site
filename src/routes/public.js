@@ -12,6 +12,7 @@ const { ensureInSandbox } = require('../utils/filename');
 const { downloadLimiter, countDownloadLimiter } = require('../middleware/rateLimit');
 const { renderThemeError } = require('../utils/render-theme');
 const { buildManifest } = require('../services/mindustry-index.service');
+const mindustryPresentation = require('../services/mindustry-presentation.service');
 const {
   normalizePublicFilePath,
   buildFilePageUrl,
@@ -210,11 +211,20 @@ router.get(['/category', '/category/*'], (req, res) => {
 
 router.get('/mindustry', (req, res) => {
   const siteInfo = themeService.getSiteInfo();
+  let manifest = null;
+  try {
+    manifest = buildManifest();
+  } catch (err) {
+    console.error('[mindustry] 版本清单生成失败:', err.message);
+  }
   return res.render('mindustry', {
-    title: `Mindustry 版本下载 - ${siteInfo.site_name}`,
+    title: 'Mindustry 下载 - 最新版与历史版本 | MDT File',
+    description: '由 MDT File 提供的 Mindustry 游戏版本镜像，可下载当前可用平台版本，并浏览历史 Build。',
+    canonicalUrl: 'https://file.mdtbbs.cn/mindustry',
     currentTheme: themeService.getTheme(),
     siteInfo,
-    manifest: buildManifest(),
+    manifest,
+    ...mindustryPresentation,
   });
 });
 

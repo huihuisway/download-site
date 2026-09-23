@@ -227,7 +227,10 @@ describe('public routes', () => {
   it('Mindustry 页面和 JSON 清单公开可访问且清单带短缓存', async () => {
     const page = await request(server, '/mindustry');
     assert.strictEqual(page.statusCode, 200);
-    assert.match(page.body, /Mindustry 版本下载/);
+    assert.match(page.body, /Mindustry 下载 - 最新版与历史版本/);
+    assert.match(page.body, /所有版本/);
+    assert.match(page.body, /文件详情与校验信息/);
+    assert.match(page.body, /Manifest API/);
     assert.match(page.body, /v8 Build 152\.2 - Beta/);
 
     const response = await request(server, '/api/v1/mindustry/manifest.json');
