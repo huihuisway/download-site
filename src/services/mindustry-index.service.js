@@ -17,8 +17,8 @@ const compareVersionTags = (left, right) => {
   for (let index = 0; index < Math.max(leftParts.length, rightParts.length); index += 1) {
     const a = leftParts[index];
     const b = rightParts[index];
-    if (a === undefined) return -1;
-    if (b === undefined) return 1;
+    if (a === undefined) return /^\d+$/.test(b) ? 1 : -1;
+    if (b === undefined) return /^\d+$/.test(a) ? -1 : 1;
     const aNumber = /^\d+$/.test(a);
     const bNumber = /^\d+$/.test(b);
     if (aNumber && bNumber && Number(a) !== Number(b)) return Number(b) - Number(a);

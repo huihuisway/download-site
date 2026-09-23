@@ -35,6 +35,7 @@ describe('Mindustry presentation helpers', () => {
 
   it('sorts numeric version segments semantically', () => {
     assert.ok(compareVersionTags('v160.10', 'v160.9') < 0);
+    assert.ok(compareVersionTags('v160.5', 'v160') < 0);
     assert.ok(compareVersionTags('v9', 'v10') > 0);
     assert.ok(compareVersionTags('v160.10-BE', 'v160.10') > 0);
     assert.strictEqual(compareVersionTags('v160.10', 'v160.10'), 0);
