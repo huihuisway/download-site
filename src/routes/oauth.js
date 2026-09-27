@@ -84,6 +84,9 @@ const handleCallback = async (req, res) => {
           code,
           client_id: config.oauth.clientId,
           client_secret: config.oauth.clientSecret,
+          // MindAuth binds an authorization code to the exact redirect URI
+          // used at /authorize and requires it again during token exchange.
+          redirect_uri: config.oauth.callbackUrl,
         }),
         signal: tokenController.signal,
       });
