@@ -28,10 +28,15 @@ const releaseRecord = (source, releaseId) => {
   ensureStores();
   return db.data.release_sync.find((item) => String(item.source_id) === String(sourceIdOf(source)) && String(item.release_id) === String(releaseId));
 };
-const validAsset = (asset) => {
+const nextReleaseSyncId = () => db.data.release_sync.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
+const validAsset = (asset, source) => {
   if (!asset || typeof asset.name !== 'string' || !Number.isFinite(Number(asset.size)) || Number(asset.size) < 0) return false;
   const sourceArchive = /^source code\s*\((zip|tar\.gz)\)$/i.test(asset.name) || /^(source|src)\.(zip|tar\.gz|tgz)$/i.test(asset.name);
-  return !asset.name.includes('/') && !asset.name.includes('\\') && !sourceArchive && isAllowedExtension(asset.name) && Number(asset.size) <= config.maxFileSize;
+  const isSourceExecutable = source?.config?.allow_executable_assets === true
+    && repositoryOf(source).toLowerCase() === 'mdtcopper/launcher'
+    && path.extname(asset.name).toLowerCase() === '.exe';
+  const extensionAllowed = isSourceExecutable || isAllowedExtension(asset.name);
+  return !asset.name.includes('/') && !asset.name.includes('\\') && !sourceArchive && extensionAllowed && Number(asset.size) <= config.maxFileSize;
 };
 const matches = (value, pattern) => {
   if (!pattern) return true;
@@ -39,9 +44,59 @@ const matches = (value, pattern) => {
   try { return new RegExp(pattern).test(value); } catch { return false; }
 };
 const selectAssets = (release, source) => (Array.isArray(release.assets) ? release.assets : [])
-  .filter(validAsset)
+  .filter((asset) => validAsset(asset, source))
   .filter((asset) => matches(asset.name, source?.asset_include_pattern))
   .filter((asset) => !source?.asset_exclude_pattern || !matches(asset.name, source.asset_exclude_pattern));
+
+const releaseNeedsSync = (source, release, existing) => {
+  if (existing?.status !== 'published') return true;
+  if (source?.config?.refresh_latest_on_update === true
+    && release.updated_at
+    && existing.upstream_updated_at !== release.updated_at) return true;
+  return selectAssets(release, source).some((asset) => {
+    const file = db.data.download_logs.find((item) => String(item.source_id) === String(sourceIdOf(source))
+      && String(item.release_id) === String(release.id)
+      && item.file_name === sanitizeFilename(asset.name));
+    return !file || !fs.existsSync(path.resolve(config.downloadDir, file.file_path));
+  });
+};
+
+const configuredReleaseLimit = (source) => {
+  const limit = source?.config?.keep_latest_releases;
+  return Number.isInteger(limit) && limit >= 1 && limit <= 100 ? limit : null;
+};
+
+const pruneOldReleases = async (source, keepReleaseIds) => {
+  const sourceId = String(sourceIdOf(source));
+  const stale = db.data.release_sync.filter((item) => String(item.source_id) === sourceId
+    && item.status === 'published'
+    && item.release_id
+    && !keepReleaseIds.has(String(item.release_id)));
+  let removedFiles = 0;
+  for (const release of stale) {
+    const files = db.data.download_logs.filter((item) => String(item.source_id) === sourceId
+      && String(item.release_id) === String(release.release_id));
+    for (const file of files) {
+      if (typeof file.file_path !== 'string' || path.isAbsolute(file.file_path)) continue;
+      const fullPath = path.resolve(config.downloadDir, file.file_path);
+      const relativePath = path.relative(config.downloadDir, fullPath);
+      if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) continue;
+      ensureInSandbox(fullPath);
+      await fsp.rm(fullPath, { force: true });
+      let parent = path.dirname(fullPath);
+      while (parent !== config.downloadDir && parent.startsWith(`${config.downloadDir}${path.sep}`)) {
+        try { await fsp.rmdir(parent); } catch { break; }
+        parent = path.dirname(parent);
+      }
+      removedFiles += 1;
+    }
+    db.data.download_logs = db.data.download_logs.filter((item) => !(String(item.source_id) === sourceId
+      && String(item.release_id) === String(release.release_id)));
+    db.data.release_sync = db.data.release_sync.filter((item) => item !== release);
+    event(source, release.release_id, 'release_pruned', { tag_name: release.tag_name, assets: files.length });
+  }
+  return { releases: stale.length, files: removedFiles };
+};
 
 // GitHub may redirect release assets to either the legacy object host or the
 // newer release-assets host. Keep this explicit allowlist to prevent following
@@ -124,7 +179,11 @@ const syncRelease = async (source, options = {}) => {
     });
     if (!release) return { skipped: true, reason: 'no-release' };
     const existing = releaseRecord(source, release.id);
-    if (existing?.status === 'published') return { skipped: true, release: release.tag_name };
+    if (!releaseNeedsSync(source, release, existing)) return { skipped: true, release: release.tag_name };
+    const refreshExistingAssets = source?.config?.refresh_latest_on_update === true
+      && existing?.status === 'published'
+      && release.updated_at
+      && existing.upstream_updated_at !== release.updated_at;
     const game = gameForSource(source, repository);
     const assets = selectAssets(release, source);
     if (!assets.length) throw new Error('Release 没有符合条件的资产');
@@ -144,20 +203,20 @@ const syncRelease = async (source, options = {}) => {
         : versionDir;
       await fsp.mkdir(assetDir, { recursive: true });
       const destination = path.join(assetDir, safeName); let result = { skipped: true };
-      if (!fs.existsSync(destination)) result = await download({ ...asset, url: asset.browser_download_url || asset.api_url || asset.url }, destination);
+      if (refreshExistingAssets || !fs.existsSync(destination)) result = await download({ ...asset, url: asset.browser_download_url || asset.api_url || asset.url }, destination);
       const stat = await fsp.stat(destination); const relativePath = path.relative(config.downloadDir, destination).replace(/\\/g, '/');
       let digest = result.sha256 || db.data.download_logs.find((item) => item.file_path === relativePath)?.sha256 || null;
       if (!digest) digest = await require('./checksum.service').computeChecksum(destination);
       upsertFile(source, release, { ...asset, name: safeName }, relativePath, stat, digest); downloaded.push({ name: safeName, sha256: digest, ...result });
     }
-    const record = { id: existing?.id || db.data.release_sync.length + 1, source_id: sourceIdOf(source), repository, release_id: release.id, tag_name: release.tag_name, status: 'published', prerelease: Boolean(release.prerelease), draft: Boolean(release.draft), published_at: release.published_at || release.created_at, synced_at: now(), error: null };
+    const record = { id: existing?.id || nextReleaseSyncId(), source_id: sourceIdOf(source), repository, release_id: release.id, tag_name: release.tag_name, status: 'published', prerelease: Boolean(release.prerelease), draft: Boolean(release.draft), published_at: release.published_at || release.created_at, upstream_updated_at: release.updated_at || existing?.upstream_updated_at || null, synced_at: now(), error: null };
     if (existing) Object.assign(existing, record); else db.data.release_sync.push(record);
     event(source, release.id, 'sync_succeeded', { assets: downloaded.length, job_id: job?.id });
     if (source) { source.status = 'idle'; source.last_success_at = now(); source.last_error = null; }
     if (job) Object.assign(job, { status: 'succeeded', finished_at: now() });
     db._save(); return { synced: true, release: release.tag_name, assets: downloaded, directory: versionDir };
   } catch (error) {
-    const existing = release && releaseRecord(source, release.id); const failed = { id: existing?.id || db.data.release_sync.length + 1, source_id: sourceIdOf(source), repository, release_id: release?.id || 0, tag_name: release?.tag_name || '', status: 'failed', error: error.message, synced_at: now() };
+    const existing = release && releaseRecord(source, release.id); const failed = { id: existing?.id || nextReleaseSyncId(), source_id: sourceIdOf(source), repository, release_id: release?.id || 0, tag_name: release?.tag_name || '', status: 'failed', error: error.message, synced_at: now() };
     if (existing) Object.assign(existing, failed); else db.data.release_sync.push(failed);
     event(source, release?.id || null, 'sync_failed', { error: error.message, job_id: job?.id });
     if (source) { source.status = 'error'; source.last_error = error.message; }
@@ -180,24 +239,26 @@ const sync = async (source, payload = {}) => {
     const latestChannels = Array.isArray(source?.config?.sync_latest_channels)
       ? [...new Set(source.config.sync_latest_channels.filter((channel) => channel === 'stable' || channel === 'prerelease'))]
       : [];
-    let releases;
+    let discoveredReleases;
     if (latestChannels.length) {
-      releases = (await Promise.all(latestChannels.map((channel) => getLatestRelease(repository, {
+      discoveredReleases = (await Promise.all(latestChannels.map((channel) => getLatestRelease(repository, {
         ...releaseOptions,
         includePrerelease: true,
         prereleaseOnly: channel === 'prerelease',
       })))).filter(Boolean);
     } else if (source?.config?.sync_latest_only) {
-      releases = [await getLatestRelease(repository, releaseOptions)].filter(Boolean);
+      discoveredReleases = [await getLatestRelease(repository, releaseOptions)].filter(Boolean);
     } else {
-      releases = await getReleases(repository, releaseOptions);
+      discoveredReleases = await getReleases(repository, releaseOptions);
     }
+    const limit = configuredReleaseLimit(source);
+    const releases = limit ? discoveredReleases.slice(0, limit) : discoveredReleases;
     const game = gameForSource(source, repository);
     const pending = [];
     for (const release of releases) {
       if (!release) continue;
       const existing = releaseRecord(source, release.id);
-      if (existing?.status === 'published') {
+      if (existing?.status === 'published' && !releaseNeedsSync(source, release, existing)) {
         if (game) {
           for (const asset of selectAssets(release, source)) {
             const file = db.data.download_logs.find((item) => String(item.source_id) === String(sourceIdOf(source))
@@ -221,13 +282,19 @@ const sync = async (source, payload = {}) => {
       }
       if (source) source.status = 'running';
     }
+    const keepReleaseIds = new Set(releases.map((release) => String(release.id)));
+    const pruned = errors.length || !releases.length
+      ? { releases: 0, files: 0 }
+      : await pruneOldReleases(source, keepReleaseIds);
     const summary = {
       repository,
-      discovered: releases.length,
+      discovered: discoveredReleases.length,
+      retained: releases.length,
       pending: pending.length,
       synced: results.filter((result) => result?.synced).length,
       skipped: results.filter((result) => result?.skipped).length,
       failed: errors.length,
+      pruned,
       errors,
     };
     if (errors.length) {
