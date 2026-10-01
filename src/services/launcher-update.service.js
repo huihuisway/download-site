@@ -6,7 +6,13 @@ const { buildFileDownloadUrl } = require('../utils/public-paths');
 const { compareVersionTags } = require('./mindustry-index.service');
 
 const REPOSITORY = 'MDTCopper/launcher';
-const isPrereleaseVersion = (version) => /-(?:alpha|beta|rc|pre|preview|snapshot)/i.test(version);
+const classifyChannel = (version) => {
+  const value = String(version || '');
+  const suffix = value.match(/-(alpha|beta)(?:[-.]?[0-9A-Za-z.+-]*)?$/i)?.[1]?.toLowerCase();
+  if (suffix === 'alpha' || suffix === 'beta') return suffix;
+  if (/^[vV]?\d+(?:\.\d+)*$/.test(value)) return 'stable';
+  return null;
+};
 
 const resolveDownloadUrl = (filePath, baseUrl) => {
   const downloadPath = buildFileDownloadUrl(filePath);
@@ -62,9 +68,9 @@ const buildUpdateInfo = ({ version, channel, baseUrl = config.downloadBaseUrl })
     throw error;
   }
 
-  const normalizedChannel = channel || (isPrereleaseVersion(currentVersion) ? 'preview' : 'stable');
-  if (!['stable', 'preview'].includes(normalizedChannel)) {
-    const error = new Error('channel 只支持 stable 或 preview');
+  const normalizedChannel = channel || classifyChannel(currentVersion);
+  if (!['alpha', 'beta', 'stable'].includes(normalizedChannel)) {
+    const error = new Error('无法识别版本通道，请使用 alpha、beta 或 stable');
     error.statusCode = 400;
     error.code = 'VALIDATION_ERROR';
     throw error;
@@ -75,7 +81,7 @@ const buildUpdateInfo = ({ version, channel, baseUrl = config.downloadBaseUrl })
   const releases = (Array.isArray(db.data.release_sync) ? db.data.release_sync : [])
     .filter((release) => release.status === 'published'
       && String(release.repository || '').toLowerCase() === REPOSITORY.toLowerCase()
-      && (normalizedChannel === 'preview' || !release.prerelease))
+      && classifyChannel(release.tag_name) === normalizedChannel)
     .map((release) => ({
       ...release,
       assets: getReleaseAssets(release.source_id || source?.id || REPOSITORY, release.release_id, baseUrl),
@@ -85,7 +91,8 @@ const buildUpdateInfo = ({ version, channel, baseUrl = config.downloadBaseUrl })
       || String(b.published_at || '').localeCompare(String(a.published_at || '')));
 
   if (!releases.length) {
-    const error = new Error(`目前没有可用的 ${normalizedChannel === 'preview' ? '预览版' : '正式版'} 启动器版本`);
+    const channelName = normalizedChannel === 'stable' ? '正式版' : normalizedChannel;
+    const error = new Error(`目前没有可用的 ${channelName} 启动器版本`);
     error.statusCode = 503;
     error.code = 'RELEASES_UNAVAILABLE';
     throw error;

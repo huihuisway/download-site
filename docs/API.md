@@ -90,14 +90,14 @@ Content-Type: application/json
 GET /api/v1/launcher/update?version=v0.1.0-alpha6
 ```
 
-此接口无需 API Key，按客户端 IP 限流，缓存 60 秒。客户端通过 `version` 提交当前版本；带 `alpha`、`beta`、`rc`、`pre`、`preview` 或 `snapshot` 后缀的版本默认检查预览版，其余版本默认检查正式版。也可显式传入 `channel=stable` 或 `channel=preview`。正式版通道只提供正式版本；预览版通道会同时考虑正式版和预览版，避免预览版客户端错过后续正式发布。返回的安装包和 ZIP 便携包包含文件大小及 SHA-256；下载地址只会指向已同步、已审核且仍存在于磁盘的文件。
+此接口无需 API Key，按客户端 IP 限流，缓存 60 秒。客户端通过 `version` 提交当前版本；`-alpha` 后缀默认检查 Alpha 通道，`-beta` 后缀默认检查 Beta 通道，无后缀的版本默认检查正式版。也可显式传入 `channel=alpha`、`channel=beta` 或 `channel=stable`。三个通道分别检查各自版本，不会跨通道提示更新；正式版对应无后缀 tag。返回的安装包和 ZIP 便携包包含文件大小及 SHA-256；下载地址只会指向已同步、已审核且仍存在于磁盘的文件。
 
 ```json
 {
   "success": true,
   "data": {
     "repository": "MDTCopper/launcher",
-    "channel": "preview",
+    "channel": "alpha",
     "current_version": "v0.1.0-alpha6",
     "latest_version": "v0.2.0-alpha2",
     "update_available": true,
