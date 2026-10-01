@@ -22,6 +22,36 @@ const classifyAsset = (assetName) => {
   return { platform: 'advanced', asset_type: 'build-artifact' };
 };
 
+const deduplicateAssets = (assets) => {
+  const result = [];
+  for (const asset of assets || []) {
+    const url = String(asset.download_url || asset.downloadUrl || '');
+    const fileName = String(asset.file_name || asset.originalFilename || '').trim().toLowerCase();
+    const platform = String(asset.platform || 'advanced').toLowerCase();
+    const sha256 = String(asset.sha256 || asset.checksum || '').trim().toLowerCase();
+    const duplicateIndex = result.findIndex((existing) => {
+      const existingUrl = String(existing.download_url || existing.downloadUrl || '');
+      if (url && existingUrl === url) return true;
+      if (!sha256 || !fileName) return false;
+      const existingName = String(existing.file_name || existing.originalFilename || '').trim().toLowerCase();
+      const existingPlatform = String(existing.platform || 'advanced').toLowerCase();
+      const existingSha256 = String(existing.sha256 || existing.checksum || '').trim().toLowerCase();
+      return existingName === fileName && existingPlatform === platform && existingSha256 === sha256;
+    });
+
+    if (duplicateIndex === -1) {
+      result.push(asset);
+      continue;
+    }
+
+    const existingUrl = String(result[duplicateIndex].download_url || result[duplicateIndex].downloadUrl || '');
+    const isCanonical = /^\/d\/Mindustry\/Main\//i.test(url);
+    const existingIsCanonical = /^\/d\/Mindustry\/Main\//i.test(existingUrl);
+    if (isCanonical && !existingIsCanonical) result[duplicateIndex] = asset;
+  }
+  return result;
+};
+
 const releaseChannel = (release) => {
   const tag = `${release?.tag_name || ''} ${release?.name || ''}`;
   return release?.prerelease || /(?:^|[-_.\s])(be|bleeding.?edge|beta|alpha|rc|pre|snapshot)(?:$|[-_.\s])/i.test(tag)
@@ -48,4 +78,4 @@ const metadataForAsset = (source, release, asset, repository) => {
   };
 };
 
-module.exports = { classifyAsset, releaseChannel, metadataForAsset, gameForSource };
+module.exports = { classifyAsset, deduplicateAssets, releaseChannel, metadataForAsset, gameForSource };

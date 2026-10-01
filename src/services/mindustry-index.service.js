@@ -3,7 +3,7 @@ const path = require('path');
 const { db } = require('../db');
 const { config } = require('../config');
 const { buildFileDownloadUrl } = require('../utils/public-paths');
-const { classifyAsset } = require('./mindustry-assets.service');
+const { classifyAsset, deduplicateAssets } = require('./mindustry-assets.service');
 
 const GAME_DETAILS = {
   mindustry: { name: 'Mindustry', repositories: ['Anuken/Mindustry'] },
@@ -87,7 +87,8 @@ const buildManifest = () => {
       .map((release) => ({
         ...release,
         source_repositories: [...new Set(release.source_repositories)],
-        assets: release.assets.sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform) || a.file_name.localeCompare(b.file_name)),
+        assets: deduplicateAssets(release.assets)
+          .sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform) || a.file_name.localeCompare(b.file_name)),
       }))
       .sort((a, b) => compareVersionTags(a.tag, b.tag) || String(b.published_at || '').localeCompare(String(a.published_at || ''))),
   }));
@@ -111,6 +112,7 @@ const buildManifest = () => {
       file_id: file.id,
       file_name: file.file_name,
       size: Number(file.file_size) || stat.size,
+      sha256: file.sha256 || null,
       platform,
       download_url: buildFileDownloadUrl(file.file_path),
     });

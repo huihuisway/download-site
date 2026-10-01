@@ -1,4 +1,5 @@
 const path = require('path');
+const { deduplicateAssets } = require('./mindustry-assets.service');
 
 const PLATFORM_LABELS = {
   android: 'Android APK',
@@ -67,14 +68,14 @@ const mergeFeaturedAssets = (release, featuredDownloads) => {
     && featuredDownloads
     && release.tag?.replace(/^v/i, '') === featuredDownloads.build
     && Boolean(featuredDownloads.game_version);
-  if (!featuredMatches || !Array.isArray(featuredDownloads.assets)) return assets;
+  if (!featuredMatches || !Array.isArray(featuredDownloads.assets)) return deduplicateAssets(assets);
 
   const merged = [...assets];
   for (const rawAsset of featuredDownloads.assets) {
     const asset = presentAsset(rawAsset);
-    if (!merged.some((existing) => existing.downloadUrl === asset.downloadUrl)) merged.push(asset);
+    merged.push(asset);
   }
-  return merged;
+  return deduplicateAssets(merged);
 };
 
 module.exports = { presentAsset, isPlayerDownload, mergeFeaturedAssets };
