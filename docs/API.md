@@ -6,7 +6,7 @@
 
 ## 一、认证
 
-除公开 Mindustry manifest 外，`/api/v1` 请求必须在 HTTP Header 中携带有效的 API Key：
+除公开 Mindustry manifest 和启动器版本检查外，`/api/v1` 请求必须在 HTTP Header 中携带有效的 API Key：
 
 ```
 Authorization: Bearer dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -84,7 +84,41 @@ Content-Type: application/json
 
 此接口无需 API Key，按 IP 限流。`client_name`、`client_version` 和 `platform` 是调用方提供的分析字段，只用于展示和统计，不是认证凭据；事件记录不保存 IP，最多保留 90 天。若同时上报并下载，请在 manifest 下载地址上加 `?tracked=1`，避免源站重复计数。平台值支持 `android`、`windows`、`linux`、`macos`、`desktop`、`advanced`、`server`、`web`、`other`。
 
-## 三、通用约定
+## 三、公开启动器更新检查
+
+```http
+GET /api/v1/launcher/update?version=v0.1.0-alpha6
+```
+
+此接口无需 API Key，按客户端 IP 限流，缓存 60 秒。客户端通过 `version` 提交当前版本；带 `alpha`、`beta`、`rc`、`pre`、`preview` 或 `snapshot` 后缀的版本默认检查预览版，其余版本默认检查正式版。也可显式传入 `channel=stable` 或 `channel=preview`。正式版通道只提供正式版本；预览版通道会同时考虑正式版和预览版，避免预览版客户端错过后续正式发布。返回的安装包和 ZIP 便携包包含文件大小及 SHA-256；下载地址只会指向已同步、已审核且仍存在于磁盘的文件。
+
+```json
+{
+  "success": true,
+  "data": {
+    "repository": "MDTCopper/launcher",
+    "channel": "preview",
+    "current_version": "v0.1.0-alpha6",
+    "latest_version": "v0.2.0-alpha2",
+    "update_available": true,
+    "published_at": "2026-09-30T00:00:00Z",
+    "release_url": "https://github.com/MDTCopper/launcher/releases/tag/v0.2.0-alpha2",
+    "assets": [{
+      "name": "copper-launcher-v0.2.0-alpha2-windows-x64-setup.exe",
+      "type": "installer",
+      "size": 12345678,
+      "sha256": "…",
+      "download_url": "https://d.file.mdtbbs.cn/d/MDTCopper/launcher/v0.2.0-alpha2/copper-launcher-v0.2.0-alpha2-windows-x64-setup.exe"
+    }],
+    "installer": { "name": "…", "type": "installer", "size": 12345678, "sha256": "…", "download_url": "…" },
+    "portable": { "name": "…", "type": "portable", "size": 12345678, "sha256": "…", "download_url": "…" }
+  }
+}
+```
+
+当所选通道没有可用同步版本时返回 `503 RELEASES_UNAVAILABLE`；参数无效时返回 `400 VALIDATION_ERROR`。
+
+## 四、通用约定
 
 ### 请求格式
 
@@ -126,7 +160,7 @@ Content-Type: application/json
 
 ---
 
-## 四、后台 GitHub Releases 来源管理
+## 五、后台 GitHub Releases 来源管理
 
 > 以下接口挂载在 `/api/admin`，使用后台 Session 管理员认证，不使用 `/api/v1` API Key。
 > `GITHUB_TOKEN` 只从服务器环境变量读取，不能通过接口写入或读取。

@@ -62,6 +62,7 @@ const releaseNeedsSync = (source, release, existing) => {
 };
 
 const configuredReleaseLimit = (source) => {
+  if (source?.config?.keep_all_releases === true) return null;
   const limit = source?.config?.keep_latest_releases;
   return Number.isInteger(limit) && limit >= 1 && limit <= 100 ? limit : null;
 };
@@ -283,7 +284,8 @@ const sync = async (source, payload = {}) => {
       if (source) source.status = 'running';
     }
     const keepReleaseIds = new Set(releases.map((release) => String(release.id)));
-    const pruned = errors.length || !releases.length
+    const keepAllReleases = source?.config?.keep_all_releases === true;
+    const pruned = keepAllReleases || errors.length || !releases.length
       ? { releases: 0, files: 0 }
       : await pruneOldReleases(source, keepReleaseIds);
     const summary = {

@@ -6,6 +6,7 @@ const fileService = require('../services/file.service');
 const statsService = require('../services/stats.service');
 const { db } = require('../db');
 const { buildManifest } = require('../services/mindustry-index.service');
+const { buildUpdateInfo } = require('../services/launcher-update.service');
 
 // 下载索引公开、无 API Key；仍经 IP 限流，便于启动器直接消费。
 router.get('/mindustry/manifest.json', apiLimiter, (req, res) => {
@@ -14,6 +15,26 @@ router.get('/mindustry/manifest.json', apiLimiter, (req, res) => {
     res.json(buildManifest());
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Mindustry manifest 暂时不可用' } });
+  }
+});
+
+// 启动器版本检查公开、无 API Key；响应只引用已同步并落盘的 Release 资产。
+router.get('/launcher/update', apiLimiter, (req, res) => {
+  try {
+    const data = buildUpdateInfo({
+      version: req.query.version,
+      channel: req.query.channel,
+    });
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({
+      success: false,
+      error: {
+        code: err.code || 'SERVER_ERROR',
+        message: err.statusCode ? err.message : '启动器版本信息暂时不可用',
+      },
+    });
   }
 });
 

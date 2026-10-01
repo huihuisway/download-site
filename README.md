@@ -8,11 +8,11 @@ Debian 镜像站风格的纯粹文件下载服务。
 - **现代后台**：React + Tailwind CSS，统计看板 + 文件管理 + 目录管理 + 批量操作
 - **自动同步**：物理目录 ↔ 数据库双向同步，SHA256 流式计算
 - **GitHub Releases 同步**：自动登记 Mindustry 主线与 Classic 来源，只同步各自最新正式版和最新预发布版，并支持自定义仓库来源
-- **Mindustry 公共索引**：网页按游戏、正式版/预发布和平台展示；`/api/v1/mindustry/manifest.json` 无 Key，可供启动器读取
+- **公开软件更新检查**：Mindustry 索引 `/api/v1/mindustry/manifest.json` 和启动器更新检查 `/api/v1/launcher/update` 无需 API Key
 - **版本文件缓存**：Release 同步的版本化文件按 SHA-256 登记，并可缓存一年（`immutable`）
 - **完整下载能力**：断点续传（Range）、协商缓存（ETag/Last-Modified）、中文文件名正确落地
 - **双登录方式**：OAuth 2.0（对接论坛，state 防 CSRF）+ 本地管理员账号
-- **第三方 API**：`/api/v1` 默认以 API Key 认证，Mindustry manifest 为公开无 Key 接口；支持文件审核流程对接
+- **第三方 API**：`/api/v1` 默认以 API Key 认证，Mindustry manifest 与启动器更新检查为公开无 Key 接口；支持文件审核流程对接
 - **安全沙箱**：路径穿越防御、扩展名白/黑名单、文件名清洗、速率限制、nonce 化 CSP
 
 ## 快速开始
@@ -108,6 +108,7 @@ APK 资产名以 `Mindustry-MDT-Android-` 开头。工作流首次发布后，�
 
 ```text
 GET  /api/v1/mindustry/manifest.json   # 公开，IP 限流，短缓存
+GET  /api/v1/launcher/update?version=v0.1.0-alpha6  # 公开，IP 限流，检查启动器更新
 GET  /mindustry                       # 人类可读版本页
 POST /count-download                  # 公开匿名统计
 ```
