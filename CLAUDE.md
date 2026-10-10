@@ -151,3 +151,7 @@ chromium --headless=new --no-sandbox --disable-http-cache \
 ## 版本号
 
 公共页脚显示 `v` 加 Git 提交计数，例如 `v1234`。每新增一个 commit，服务启动后版本号自动增加；没有 `.git` 的部署环境可通过 `APP_VERSION=v1234` 指定固定版本。
+
+## 新服务器运维配置
+
+涉及下载站新机 `64.90.0.99` 时先阅读 `ops/README.md` 和 `ops/download-site-new.yaml`。本机 SSH 别名是 `download-site-new`；不要把服务器 `.env` 或 SSH 私钥复制进仓库。

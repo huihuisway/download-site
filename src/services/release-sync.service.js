@@ -20,6 +20,8 @@ const ensureStores = () => {
 const now = () => new Date().toISOString();
 const repositoryOf = (source) => source ? `${source.owner}/${source.repo}` : config.releaseSync.repository;
 const sourceIdOf = (source) => source?.id || repositoryOf(source);
+// 只对明确审核过的启动器仓库开放 EXE；其他来源仍受危险扩展名拦截。
+const EXECUTABLE_ASSET_REPOSITORIES = new Set(['mdtcopper/launcher', 'ch-bookbanana/bookmdtlauncher']);
 const event = (source, releaseId, type, payload = {}) => {
   ensureStores();
   db.data.release_history.push({ id: db.data.release_history.length + 1, source_id: sourceIdOf(source), release_id: releaseId, type, payload, created_at: now() });
@@ -33,7 +35,7 @@ const validAsset = (asset, source) => {
   if (!asset || typeof asset.name !== 'string' || !Number.isFinite(Number(asset.size)) || Number(asset.size) < 0) return false;
   const sourceArchive = /^source code\s*\((zip|tar\.gz)\)$/i.test(asset.name) || /^(source|src)\.(zip|tar\.gz|tgz)$/i.test(asset.name);
   const isSourceExecutable = source?.config?.allow_executable_assets === true
-    && repositoryOf(source).toLowerCase() === 'mdtcopper/launcher'
+    && EXECUTABLE_ASSET_REPOSITORIES.has(repositoryOf(source).toLowerCase())
     && path.extname(asset.name).toLowerCase() === '.exe';
   const extensionAllowed = isSourceExecutable || isAllowedExtension(asset.name);
   return !asset.name.includes('/') && !asset.name.includes('\\') && !sourceArchive && extensionAllowed && Number(asset.size) <= config.maxFileSize;
