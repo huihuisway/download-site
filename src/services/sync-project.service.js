@@ -135,6 +135,12 @@ const normalize = (input, partial = false) => {
 
 const DEFAULT_NOTIFY = { new_version: false, sync_complete: false, delayed: true, failed: true, recovered: true };
 
+// 项目状态变化后状态页/顶部状态必须立刻反映，避免缓存窗口里看到旧数据
+const invalidatePublicStatus = () => {
+  try { require('./status.service').invalidateStatusCache(); } catch { /* 循环依赖时忽略 */ }
+  try { require('./shell.service').invalidateHeaderStatus(); } catch { /* 同上 */ }
+};
+
 const recordEvent = (project, type, payload = {}) => {
   ensureStore();
   const event = {
@@ -222,10 +228,11 @@ const computeStatus = (project) => {
   }
 
   const elapsed = Date.now() - lastSuccess;
+  // startedAgo 是「距本次同步开始已过去多久」；没有开始时间就用距上次成功的时间兜底
   const startedAgo = lastStarted ? Date.now() - lastStarted : elapsed;
   if (remote && local && remote !== local) {
     // 远端出现了新版本，本地还没跟上：短时间内算「同步中」，超过阈值算「延迟」
-    const stale = Date.now() - startedAgo > DELAY_THRESHOLD_MS;
+    const stale = startedAgo > DELAY_THRESHOLD_MS;
     return { status: stale ? 'delayed' : 'syncing', reason: `远端 ${remote}，本地 ${local}` };
   }
   if (missing > 0) return { status: 'partial', reason: `${missing} 个文件尚未就绪` };
@@ -322,6 +329,7 @@ const create = (input) => {
   db.data.sync_projects.push(project);
   db._save();
   recordEvent(project, 'project_created');
+  invalidatePublicStatus();
   return decorate(project);
 };
 
@@ -335,6 +343,7 @@ const update = (id, input) => {
   if (value.notify) value.notify = { ...DEFAULT_NOTIFY, ...project.notify, ...value.notify };
   Object.assign(project, value, { updated_at: now() });
   db._save();
+  invalidatePublicStatus();
   return decorate(project);
 };
 
@@ -351,6 +360,7 @@ const remove = (id) => {
     }
   }
   db._save();
+  invalidatePublicStatus();
   return true;
 };
 
@@ -558,8 +568,9 @@ const refresh = (project, { notify = true } = {}) => {
     project.status = decorated.status;
   }
   project.last_check_at = now();
-  db._scheduleSave();
+  db._save();
   if (notify) syncAutoNotice(project);
+  invalidatePublicStatus();
   return decorate(project);
 };
 
@@ -629,7 +640,9 @@ const events = (id, limit = 50) => {
 /** 全局刷新：调度器与状态页调用，顺带触发自动通知 */
 const refreshAll = ({ notify = true } = {}) => {
   ensureStore();
-  return db.data.sync_projects.map((project) => refresh(project, { notify }));
+  const result = db.data.sync_projects.map((project) => refresh(project, { notify }));
+  invalidatePublicStatus();
+  return result;
 };
 
 /** 首次启动时按既有 Release Source 生成项目骨架，老数据也能直接起来 */
@@ -667,7 +680,10 @@ const ensureDefaultProjects = () => {
       notify: DEFAULT_NOTIFY,
     }));
   }
-  if (created.length) db._save();
+  if (created.length) {
+    db._save();
+    invalidatePublicStatus();
+  }
   return created;
 };
 

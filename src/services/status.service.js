@@ -69,7 +69,8 @@ const checkManifest = () => {
     const manifest = buildManifest();
     const games = Array.isArray(manifest.games) ? manifest.games : [];
     const releases = games.reduce((sum, game) => sum + (game.releases?.length || 0), 0);
-    if (!games.length) return { status: 'degraded', detail: '暂无可用的版本清单' };
+    // 空清单意味着「还没同步到内容」，不是服务故障
+    if (!games.length) return { status: 'syncing', detail: '等待首次版本同步' };
     return { status: 'operational', detail: `${games.length} 个游戏 · ${releases} 个版本`, metrics: { games: games.length, releases } };
   } catch {
     return { status: 'outage', detail: '版本清单不可用' };
@@ -80,20 +81,24 @@ const checkReleaseSync = () => {
   const sources = releaseSourceService.list();
   const records = Array.isArray(db.data.release_sync) ? db.data.release_sync : [];
   const enabled = sources.filter((source) => source.enabled !== false);
-  if (!enabled.length) return { status: 'unknown', detail: '未配置发布来源' };
+  if (!enabled.length) {
+    return { status: config.releaseSync.enabled ? 'unknown' : 'unknown', detail: config.releaseSync.enabled ? '尚未配置发布来源' : '自动同步未启用' };
+  }
   const running = enabled.filter((source) => source.status === 'running');
   const failed = enabled.filter((source) => source.status === 'error');
   const latestSuccess = records
     .filter((record) => record.status === 'published' && record.synced_at)
     .map((record) => Date.parse(record.synced_at))
     .sort((a, b) => b - a)[0] || 0;
-  const stale = latestSuccess ? Date.now() - latestSuccess > STALE_SYNC_MS : true;
   const metrics = { sources: sources.length, enabled: enabled.length, failed: failed.length, running: running.length, latest_success_at: latestSuccess ? new Date(latestSuccess).toISOString() : null };
-  if (!config.releaseSync.enabled && !sources.length) return { status: 'unknown', detail: '自动同步未启用' };
+  // 「还没同步过」不等于故障：只有明确的失败才降级，其余按同步中/未知处理
   if (failed.length && !running.length) return { status: 'degraded', detail: `${failed.length} 个来源同步失败`, metrics };
   if (running.length) return { status: 'syncing', detail: `${running.length} 个来源正在同步`, metrics };
-  if (stale && !latestSuccess) return { status: 'degraded', detail: '尚无成功的同步记录', metrics };
-  return { status: 'operational', detail: latestSuccess ? `最近成功同步 ${new Date(latestSuccess).toLocaleString('zh-CN', { hour12: false })}` : '来源配置正常', metrics };
+  if (!latestSuccess) return { status: 'syncing', detail: '等待首次同步完成', metrics };
+  if (Date.now() - latestSuccess > STALE_SYNC_MS) {
+    return { status: 'degraded', detail: '距上次成功同步已超过 6 小时', metrics };
+  }
+  return { status: 'operational', detail: `最近成功同步 ${new Date(latestSuccess).toLocaleString('zh-CN', { hour12: false })}`, metrics };
 };
 
 const checkGithubApi = () => {

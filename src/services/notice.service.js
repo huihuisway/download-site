@@ -45,8 +45,6 @@ const asOptionalDate = (value) => {
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? null : new Date(parsed).toISOString();
 };
-const oneOf = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
-
 const normalize = (input, partial = false) => {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('通知参数必须是对象');
   const value = {};
@@ -57,10 +55,26 @@ const normalize = (input, partial = false) => {
     value.title = title;
   }
   if (input.content !== undefined) value.content = asString(input.content, 2000);
-  if (input.type !== undefined || !partial) value.type = oneOf(input.type, NOTICE_TYPES, 'info');
-  if (input.scope !== undefined || !partial) value.scope = oneOf(input.scope, NOTICE_SCOPES, 'global');
-  if (input.platform !== undefined) value.platform = oneOf(input.platform, NOTICE_PLATFORMS, 'all');
-  if (input.category !== undefined) value.category = oneOf(input.category, NOTICE_CATEGORIES, 'announcement');
+  if (input.type !== undefined) {
+    if (!NOTICE_TYPES.includes(input.type)) throw new Error(`通知类型必须是 ${NOTICE_TYPES.join(' / ')} 之一`);
+    value.type = input.type;
+  } else if (!partial) {
+    value.type = 'info';
+  }
+  if (input.scope !== undefined) {
+    if (!NOTICE_SCOPES.includes(input.scope)) throw new Error(`目标位置必须是 ${NOTICE_SCOPES.join(' / ')} 之一`);
+    value.scope = input.scope;
+  } else if (!partial) {
+    value.scope = 'global';
+  }
+  if (input.platform !== undefined) {
+    if (!NOTICE_PLATFORMS.includes(input.platform)) throw new Error(`目标平台必须是 ${NOTICE_PLATFORMS.join(' / ')} 之一`);
+    value.platform = input.platform;
+  }
+  if (input.category !== undefined) {
+    if (!NOTICE_CATEGORIES.includes(input.category)) throw new Error(`通知分类必须是 ${NOTICE_CATEGORIES.join(' / ')} 之一`);
+    value.category = input.category;
+  }
   if (input.version !== undefined) value.version = asString(input.version, 40);
   if (input.priority !== undefined) {
     const priority = Number(input.priority);
