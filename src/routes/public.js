@@ -39,7 +39,7 @@ const RESERVED_ROOTS = new Set([
   'admin', 'auth', 'api', 'd', 'category', 'css', 'fonts', 'js', 'privacy', 'terms',
   'mindustry', 'files', 'status', 'notices',
 ]);
-const RESERVED_EXACT_PATHS = new Set(['favicon.svg']);
+const RESERVED_EXACT_PATHS = new Set(['favicon.svg', 'robots.txt', 'sitemap.xml']);
 
 const getFileExt = (filename) => {
   const ext = filename.split('.').pop()?.toUpperCase() || '';
@@ -236,7 +236,7 @@ const renderDirectory = (res, { currentPath, directoryName }) => {
   return renderTheme(res, 'category', {
     title: `${directory.isRoot ? '文件目录' : directory.currentPath} - ${siteInfo.site_name}`,
     description: `${siteInfo.site_name} 文件目录：浏览全部目录与文件，保留原始目录结构、大小与校验信息。`,
-    canonicalUrl: 'https://file.mdtbbs.cn/files',
+    canonicalUrl: `${config.siteUrl}/files`,
     currentPath: directory.currentPath,
     isRoot: directory.isRoot,
     directoryName: directoryName || '文件目录',
@@ -288,7 +288,7 @@ router.get('/', (req, res) => {
   return renderTheme(res, 'index', {
     title: `${siteInfo.site_name} - MDTBBS 文件分发`,
     description: siteInfo.site_description,
-    canonicalUrl: 'https://file.mdtbbs.cn/',
+    canonicalUrl: `${config.siteUrl}/`,
     currentPath: 'root',
     isRoot: true,
     rootHref: '/',
@@ -350,7 +350,7 @@ const renderMindustry = (req, res) => {
   return res.render('mindustry', {
     title: 'Mindustry 下载 - 最新版与历史版本 | MDT File',
     description: '由 MDT File 提供的 Mindustry 游戏版本镜像，可下载当前可用平台版本，并浏览历史 Build。',
-    canonicalUrl: 'https://file.mdtbbs.cn/mindustry',
+    canonicalUrl: `${config.siteUrl}/mindustry`,
     currentTheme: themeService.getTheme(),
     siteInfo,
     manifest,
@@ -383,7 +383,7 @@ router.get('/status', (req, res) => {
   return res.render('status', {
     title: '服务状态 - MDT File',
     description: 'MDT File 实时服务状态：下载、Manifest、数据库、Release 同步、下载节点与项目同步进度。',
-    canonicalUrl: 'https://file.mdtbbs.cn/status',
+    canonicalUrl: `${config.siteUrl}/status`,
     currentTheme: themeService.getTheme(),
     siteInfo: themeService.getSiteInfo(),
     pageScripts: ['/js/status.js'],
@@ -404,7 +404,7 @@ router.get('/notices', (req, res) => {
   return res.render('notices', {
     title: '通知公告 - MDT File',
     description: 'MDT File 通知公告：版本更新、维护通知与故障通报。',
-    canonicalUrl: 'https://file.mdtbbs.cn/notices',
+    canonicalUrl: `${config.siteUrl}/notices`,
     currentTheme: themeService.getTheme(),
     siteInfo: themeService.getSiteInfo(),
     pageScripts: ['/js/notices.js'],
@@ -527,6 +527,80 @@ router.get('/terms', (req, res) => {
     cspNonce: res.locals.cspNonce,
     appVersion: res.locals.appVersion,
   });
+});
+
+
+// ===== SEO：robots / sitemap =====
+// 下载直链（/d/*）与后台不应被爬虫收录，其余公开页面允许。
+router.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send([
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /admin',
+    'Disallow: /auth/',
+    'Disallow: /api/',
+    'Disallow: /d/',
+    'Disallow: /count-download',
+    `Sitemap: ${config.siteUrl}/sitemap.xml`,
+    '',
+  ].join('\n'));
+});
+
+// 收录范围：首页 + 固定页 + 目录页 + 文件详情页 + 有效通知
+router.get('/sitemap.xml', (req, res) => {
+  const urls = [
+    { loc: '/', changefreq: 'daily', priority: '1.0' },
+    { loc: '/files', changefreq: 'daily', priority: '0.9' },
+    { loc: '/mindustry', changefreq: 'daily', priority: '0.9' },
+    { loc: '/notices', changefreq: 'weekly', priority: '0.6' },
+    { loc: '/status', changefreq: 'hourly', priority: '0.5' },
+    { loc: '/privacy', changefreq: 'yearly', priority: '0.2' },
+    { loc: '/terms', changefreq: 'yearly', priority: '0.2' },
+  ];
+
+  for (const folderPath of folderTreeService.listPhysicalFolders(config.downloadDir)) {
+    urls.push({ loc: `/files/${encodePublicFilePath(folderPath)}`, changefreq: 'weekly', priority: '0.7' });
+  }
+
+  // 只收录已通过审核的文件，避免把待审/被拒内容暴露给爬虫
+  for (const file of listDownloadFiles()) {
+    if (file.approval_status && file.approval_status !== 'approved') continue;
+    urls.push({
+      loc: buildFilePageUrl(file.file_path),
+      changefreq: 'monthly',
+      priority: '0.6',
+      lastmod: (file.file_mtime || file.updated_at || '').slice(0, 10) || undefined,
+    });
+  }
+
+  for (const notice of noticeService.listPublic({})) {
+    urls.push({
+      loc: `/notices/${notice.id}`,
+      changefreq: 'monthly',
+      priority: '0.4',
+      lastmod: (notice.updated_at || notice.created_at || '').slice(0, 10) || undefined,
+    });
+  }
+
+  const escapeXml = (value) => String(value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+
+  const body = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...urls.map((entry) => {
+      const parts = [`    <loc>${escapeXml(config.siteUrl + entry.loc)}</loc>`];
+      if (entry.lastmod) parts.push(`    <lastmod>${escapeXml(entry.lastmod)}</lastmod>`);
+      parts.push(`    <changefreq>${entry.changefreq}</changefreq>`);
+      parts.push(`    <priority>${entry.priority}</priority>`);
+      return `  <url>\n${parts.join('\n')}\n  </url>`;
+    }),
+    '</urlset>',
+    '',
+  ].join('\n');
+
+  res.type('application/xml').send(body);
 });
 
 // 文件详情页 catch-all

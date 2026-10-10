@@ -391,4 +391,31 @@ describe('public routes', () => {
     const download = await request(server, '/d/docs/a.txt');
     assert.doesNotMatch(download.headers['cache-control'] || '', /no-cache/);
   });
+  it('robots.txt 应屏蔽后台/接口/下载直链并声明 sitemap', async () => {
+    const response = await request(server, '/robots.txt');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.headers['content-type'], /text\/plain/);
+    assert.match(response.body, /Disallow: \/admin/);
+    assert.match(response.body, /Disallow: \/api\//);
+    assert.match(response.body, /Disallow: \/d\//);
+    assert.match(response.body, /Sitemap: https:\/\/file\.mdtbbs\.cn\/sitemap\.xml/);
+  });
+
+  it('sitemap.xml 应是合法 XML 且不收录后台与下载直链', async () => {
+    const response = await request(server, '/sitemap.xml');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.headers['content-type'], /application\/xml/);
+    assert.match(response.body, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
+    assert.match(response.body, /<loc>https:\/\/file\.mdtbbs\.cn\/files<\/loc>/);
+    assert.match(response.body, /<loc>https:\/\/file\.mdtbbs\.cn\/mindustry<\/loc>/);
+    assert.doesNotMatch(response.body, /<loc>[^<]*\/admin/);
+    assert.doesNotMatch(response.body, /<loc>[^<]*\/d\//);
+  });
+
+  it('robots.txt / sitemap.xml 不应被文件详情页 catch-all 截获', async () => {
+    const robots = await request(server, '/robots.txt');
+    assert.doesNotMatch(robots.body, /<!DOCTYPE html>/);
+    const sitemap = await request(server, '/sitemap.xml');
+    assert.doesNotMatch(sitemap.body, /<!DOCTYPE html>/);
+  });
 });
