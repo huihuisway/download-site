@@ -70,6 +70,7 @@ MDT File 是 MDTBBS 生态的统一文件分发站，所有前台页面共用同
 | `/status` | 服务状态与项目同步状态（含同步链、项目文件、失败原因） |
 | `/notices`、`/notices/:id` | 通知中心与通知详情 |
 | `/<文件路径>`、`/d/<文件路径>` | 文件详情页 / 真实下载（Range、断点续传、中文文件名不变） |
+| `/robots.txt`、`/sitemap.xml` | SEO：抓取规则（屏蔽后台/接口/下载直链）与页面地图 |
 
 Mindustry 页面与文件目录双向打通：目录页有「Mindustry 版本下载」，版本列表每个 Release
 提供「查看全部文件」跳到对应原始目录；文件详情页标注来源版本并可跳回下载页。
@@ -269,6 +270,7 @@ GET    /api/admin/releases/health
 | `PORT` | 监听端口，默认 3000 |
 | `NODE_ENV` | `production` 时启用生产行为（配置校验 fail-fast、Secure cookie 等） |
 | `TRUST_PROXY_HOPS` | 信任的反向代理跳数，默认 `1`；按实际代理链设置，并确保代理覆盖客户端转发头 |
+| `SITE_URL` | 站点公开地址，用于 canonical / og:url / robots.txt / sitemap.xml，默认 `https://file.mdtbbs.cn` |
 | `DOWNLOAD_DIR` | 文件沙箱目录，默认 `./downloads` |
 | `DB_PATH` | JSON 数据库路径，默认 `./data/stats.db` |
 | `MAX_FILE_SIZE` | 单文件上限字节数，默认 150MB |

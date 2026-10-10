@@ -9,7 +9,7 @@
 
 <article class="mdt-notice-detail">
   <span class="mdt-status mdt-notice-type" data-type="<%= notice.type %>"><%= notice.type_label %></span>
-  <h1 style="margin-top: var(--space-3)"><%= notice.title %></h1>
+  <h1><%= notice.title %></h1>
   <p class="mdt-section-note">
     <%= notice.category_label %> ·
     <time datetime="<%= notice.start_at || notice.created_at %>"><%= formatDate(notice.start_at || notice.created_at) %></time>
