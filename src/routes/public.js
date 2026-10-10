@@ -19,9 +19,20 @@ const { buildManifest } = require('../services/mindustry-index.service');
 const mindustryPresentation = require('../services/mindustry-presentation.service');
 const {
   normalizePublicFilePath,
+  encodePublicFilePath,
   buildFilePageUrl,
   buildFileDownloadUrl,
 } = require('../utils/public-paths');
+
+/**
+ * 目录链接前缀跟随当前入口：从 /files 进就在 /files 下继续走，
+ * 从旧的 /category 进来就留在 /category，避免浏览中途换 URL 结构。
+ */
+const directoryHrefBuilder = (reqPath) => {
+  const useFilesPrefix = reqPath === '/files' || String(reqPath).startsWith('/files/');
+  const base = useFilesPrefix ? '/files' : '/category';
+  return (folderPath) => (folderPath === 'root' ? '/' : `${base}/${encodePublicFilePath(folderPath)}`);
+};
 
 // 新增顶层路由或静态挂载点时必须同步登记，否则会被文件详情页的 catch-all 吞掉
 const RESERVED_ROOTS = new Set([
@@ -158,7 +169,11 @@ router.use((req, res, next) => {
   res.locals.getFileExt = getFileExt;
   res.locals.buildFilePageUrl = buildFilePageUrl;
   res.locals.buildFileDownloadUrl = buildFileDownloadUrl;
-  res.locals.buildCategoryHref = folderTreeService.buildCategoryHref;
+  res.locals.buildCategoryHref = req.path === '/files' || String(req.path).startsWith('/files/')
+    ? directoryHrefBuilder(req.path)
+    : folderTreeService.buildCategoryHref;
+  res.locals.buildDirHref = directoryHrefBuilder(req.path);
+  res.locals.buildFilesHref = directoryHrefBuilder('/files/x');
   res.locals.currentTheme = themeService.getTheme();
   res.locals.siteInfo = themeService.getSiteInfo();
   res.locals.fileSyncStatus = syncContext.fileStatus;
@@ -216,7 +231,6 @@ const renderDirectory = (res, { currentPath, directoryName }) => {
     parentPath: directory.parentPath,
     ancestors: directory.ancestors,
     breadcrumbs: directory.breadcrumbs,
-    canonicalHref: (folderPath) => `/files/${folderPath === 'root' ? '' : folderPath.split('/').map(encodeURIComponent).join('/')}`,
     directories,
     files: directory.files,
     treeRows: directory.treeRows,
@@ -476,15 +490,29 @@ router.get('/d/*', downloadLimiter, (req, res, next) => {
 
 // 法律协议页面必须在文件详情 catch-all 之前注册，并列入保留路径
 router.get('/privacy', (req, res) => {
-  const siteInfo = themeService.getSiteInfo();
   const privacyContent = fs.readFileSync(path.join(__dirname, '..', 'views', 'partials', 'privacy-policy.ejs'), 'utf-8');
-  return res.render('legal', { title: '隐私政策', siteInfo, legalContent: privacyContent });
+  return res.render('legal', {
+    title: '隐私政策',
+    siteInfo: themeService.getSiteInfo(),
+    currentTheme: themeService.getTheme(),
+    legalContent: privacyContent,
+    pageScripts: [],
+    cspNonce: res.locals.cspNonce,
+    appVersion: res.locals.appVersion,
+  });
 });
 
 router.get('/terms', (req, res) => {
-  const siteInfo = themeService.getSiteInfo();
   const termsContent = fs.readFileSync(path.join(__dirname, '..', 'views', 'partials', 'terms-of-service.ejs'), 'utf-8');
-  return res.render('legal', { title: '服务使用协议', siteInfo, legalContent: termsContent });
+  return res.render('legal', {
+    title: '服务使用协议',
+    siteInfo: themeService.getSiteInfo(),
+    currentTheme: themeService.getTheme(),
+    legalContent: termsContent,
+    pageScripts: [],
+    cspNonce: res.locals.cspNonce,
+    appVersion: res.locals.appVersion,
+  });
 });
 
 // 文件详情页 catch-all
@@ -506,6 +534,7 @@ router.get('*', (req, res, next) => {
   if (!resolved) return;
 
   const siteInfo = themeService.getSiteInfo();
+  const fileHref = directoryHrefBuilder('/files/x');
   const parentPath = folderTreeService.getParentFolderPath(resolved.file.file_path);
   const project = req.npcSyncContext.projectForFile(resolved.file);
   return renderTheme(res, 'file', {
@@ -514,7 +543,7 @@ router.get('*', (req, res, next) => {
     publicFilePath: resolved.publicFilePath,
     filePageHref: buildFilePageUrl(resolved.file.file_path),
     downloadUrl: buildFileDownloadUrl(resolved.file.file_path),
-    parentHref: folderTreeService.buildCategoryHref(parentPath),
+    parentHref: fileHref(parentPath),
     ancestors: folderTreeService.listFolderEntries({
       currentPath: parentPath,
       files: [],

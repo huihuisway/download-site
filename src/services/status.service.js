@@ -161,11 +161,12 @@ const projectSummary = () => {
   const affecting = visible.filter((project) => project.affects_global_status !== false);
   const counts = {};
   for (const project of visible) counts[project.status] = (counts[project.status] || 0) + 1;
-  const degraded = affecting.filter((p) => p.status === 'failed');
-  const partial = affecting.filter((p) => p.status === 'partial' || p.status === 'delayed');
-  const syncing = affecting.filter((p) => p.status === 'syncing');
-  const status = degraded.length ? 'degraded' : partial.length ? 'degraded' : syncing.length ? 'syncing' : 'operational';
-  return { status, counts, projects: visible, degraded: degraded.length, partial: partial.length, syncing: syncing.length };
+  const degraded = affecting.filter((p) => p.status === 'failed' || p.status === 'partial');
+  // 同步延迟属于「内容还没跟上」，不是服务故障：归入「同步中」而非「部分异常」，
+  // 否则一个子项目慢半拍就会让整站顶部显示异常。
+  const syncing = affecting.filter((p) => p.status === 'syncing' || p.status === 'delayed');
+  const status = degraded.length ? 'degraded' : syncing.length ? 'syncing' : 'operational';
+  return { status, counts, projects: visible, degraded: degraded.length, partial: syncing.length, syncing: syncing.length };
 };
 
 /**
@@ -198,7 +199,7 @@ const buildStatus = ({ requestId, fresh = false } = {}) => {
       counts: projects.counts,
       total: projects.projects.length,
       degraded: projects.degraded,
-      partial: projects.partial,
+      delayed: projects.partial,
       syncing: projects.syncing,
       items: projects.projects.map((project) => ({
         id: project.id,

@@ -49,13 +49,15 @@ const ensureStore = () => {
 };
 
 const now = () => new Date().toISOString();
-const asString = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
-const asOptionalDate = (value) => {
-  if (!value) return null;
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? null : new Date(parsed).toISOString();
-};
 
+// 注意别用 Date.parse(0)：它会把数字 0 解析成 2000 年而不是 epoch，
+// 于是「从未同步」被判成「很久以前同步过」。
+const parseTime = (value) => {
+  if (!value || typeof value !== 'string') return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+const asString = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 const normalize = (input, partial = false) => {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('项目参数必须是对象');
   const value = {};
@@ -201,8 +203,8 @@ const computeStatus = (project) => {
   const record = releaseRecordFor(project);
   const files = filesForProject(project);
   const missing = files.filter((file) => !fileExists(file)).length;
-  const lastSuccess = Date.parse(project.last_success_at || source?.last_success_at || record?.synced_at || 0);
-  const lastStarted = Date.parse(project.last_sync_started_at || source?.last_sync_at || 0);
+  const lastSuccess = parseTime(project.last_success_at || source?.last_success_at || record?.synced_at);
+  const lastStarted = parseTime(project.last_sync_started_at || source?.last_sync_at);
   const remote = project.remote_version || record?.tag_name || '';
   const local = project.local_version || '';
 
@@ -210,7 +212,14 @@ const computeStatus = (project) => {
     return { status: 'failed', reason: (source?.last_error || record?.error || '最近一次同步失败').slice(0, 200) };
   }
   if (!source && !files.length) return { status: 'pending', reason: '尚未同步' };
-  if (!lastSuccess) return { status: 'pending', reason: '尚未完成首次同步' };
+
+  // 从未成功同步过：不判「延迟」（否则新项目一上线就挂着「同步延迟」很像故障）。
+  // 本地文件已经齐全且没有上游版本可对照时，按已同步处理。
+  if (!lastSuccess) {
+    if (files.length && missing === 0) return { status: 'synced', reason: '' };
+    if (missing > 0) return { status: 'partial', reason: `${missing} 个文件尚未就绪` };
+    return { status: 'pending', reason: '尚未完成首次同步' };
+  }
 
   const elapsed = Date.now() - lastSuccess;
   const startedAgo = lastStarted ? Date.now() - lastStarted : elapsed;
@@ -350,28 +359,19 @@ const remove = (id) => {
  * 目录绑定项目来自 project.local_path；一个目录下可能挂着多个项目，
  * 按「全部完成 / 存在同步中 / 部分完成 / 存在失败 / 全部未知」聚合。
  */
-const DIRECTORY_STATUS_PRIORITY = ['failed', 'partial', 'syncing', 'delayed', 'pending', 'synced', 'unknown'];
-
+/**
+ * 目录状态聚合：目录下多个项目状态不一致时按「最需要被看见」的那个展示，
+ * 但不能因为一个失败子项目就把整层显示成异常 —— 混合情况统一落到「部分完成」。
+ */
 const aggregateStatus = (statuses) => {
   if (!statuses.length) return null;
-  if (statuses.every((status) => status === 'synced')) return 'synced';
-  if (statuses.some((status) => status === 'syncing')) return 'syncing';
-  if (statuses.some((status) => status === 'partial')) return 'partial';
-  if (statuses.some((status) => status === 'failed')) return 'failed';
-  if (statuses.some((status) => status === 'delayed')) return 'delayed';
-  if (statuses.every((status) => status === 'unknown')) return 'unknown';
-  return statuses.find((status) => status !== 'unknown') || 'unknown';
-};
-
-const directoryStatusMap = () => {
-  const projects = list();
-  const map = {};
-  for (const project of projects) {
-    if (!project.local_path) continue;
-    if (!map[project.local_path]) map[project.local_path] = [];
-    map[project.local_path].push(project);
-  }
-  return map;
+  const kinds = new Set(statuses);
+  if (kinds.size === 1) return statuses[0];
+  if (kinds.has('syncing')) return 'syncing';
+  if (kinds.has('failed')) return 'failed';
+  if (kinds.has('partial')) return 'partial';
+  if (kinds.has('delayed')) return 'delayed';
+  return 'partial';
 };
 
 /** 返回「目录路径 → 状态」的聚合视图，未绑定项目的目录不出现在结果里 */
@@ -443,7 +443,6 @@ const buildChain = (project) => {
   const status = project.status || computeStatus(project).status;
   const done = status === 'synced';
   const running = status === 'syncing';
-  const downstream = done ? '已完成' : running ? '同步中' : '等待';
   const nodes = [
     { key: 'upstream', label: '上游版本', state: record || source ? 'done' : 'waiting', detail: project.remote_version || project.local_version || '' },
     { key: 'build', label: '构建任务', state: record ? 'done' : 'waiting', detail: '' },

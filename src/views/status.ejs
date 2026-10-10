@@ -42,7 +42,7 @@
 <section class="mdt-section" aria-labelledby="mdt-status-projects">
   <div class="mdt-section-head">
     <h2 class="mdt-section-title" id="mdt-status-projects">项目同步状态</h2>
-    <span class="mdt-section-note"><%= status.projects.total %> 个项目<% if (status.projects.syncing) { %> · <%= status.projects.syncing %> 个同步中<% } %></span>
+    <span class="mdt-section-note"><%= status.projects.total %> 个项目<% if (status.projects.syncing) { %> · <%= status.projects.syncing %> 个同步中<% } %><% if (status.projects.degraded) { %> · <%= status.projects.degraded %> 个需关注<% } %></span>
   </div>
   <% if (!status.projects.items.length) { %>
     <p class="mdt-empty">还没有配置同步项目。管理员可在后台「项目同步」中添加。</p>

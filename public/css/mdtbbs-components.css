@@ -304,3 +304,21 @@
 @media (min-width: 761px) and (max-width: 900px) {
   .mdt-table .mdt-col-time { display: none; }
 }
+
+/* ===== 法律条款 ===== */
+.mdt-legal {
+  margin-top: var(--space-4);
+  padding: var(--space-5);
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.9;
+}
+
+.mdt-legal h1, .mdt-legal h2, .mdt-legal h3 { margin: var(--space-4) 0 var(--space-2); color: var(--text); font-size: 1rem; }
+.mdt-legal h1:first-child, .mdt-legal h2:first-child { margin-top: 0; }
+.mdt-legal p { margin-bottom: var(--space-3); }
+.mdt-legal ul, .mdt-legal ol { margin: 0 0 var(--space-3) var(--space-5); }
+.mdt-legal a { color: var(--primary); }
+.mdt-legal code { font-family: var(--font-mono); font-size: 0.8125rem; }

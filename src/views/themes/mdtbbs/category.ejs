@@ -8,9 +8,10 @@
     <span class="is-current" aria-current="page">文件目录</span>
   <% } else { %>
     <a href="/files">文件目录</a>
-    <% breadcrumbs.forEach(function (crumb, index) { %>
+    <% const visibleCrumbs = breadcrumbs.filter(function (crumb) { return crumb.path !== 'root'; }); %>
+    <% visibleCrumbs.forEach(function (crumb, index) { %>
       <span aria-hidden="true">/</span>
-      <% if (index === breadcrumbs.length - 1) { %>
+      <% if (index === visibleCrumbs.length - 1) { %>
         <span class="is-current" aria-current="page"><%= crumb.name %></span>
       <% } else { %>
         <a href="<%= buildCategoryHref(crumb.path) %>"><%= crumb.name %></a>
@@ -39,7 +40,7 @@
 <% } %>
 
 <% if (directoryStatuses && Object.keys(directoryStatuses).length) { %>
-  <% const projectList = []; directoryStatuses.forEach(function (entry) { entry.projects.forEach(function (project) { if (!projectList.some(function (item) { return item.id === project.id; })) projectList.push(project); }); }); %>
+  <% const projectList = []; Object.keys(directoryStatuses).forEach(function (key) { (directoryStatuses[key].projects || []).forEach(function (project) { if (!projectList.some(function (item) { return item.id === project.id; })) projectList.push(project); }); }); %>
   <% if (projectList.length) { %>
     <p class="mdt-hint" data-tone="none">本层目录涉及 <%= projectList.length %> 个同步项目：
       <% projectList.forEach(function (project, index) { %><a href="/status#project-<%= project.id %>"><%= project.name %></a><span class="mdt-status mdt-status-<%= project.status %>"><%= project.status || 'unknown' %></span><% if (index < projectList.length - 1) { %> · <% } %><% }); %>
