@@ -4,7 +4,7 @@ import api from '../api/client';
 import { useToast } from '../components/Toast';
 
 function SiteSettings() {
-  const [siteInfo, setSiteInfo] = useState({ site_name: '', site_description: '', footer_text: '', footer_links: [], icp_number: '', police_number: '' });
+  const [siteInfo, setSiteInfo] = useState({ site_name: '', site_description: '', footer_text: '', footer_links: [], external_links: [], icp_number: '', police_number: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -26,6 +26,12 @@ function SiteSettings() {
     setDirty(true);
   };
   const handleRemoveLink = (i) => { setSiteInfo((p) => ({ ...p, footer_links: p.footer_links.filter((_, j) => j !== i) })); setDirty(true); };
+  const handleAddExternal = () => { setSiteInfo((p) => ({ ...p, external_links: [...(p.external_links || []), { label: '', url: '' }] })); setDirty(true); };
+  const handleUpdateExternal = (i, field, value) => {
+    setSiteInfo((p) => { const links = [...(p.external_links || [])]; links[i] = { ...links[i], [field]: value }; return { ...p, external_links: links }; });
+    setDirty(true);
+  };
+  const handleRemoveExternal = (i) => { setSiteInfo((p) => ({ ...p, external_links: (p.external_links || []).filter((_, j) => j !== i) })); setDirty(true); };
 
   const handleSave = async () => {
     setSaving(true);
@@ -117,6 +123,27 @@ function SiteSettings() {
                         <input type="text" className="input-field flex-1 min-w-0" placeholder="标签" value={link.label} onChange={(e) => handleUpdateLink(i, 'label', e.target.value)} />
                         <input type="text" className="input-field flex-1 min-w-0" placeholder="URL" value={link.url} onChange={(e) => handleUpdateLink(i, 'url', e.target.value)} />
                         <button onClick={() => handleRemoveLink(i)} className="btn-ghost !p-2" data-admin-style="text-error"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2 mt-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider" data-admin-style="text-secondary">侧栏外部链接</label>
+                  <button onClick={handleAddExternal} className="btn-ghost text-xs"><Plus className="w-3 h-3 mr-1" />添加</button>
+                </div>
+                <p className="text-xs mb-2" data-admin-style="text-muted">显示在左侧导航底部，例如 MDTBBS 论坛、文档、帮助。</p>
+                {(siteInfo.external_links || []).length === 0 ? (
+                  <p className="text-sm italic py-3" data-admin-style="text-muted">暂无外部链接</p>
+                ) : (
+                  <div className="space-y-2">
+                    {siteInfo.external_links.map((link, i) => (
+                      <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input type="text" className="input-field flex-1 min-w-0" placeholder="标签" value={link.label} onChange={(e) => handleUpdateExternal(i, 'label', e.target.value)} />
+                        <input type="text" className="input-field flex-1 min-w-0" placeholder="https://…" value={link.url} onChange={(e) => handleUpdateExternal(i, 'url', e.target.value)} />
+                        <button onClick={() => handleRemoveExternal(i)} className="btn-ghost !p-2" data-admin-style="text-error"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </div>
