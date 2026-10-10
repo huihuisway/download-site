@@ -15,6 +15,13 @@
   const name = document.getElementById('mindustry-recommend-name');
   const meta = document.getElementById('mindustry-recommend-meta');
   const status = document.getElementById('mindustry-device-status');
+  const stickyDownload = document.getElementById('mindustry-sticky-download');
+  const stickyName = document.getElementById('mindustry-sticky-name');
+  const stickyMeta = document.getElementById('mindustry-sticky-meta');
+  const versionSearch = document.getElementById('mindustry-version-search');
+  const versionRows = [...document.querySelectorAll('.mindustry-version-row')];
+  const versionEmpty = document.getElementById('mindustry-version-empty');
+  const versionTabs = [...document.querySelectorAll('.mindustry-version-tab')];
   const formatSize = (bytes) => {
     if (!bytes) return '';
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -36,6 +43,14 @@
     download.innerHTML = `下载 ${asset.displayName}<span aria-hidden="true">↓</span>`;
     name.textContent = asset.displayName;
     meta.textContent = [asset.format, formatSize(asset.fileSize), asset.architecture].filter(Boolean).join(' · ');
+    // 手机底部常驻下载条跟随推荐平台切换
+    if (stickyDownload) {
+      stickyDownload.href = asset.downloadUrl;
+      stickyDownload.dataset.fileId = asset.fileId || '';
+      stickyDownload.dataset.platform = asset.platform;
+      if (stickyName) stickyName.textContent = `${asset.displayName}${asset.versionName ? ` · ${asset.versionName}` : ''}`;
+      if (stickyMeta) stickyMeta.textContent = [asset.format, formatSize(asset.fileSize), asset.architecture].filter(Boolean).join(' · ');
+    }
     buttons.forEach((button) => {
       const selected = Number(button.dataset.assetIndex) === index;
       button.classList.toggle('is-selected', selected);
@@ -96,4 +111,34 @@
       console.error('[mindustry] 复制失败:', error);
     }
   }));
+
+  // 版本筛选：搜索框 + 正式版/测试版/历史版本 三档
+  let activeFilter = 'all';
+  const applyVersionFilter = () => {
+    const keyword = (versionSearch?.value || '').trim().toLowerCase();
+    let visible = 0;
+    versionRows.forEach((row) => {
+      const version = String(row.dataset.version || '').toLowerCase();
+      const channel = row.dataset.channel;
+      const index = Number(row.dataset.index || 0);
+      let matched = !keyword || version.includes(keyword) || String(index + 1) === keyword;
+      if (activeFilter === 'stable' || activeFilter === 'prerelease') matched = matched && channel === activeFilter;
+      if (activeFilter === 'history') matched = matched && index > 0;
+      row.hidden = !matched;
+      if (matched) visible += 1;
+    });
+    if (versionEmpty) versionEmpty.hidden = visible > 0;
+  };
+
+  versionTabs.forEach((tab) => tab.addEventListener('click', () => {
+    activeFilter = tab.dataset.versionFilter || 'all';
+    versionTabs.forEach((item) => {
+      const selected = item === tab;
+      item.classList.toggle('is-active', selected);
+      item.setAttribute('aria-selected', String(selected));
+    });
+    applyVersionFilter();
+  }));
+
+  versionSearch?.addEventListener('input', applyVersionFilter);
 })();

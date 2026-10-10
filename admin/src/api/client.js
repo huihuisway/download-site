@@ -225,6 +225,27 @@ export const api = {
   async getReleaseSourceJobs(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/jobs`)); },
   async getReleaseSourceAssets(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/assets`)); },
   async retryReleaseTask(id) { return handleResponse(await fetch(`${API_BASE}/releases/sources/${encodeURIComponent(id)}/retry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })); },
+
+  // 通知管理
+  async getNotices() { return handleResponse(await fetch(`${API_BASE}/notices`)); },
+  async getNotice(id) { return handleResponse(await fetch(`${API_BASE}/notices/${encodeURIComponent(id)}`)); },
+  async createNotice(data) { return handleResponse(await fetch(`${API_BASE}/notices`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })); },
+  async updateNotice(id, data) { return handleResponse(await fetch(`${API_BASE}/notices/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })); },
+  async deleteNotice(id) { return handleResponse(await fetch(`${API_BASE}/notices/${encodeURIComponent(id)}`, { method: 'DELETE' })); },
+  async enableNotice(id) { return handleResponse(await fetch(`${API_BASE}/notices/${encodeURIComponent(id)}/enable`, { method: 'POST' })); },
+  async disableNotice(id) { return handleResponse(await fetch(`${API_BASE}/notices/${encodeURIComponent(id)}/disable`, { method: 'POST' })); },
+
+  // 项目同步
+  async getSyncProjects() { return handleResponse(await fetch(`${API_BASE}/sync-projects`)); },
+  async getSyncProject(id) { return handleResponse(await fetch(`${API_BASE}/sync-projects/${encodeURIComponent(id)}`)); },
+  async createSyncProject(data) { return handleResponse(await fetch(`${API_BASE}/sync-projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })); },
+  async updateSyncProject(id, data) { return handleResponse(await fetch(`${API_BASE}/sync-projects/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })); },
+  async deleteSyncProject(id) { return handleResponse(await fetch(`${API_BASE}/sync-projects/${encodeURIComponent(id)}`, { method: 'DELETE' })); },
+  async checkSyncProject(id) { return handleResponse(await fetch(`${API_BASE}/sync-projects/${encodeURIComponent(id)}/check`, { method: 'POST' })); },
+  async syncSyncProject(id) { return handleResponse(await fetch(`${API_BASE}/sync-projects/${encodeURIComponent(id)}/sync`, { method: 'POST' })); },
+
+  // 状态配置（服务状态页数据源）
+  async getStatusConfig() { return handleResponse(await fetch(`${API_BASE}/status`)); },
 };
 
 export default api;

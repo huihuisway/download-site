@@ -31,6 +31,7 @@ const { syncDirectory } = require('./services/sync.service');
 const { renderThemeError } = require('./utils/render-theme');
 const { startReleaseScheduler, stopReleaseScheduler } = require('./services/release-scheduler');
 const releaseSourceService = require('./services/release-source.service');
+const syncProjectService = require('./services/sync-project.service');
 
 const app = express();
 const appVersion = getAppVersion();
@@ -193,6 +194,15 @@ const startServer = async () => {
   const seededSources = releaseSourceService.ensureMindustrySources();
   if (seededSources.length) console.log(`[init] 已添加 ${seededSources.length} 个 Mindustry Release 来源`);
 
+  // 项目同步状态：按既有 Release Source 生成骨架并刷新一次状态
+  try {
+    const seededProjects = syncProjectService.ensureDefaultProjects();
+    if (seededProjects.length) console.log(`[init] 已添加 ${seededProjects.length} 个同步项目`);
+    syncProjectService.refreshAll();
+  } catch (err) {
+    console.error('[init] 项目同步状态初始化失败:', err.message);
+  }
+
   // 启动时自动同步目录
   console.log('[init] 正在同步文件目录...');
   try {
@@ -202,6 +212,7 @@ const startServer = async () => {
     console.error('[init] 同步失败:', err.message);
   }
   startReleaseScheduler();
+  startProjectStatusScheduler();
 
   app.listen(config.port, () => {
     console.log(`[server] 下载站已启动: http://localhost:${config.port}`);
@@ -211,10 +222,31 @@ const startServer = async () => {
   });
 };
 
+/**
+ * 项目状态轮询：每 60 秒按当前文件/来源状态刷新一次，
+ * 顺带触发「同步延迟 / 失败 / 恢复」的自动通知（同状态只保留一条）。
+ */
+let projectStatusTimer;
+function startProjectStatusScheduler() {
+  if (projectStatusTimer) return projectStatusTimer;
+  projectStatusTimer = setInterval(() => {
+    try {
+      syncProjectService.refreshAll();
+    } catch (err) {
+      console.error('[sync-project] 状态刷新失败:', err.message);
+    }
+  }, 60 * 1000);
+  projectStatusTimer.unref?.();
+  return projectStatusTimer;
+}
+
 // 仅在直接运行时启动服务（允许测试安全导入）
 if (require.main === module) {
   startServer();
-  process.on('SIGTERM', stopReleaseScheduler);
+  process.on('SIGTERM', () => {
+    stopReleaseScheduler();
+    if (projectStatusTimer) clearInterval(projectStatusTimer);
+  });
 }
 
 module.exports = app;

@@ -1,0 +1,45 @@
+<%- include('partials/shell/head') %>
+<%- include('partials/shell/banner') %>
+<%- include('partials/shell/header') %>
+<%- include('partials/shell/sidebar') %>
+
+<nav class="mdt-breadcrumb" aria-label="面包屑导航"><a href="/">MDT File</a><span aria-hidden="true">/</span><span class="is-current">通知公告</span></nav>
+
+<div class="mdt-page-head">
+  <div>
+    <h1 class="mdt-page-title">通知公告</h1>
+    <p class="mdt-page-desc">版本更新、维护通知与故障通报</p>
+  </div>
+  <div class="mdt-page-actions"><a class="mdt-secondary-link" href="/status">查看服务状态</a></div>
+</div>
+
+<div class="mdt-notice-filters" role="tablist" aria-label="通知分类">
+  <a class="mdt-filter<%= activeCategory === '' ? ' is-active' : '' %>" href="/notices">全部</a>
+  <% Object.keys(categoryLabels).forEach(function (key) { %>
+    <a class="mdt-filter<%= activeCategory === key ? ' is-active' : '' %>" href="/notices?type=<%= key %>"><%= categoryLabels[key] %></a>
+  <% }); %>
+</div>
+
+<% if (!notices.length) { %>
+  <p class="mdt-empty">暂时没有通知。重要公告与同步状态变化会显示在这里。</p>
+<% } else { %>
+  <div class="mdt-notice-list">
+    <% notices.forEach(function (notice) { %>
+      <article class="mdt-notice-item">
+        <span class="mdt-status mdt-notice-type" data-type="<%= notice.type %>"><%= notice.type_label %></span>
+        <div>
+          <h3><a href="/notices/<%= notice.id %>"><%= notice.title %></a></h3>
+          <p><%= notice.content %></p>
+          <p class="mdt-section-note">
+            <%= notice.category_label %>
+            <% if (notice.source === 'system') { %>· 系统通知<% } else { %>· 站点公告<% } %>
+            <% if (notice.version) { %>· <%= notice.version %><% } %>
+          </p>
+        </div>
+        <div class="mdt-notice-meta"><time datetime="<%= notice.start_at || notice.created_at %>"><%= formatDate(notice.start_at || notice.created_at) %></time></div>
+      </article>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('partials/shell/footer') %>

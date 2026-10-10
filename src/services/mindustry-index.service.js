@@ -54,6 +54,7 @@ const buildManifest = () => {
         source_repository: file.source_repository || null,
         source_repositories: [],
         release_url: file.release_url || null,
+        asset_dirs: [],
         assets: [],
       });
     }
@@ -67,6 +68,8 @@ const buildManifest = () => {
       release.published_at = file.published_at || release.published_at;
       release.build_name = file.build_name || release.build_name;
     }
+    const assetDir = String(file.file_path || '').split('/').slice(0, -1).join('/');
+    if (assetDir && !release.asset_dirs.includes(assetDir)) release.asset_dirs.push(assetDir);
     release.assets.push({
       file_id: file.id,
       file_name: file.file_name,
@@ -87,6 +90,11 @@ const buildManifest = () => {
       .map((release) => ({
         ...release,
         source_repositories: [...new Set(release.source_repositories)],
+        directory: release.asset_dirs[0] || null,
+        directory_href: release.asset_dirs[0]
+          ? `/files/${release.asset_dirs[0].split('/').map(encodeURIComponent).join('/')}`
+          : null,
+        asset_dirs: undefined,
         assets: deduplicateAssets(release.assets)
           .sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform) || a.file_name.localeCompare(b.file_name)),
       }))

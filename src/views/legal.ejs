@@ -1,14 +1,17 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> - <%= siteInfo.site_name %></title>
-  <link rel="stylesheet" href="/css/legal.css">
-</head>
-<body>
-  <div class="legal-page">
-    <%- legalContent %>
+<%- include('partials/shell/head') %>
+<%- include('partials/shell/banner') %>
+<%- include('partials/shell/header') %>
+<%- include('partials/shell/sidebar') %>
+
+<nav class="mdt-breadcrumb" aria-label="面包屑导航"><a href="/">MDT File</a><span aria-hidden="true">/</span><span class="is-current"><%= title %></span></nav>
+
+<div class="mdt-page-head">
+  <div>
+    <h1 class="mdt-page-title"><%= title %></h1>
+    <p class="mdt-page-desc"><%= siteInfo.site_name %> 的正式条款</p>
   </div>
-</body>
-</html>
+</div>
+
+<article class="mdt-legal"><%- legalContent %></article>
+
+<%- include('partials/shell/footer') %>

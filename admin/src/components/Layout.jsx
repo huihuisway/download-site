@@ -11,6 +11,9 @@ import {
   Moon,
   Key,
   GitBranch,
+  Bell,
+  Activity,
+  Server,
   Menu,
   X,
 } from 'lucide-react';
@@ -63,6 +66,9 @@ function Layout({ user, children }) {
     { to: '/settings', label: '站点设置', icon: Settings },
     { to: '/api-keys', label: 'API Key', icon: Key },
     { to: '/releases', label: '发布同步', icon: GitBranch },
+    { to: '/sync-projects', label: '项目同步', icon: Activity },
+    { to: '/notices', label: '通知管理', icon: Bell },
+    { to: '/status', label: '状态配置', icon: Server },
   ];
 
   const currentPage = navItems.find(
@@ -96,7 +102,7 @@ function Layout({ user, children }) {
                 <span className="text-white font-bold text-sm">D</span>
               </div>
               <div>
-                <h1 className="text-sm font-semibold" data-admin-style="text">下载站管理</h1>
+                <h1 className="text-sm font-semibold" data-admin-style="text">MDT File 管理</h1>
                 <p className="text-[11px] flex items-center gap-1" data-admin-style="text-muted">
                   {user?.username || '管理员'}
                   {isDev && (

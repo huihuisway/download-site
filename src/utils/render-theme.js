@@ -1,4 +1,5 @@
 const themeService = require('../services/theme.service');
+const shellService = require('../services/shell.service');
 
 /**
  * 渲染主题化错误页
@@ -14,6 +15,11 @@ const renderThemeError = (res, status, data = {}) => {
     ...data,
     currentTheme: theme,
     siteInfo: themeService.getSiteInfo(),
+    ...(theme === 'mdtbbs' ? {
+      shellSection: '',
+      headerStatus: shellService.headerStatus(),
+      globalNotices: shellService.globalNotices(),
+    } : {}),
   });
 };
 

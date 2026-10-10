@@ -1,0 +1,141 @@
+<%- include('partials/shell/head') %>
+<%- include('partials/shell/banner') %>
+<%- include('partials/shell/header') %>
+<%- include('partials/shell/sidebar') %>
+
+<nav class="mdt-breadcrumb" aria-label="面包屑导航"><a href="/">MDT File</a><span aria-hidden="true">/</span><span class="is-current">服务状态</span></nav>
+
+<div class="mdt-page-head">
+  <div>
+    <h1 class="mdt-page-title">服务状态</h1>
+    <p class="mdt-page-desc">下载、清单、同步与节点的实时状态</p>
+  </div>
+  <div class="mdt-page-actions"><a class="mdt-secondary-link" href="/notices">查看维护公告</a></div>
+</div>
+
+<section class="mdt-overall" data-status="<%= status.status %>" id="mdt-overall" aria-live="polite">
+  <div class="mdt-overall-copy">
+    <h2><span class="mdt-status-dot" aria-hidden="true"></span> <span id="mdt-overall-label"><%= status.status_label %></span></h2>
+    <p>最后更新：<time class="mdt-overall-refresh" id="mdt-overall-time" datetime="<%= status.updated_at %>"><%= status.updated_at.slice(11, 19) %></time></p>
+  </div>
+  <button type="button" class="mdt-secondary-link" id="mdt-overall-refresh">刷新</button>
+</section>
+
+<section class="mdt-section" aria-labelledby="mdt-status-core">
+  <div class="mdt-section-head">
+    <h2 class="mdt-section-title" id="mdt-status-core">核心服务</h2>
+    <span class="mdt-section-note">状态每 30 秒自动刷新（页面可见时）</span>
+  </div>
+  <div class="mdt-status-grid" id="mdt-service-grid">
+    <% status.services.forEach(function (service) { %>
+      <article class="mdt-status-card" data-service="<%= service.key %>">
+        <div class="mdt-status-card-head">
+          <span class="mdt-status-card-name"><%= service.name %></span>
+          <span class="mdt-status mdt-status-<%= service.status %>" data-service-status><%= service.status_label %></span>
+        </div>
+        <p class="mdt-status-card-detail" data-service-detail><%= service.detail %></p>
+      </article>
+    <% }); %>
+  </div>
+</section>
+
+<section class="mdt-section" aria-labelledby="mdt-status-projects">
+  <div class="mdt-section-head">
+    <h2 class="mdt-section-title" id="mdt-status-projects">项目同步状态</h2>
+    <span class="mdt-section-note"><%= status.projects.total %> 个项目<% if (status.projects.syncing) { %> · <%= status.projects.syncing %> 个同步中<% } %><% if (status.projects.degraded) { %> · <%= status.projects.degraded %> 个需关注<% } %></span>
+  </div>
+  <% if (!status.projects.items.length) { %>
+    <p class="mdt-empty">还没有配置同步项目。管理员可在后台「项目同步」中添加。</p>
+  <% } else { %>
+    <div class="mdt-data-list" id="mdt-project-list">
+      <% status.projects.items.forEach(function (project) { %>
+        <% const detail = projectDetails[project.id] || {}; %>
+        <details class="mdt-project-item" id="project-<%= project.id %>"<%= status.projects.items.length === 1 ? ' open' : '' %>>
+          <summary class="mdt-project-row" data-project="<%= project.id %>">
+            <div>
+              <span class="mdt-project-name"><strong><%= project.name %></strong><span class="mdt-status mdt-status-<%= project.status %>"><%= project.status_label %></span></span>
+              <span class="mdt-project-versions">
+                <% if (project.remote_version) { %><span>远端 <code><%= project.remote_version %></code></span><% } %>
+                <% if (project.local_version) { %><span>本地 <code><%= project.local_version %></code></span><% } %>
+                <% if (project.files.expected) { %><span>文件 <%= project.files.synced %>/<%= project.files.expected %></span><% } %>
+              </span>
+            </div>
+            <div class="mdt-project-time">
+              <% if (project.status_reason) { %><span><%= project.status_reason %></span><br><% } %>
+              <% if (project.last_check_at) { %>最后检查 <%= formatDate(project.last_check_at) %><% } %>
+            </div>
+            <span class="mdt-project-actions"><span class="mdt-row-action">展开</span></span>
+          </summary>
+          <div class="mdt-project-detail">
+            <div class="mdt-detail-block">
+              <div class="mdt-detail-columns">
+                <div><h4>远端版本</h4><p><code><%= project.remote_version || '—' %></code></p></div>
+                <div><h4>本地版本</h4><p><code><%= project.local_version || '—' %></code></p></div>
+                <div><h4>状态</h4><p><span class="mdt-status mdt-status-<%= project.status %>"><%= project.status_label %></span></p></div>
+                <div><h4>最后检查</h4><p><%= project.last_check_at ? formatDate(project.last_check_at) : '—' %></p></div>
+                <div><h4>最后成功</h4><p><%= project.last_success_at ? formatDate(project.last_success_at) : '—' %></p></div>
+                <% if (detail.dependency && detail.dependency.dependencies.length) { %>
+                  <div>
+                    <h4>依赖项目</h4>
+                    <p>
+                      <% detail.dependency.dependencies.forEach(function (dependency, index) { %>
+                        <a href="#project-<%= dependency.id %>"><%= dependency.name %></a> <span class="mdt-status mdt-status-<%= dependency.status %>"><%= dependency.status %></span><% if (index < detail.dependency.dependencies.length - 1) { %><br><% } %>
+                      <% }); %>
+                    </p>
+                  </div>
+                <% } %>
+              </div>
+              <% if (detail.chain) { %>
+                <div class="mdt-chain" aria-label="同步链">
+                  <% detail.chain.nodes.forEach(function (node, index) { %>
+                    <% if (index > 0) { %><span class="mdt-chain-arrow" aria-hidden="true">→</span><% } %>
+                    <span class="mdt-chain-node" data-state="<%= node.state %>"><%= node.label %><% if (node.detail) { %> <code><%= node.detail %></code><% } %></span>
+                  <% }); %>
+                </div>
+                <p class="mdt-hint"><%= detail.chain.summary %></p>
+              <% } %>
+              <% if (detail.files && detail.files.length) { %>
+                <h4 style="margin-top: var(--space-4); font-size: 0.75rem; color: var(--text-muted)">项目文件</h4>
+                <div class="mdt-file-status-list">
+                  <% detail.files.forEach(function (file) { %>
+                    <div class="mdt-file-status-row">
+                      <code><%= file.file_name %></code>
+                      <span><span class="mdt-status mdt-status-<%= file.status %>"><%= file.status_label %></span></span>
+                      <span class="mdt-col-size"><%= file.size ? formatFileSize(file.size) : '—' %></span>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </details>
+      <% }); %>
+    </div>
+  <% } %>
+</section>
+
+<section class="mdt-section" aria-labelledby="mdt-status-links">
+  <div class="mdt-section-head">
+    <h2 class="mdt-section-title" id="mdt-status-links">相关入口</h2>
+  </div>
+  <div class="mdt-data-list">
+    <div class="mdt-data-row">
+      <div><h3>Mindustry 版本下载</h3><p>查看最新版本与历史 Build</p></div>
+      <div class="mdt-data-actions"><a class="mdt-row-action" href="/mindustry">前往下载</a></div>
+    </div>
+    <div class="mdt-data-row">
+      <div><h3>文件目录</h3><p>浏览全部目录与文件</p></div>
+      <div class="mdt-data-actions"><a class="mdt-row-action" href="/files">打开目录</a></div>
+    </div>
+    <div class="mdt-data-row">
+      <div><h3>版本清单接口</h3><p><code>/api/v1/mindustry/manifest.json</code></p></div>
+      <div class="mdt-data-actions"><a class="mdt-row-action" href="/api/v1/mindustry/manifest.json">查看</a></div>
+    </div>
+    <div class="mdt-data-row">
+      <div><h3>服务状态接口</h3><p><code>/api/v1/status</code></p></div>
+      <div class="mdt-data-actions"><a class="mdt-row-action" href="/api/v1/status">查看</a></div>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/shell/footer') %>

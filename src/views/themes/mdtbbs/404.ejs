@@ -1,0 +1,18 @@
+<%- include('head') %>
+<%- include('../../partials/shell/banner') %>
+<%- include('../../partials/shell/header') %>
+<%- include('../../partials/shell/sidebar') %>
+
+<nav class="mdt-breadcrumb" aria-label="面包屑导航"><a href="/">MDT File</a><span aria-hidden="true">/</span><span class="is-current">页面未找到</span></nav>
+
+<section class="mdt-panel">
+  <p><span class="mdt-status mdt-status-failed">404</span></p>
+  <h1 class="mdt-page-title" style="margin-top: var(--space-3)">页面不存在</h1>
+  <p class="mdt-hint">这个页面可能已经被移动或删除。</p>
+  <div class="mdt-action-row" style="margin-top: var(--space-4)">
+    <a class="mdt-primary-link" href="/files">返回文件目录</a>
+    <a class="mdt-secondary-link" href="/">回到首页</a>
+  </div>
+</section>
+
+<%- include('../../partials/shell/footer') %>

@@ -37,6 +37,7 @@ const errorHandler = (err, req, res, _next) => {
   try {
     const themeService = require('../services/theme.service');
     const theme = themeService.getTheme();
+    const shellService = require('../services/shell.service');
     return res.status(status).render(`themes/${theme}/error`, {
       title: '出错了',
       message,
@@ -44,6 +45,7 @@ const errorHandler = (err, req, res, _next) => {
       fileName: null,
       currentTheme: theme,
       siteInfo: themeService.getSiteInfo(),
+      ...(theme === 'mdtbbs' ? { shellSection: '', headerStatus: shellService.headerStatus(), globalNotices: shellService.globalNotices() } : {}),
     });
   } catch (renderErr) {
     console.error('[error] 错误页渲染失败:', renderErr.message);
@@ -57,7 +59,13 @@ const notFoundHandler = (req, res) => {
   }
   const themeService = require('../services/theme.service');
   const theme = themeService.getTheme();
-  return res.status(404).render(`themes/${theme}/404`, { title: '页面未找到' });
+  const shellService = require('../services/shell.service');
+  return res.status(404).render(`themes/${theme}/404`, {
+    title: '页面未找到',
+    currentTheme: theme,
+    siteInfo: themeService.getSiteInfo(),
+    ...(theme === 'mdtbbs' ? { shellSection: '', headerStatus: shellService.headerStatus(), globalNotices: shellService.globalNotices() } : {}),
+  });
 };
 
 module.exports = {

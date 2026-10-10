@@ -29,6 +29,26 @@ const migrations = [
       if (!db.data.release_sync) db.data.release_sync = [];
     },
   },
+  {
+    version: 4,
+    description: 'MDT File：通知/项目同步数据结构 + 默认主题切到 mdtbbs',
+    up: () => {
+      for (const table of ['notices', 'sync_projects', 'sync_project_files', 'sync_events']) {
+        if (!Array.isArray(db.data[table])) db.data[table] = [];
+      }
+      if (!db.data._nextNoticeId) db.data._nextNoticeId = 1;
+      if (!db.data._nextSyncProjectId) db.data._nextSyncProjectId = 1;
+      if (!db.data._nextSyncEventId) db.data._nextSyncEventId = 1;
+      // 只有仍停留在旧默认值(editorial)的站点才切到新默认主题，
+      // 管理员手动选过的主题不做改动。
+      const themeSetting = (db.data.settings || []).find((item) => item.key === 'theme');
+      if (themeSetting && themeSetting.value === 'editorial') {
+        themeSetting.value = 'mdtbbs';
+        themeSetting.updated_at = new Date().toISOString();
+      }
+      db._save();
+    },
+  },
 ];
 
 const getSchemaVersion = () => {

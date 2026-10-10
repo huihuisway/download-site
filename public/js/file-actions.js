@@ -25,6 +25,7 @@
         url.searchParams.set('tracked', '1');
         link.href = url.toString();
       } catch { /* 下载仍可使用原链接 */ }
+      if (typeof window.mdtToast === 'function') window.mdtToast('下载已开始', 'success', 2000);
     });
   });
 
@@ -49,12 +50,16 @@
         if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
         else fallbackCopy(value);
         if (status) status.textContent = '已复制';
+        if (!status && typeof window.mdtToast === 'function') window.mdtToast('已复制', 'success', 2000);
       } catch {
         try {
           fallbackCopy(value);
           if (status) status.textContent = '已复制';
+          if (!status && typeof window.mdtToast === 'function') window.mdtToast('已复制', 'success', 2000);
         } catch {
+          // 没有行内状态位时用全局 Toast 兜底，保证「复制失败」可见
           if (status) status.textContent = '复制失败';
+          if (!status && typeof window.mdtToast === 'function') window.mdtToast('复制失败', 'error', 2600);
         }
       }
       window.setTimeout(() => { if (status) status.textContent = ''; }, 1800);

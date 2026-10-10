@@ -1,0 +1,26 @@
+<%- include('partials/shell/head') %>
+<%- include('partials/shell/banner') %>
+<%- include('partials/shell/header') %>
+<%- include('partials/shell/sidebar') %>
+
+<nav class="mdt-breadcrumb" aria-label="面包屑导航">
+  <a href="/">MDT File</a><span aria-hidden="true">/</span><a href="/notices">通知公告</a><span aria-hidden="true">/</span><span class="is-current"><%= notice.title %></span>
+</nav>
+
+<article class="mdt-notice-detail">
+  <span class="mdt-status mdt-notice-type" data-type="<%= notice.type %>"><%= notice.type_label %></span>
+  <h1 style="margin-top: var(--space-3)"><%= notice.title %></h1>
+  <p class="mdt-section-note">
+    <%= notice.category_label %> ·
+    <time datetime="<%= notice.start_at || notice.created_at %>"><%= formatDate(notice.start_at || notice.created_at) %></time>
+    <% if (notice.end_at) { %> · 有效至 <%= formatDate(notice.end_at) %><% } %>
+    <% if (notice.source === 'system') { %> · 系统通知<% } %>
+  </p>
+  <div class="mdt-notice-detail-body"><%= notice.content || '暂无详细说明。' %></div>
+  <div class="mdt-notice-detail-actions">
+    <% if (notice.action_url && notice.action_label) { %><a class="mdt-primary-link" href="<%= notice.action_url %>"><%= notice.action_label %></a><% } %>
+    <a class="mdt-secondary-link" href="/notices">返回通知列表</a>
+  </div>
+</article>
+
+<%- include('partials/shell/footer') %>

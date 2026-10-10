@@ -1,0 +1,40 @@
+  </main>
+</div>
+<footer class="site-footer mdt-shell-footer">
+  <div class="footer-inner">
+    <span class="footer-text"><%= siteInfo.footer_text %></span>
+    <span class="footer-links"><a href="/files">文件目录</a><span class="footer-sep">·</span><a href="/mindustry">Mindustry</a><span class="footer-sep">·</span><a href="/status">服务状态</a></span>
+    <% if (siteInfo.footer_links && siteInfo.footer_links.length) { %>
+      <span class="footer-links">
+        <% for (let i = 0; i < siteInfo.footer_links.length; i++) { %>
+          <% const link = siteInfo.footer_links[i]; %>
+          <a href="<%= link.url %>"><%= link.label %></a>
+          <% if (i < siteInfo.footer_links.length - 1) { %><span class="footer-sep">·</span><% } %>
+        <% } %>
+      </span>
+    <% } %>
+    <% if (siteInfo.icp_number || siteInfo.police_number) { %>
+      <span class="footer-beian">
+        <% if (siteInfo.icp_number) { %><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener"><%= siteInfo.icp_number %></a><% } %>
+        <% if (siteInfo.icp_number && siteInfo.police_number) { %><span class="footer-sep">·</span><% } %>
+        <% if (siteInfo.police_number) { %><a href="https://beian.mps.gov.cn/" target="_blank" rel="noopener"><%= siteInfo.police_number %></a><% } %>
+      </span>
+    <% } %>
+    <span class="footer-version" aria-label="当前版本"><%= appVersion %></span>
+  </div>
+</footer>
+<div class="mdt-toast-stack" id="mdt-toast-stack" aria-live="polite" aria-atomic="true"></div>
+<script nonce="<%= cspNonce %>">
+  function toggleTheme() {
+    var html = document.documentElement;
+    var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    if (next === 'dark') html.setAttribute('data-theme', 'dark');
+    else html.removeAttribute('data-theme');
+    localStorage.setItem('theme', next);
+  }
+  document.querySelectorAll('.theme-toggle').forEach(function (btn) {
+    btn.addEventListener('click', toggleTheme);
+  });
+</script>
+</body>
+</html>

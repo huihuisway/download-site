@@ -8,6 +8,9 @@ import ThemeSettings from './pages/ThemeSettings';
 import SiteSettings from './pages/SiteSettings';
 import ApiKeys from './pages/ApiKeys';
 import Releases from './pages/Releases';
+import Notices from './pages/Notices';
+import SyncProjects from './pages/SyncProjects';
+import StatusConfig from './pages/StatusConfig';
 import Login from './pages/Login';
 import { ToastProvider } from './components/Toast';
 
@@ -34,6 +37,9 @@ function App() {
             <Route path="/settings" element={<SiteSettings />} />
             <Route path="/api-keys" element={<ApiKeys />} />
             <Route path="/releases" element={<Releases />} />
+            <Route path="/sync-projects" element={<SyncProjects />} />
+            <Route path="/notices" element={<Notices />} />
+            <Route path="/status" element={<StatusConfig />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
