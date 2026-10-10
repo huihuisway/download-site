@@ -88,4 +88,30 @@
     const drawer = document.getElementById('mdt-drawer');
     if (navLink && drawer) drawer.checked = false;
   });
+
+  /**
+   * 顶部服务状态：60 秒一次、且只在页面可见时刷新。
+   * 状态页（/status）自己带 30 秒轮询，这里跳过以免同一页面两次请求。
+   */
+  const pill = document.getElementById('mdt-status-pill');
+  if (pill && !document.getElementById('mdt-service-grid')) {
+    const sync = async () => {
+      try {
+        const response = await fetch('/api/v1/status', { headers: { Accept: 'application/json' } });
+        if (!response.ok) return;
+        const payload = await response.json();
+        const data = payload.data || payload;
+        if (!data.status) return;
+        pill.dataset.status = data.status;
+        const label = pill.querySelector('[data-status-label]');
+        if (label) label.textContent = data.status_short || '服务状态';
+      } catch { /* 网络抖动时保留上一次结果 */ }
+    };
+    window.setInterval(() => {
+      if (document.visibilityState === 'visible') sync();
+    }, 60000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') sync();
+    });
+  }
 })();

@@ -13,6 +13,7 @@ import {
   GitBranch,
   Bell,
   Activity,
+  Server,
   Menu,
   X,
 } from 'lucide-react';

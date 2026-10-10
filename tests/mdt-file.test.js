@@ -325,6 +325,22 @@ describe('MDT File 前台与后台', () => {
     }
   });
 
+  it('切换任意旧主题后所有前台页面仍可渲染', async () => {
+    const themeService = require('../src/services/theme.service');
+    const original = themeService.getTheme();
+    try {
+      for (const theme of ['editorial', 'cloud', 'mirror', 'terminal', 'mdtbbs']) {
+        themeService.setTheme(theme);
+        for (const target of ['/', '/mindustry', '/files', '/status', '/notices', '/docs/a.txt', '/category/docs']) {
+          const response = await request(server, target);
+          assert.strictEqual(response.statusCode, 200, `${theme} 主题下 ${target} 应可访问`);
+        }
+      }
+    } finally {
+      themeService.setTheme(original);
+    }
+  });
+
   it('后台 SPA 新增路由仍回退到 index', async () => {
     for (const route of ['/admin/notices', '/admin/sync-projects', '/admin/status']) {
       const response = await request(server, route, { headers: { Cookie: cookie } });

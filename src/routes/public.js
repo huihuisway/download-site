@@ -46,6 +46,18 @@ const getFileExt = (filename) => {
   return ext.length > 4 ? ext.substring(0, 4) : ext;
 };
 
+// cloud 主题仍在用：按扩展名给出图标分类
+const getFileIconClass = (filename) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  const map = {
+    pdf: 'doc', txt: 'doc', md: 'doc', doc: 'doc', docx: 'doc',
+    zip: 'zip', gz: 'zip', tar: 'zip', '7z': 'zip', rar: 'zip',
+    png: 'img', jpg: 'img', jpeg: 'img', gif: 'img', svg: 'img', webp: 'img',
+    iso: 'iso', img: 'iso',
+  };
+  return map[ext] || 'default';
+};
+
 const renderTheme = (res, view, data, status = 200) => {
   const theme = themeService.getTheme();
   return res.status(status).render(`themes/${theme}/${view}`, data);
@@ -167,6 +179,7 @@ router.use((req, res, next) => {
   res.locals.formatDate = formatDate;
   res.locals.formatNumber = formatNumber;
   res.locals.getFileExt = getFileExt;
+  res.locals.getFileIconClass = getFileIconClass;
   res.locals.buildFilePageUrl = buildFilePageUrl;
   res.locals.buildFileDownloadUrl = buildFileDownloadUrl;
   res.locals.buildCategoryHref = req.path === '/files' || String(req.path).startsWith('/files/')

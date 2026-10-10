@@ -92,7 +92,11 @@
                 <h4><%= asset.displayName %> · <%= asset.format %></h4>
                 <dl>
                   <dt>原始文件名</dt><dd><code><%= asset.originalFilename %></code></dd>
+                  <dt>平台</dt><dd><%= PLATFORM_LABELS[asset.platform] || '其他文件' %></dd>
                   <% if (asset.fileSize) { %><dt>文件大小</dt><dd><%= formatFileSize(asset.fileSize) %></dd><% } %>
+                  <% if (asset.architecture) { %><dt>架构</dt><dd><%= asset.architecture %></dd><% } %>
+                  <% if (versionName) { %><dt>版本号</dt><dd><%= versionName %></dd><% } %>
+                  <% if (latestRelease && latestRelease.published_at) { %><dt>发布时间</dt><dd><%= latestRelease.published_at.slice(0, 10) %></dd><% } %>
                   <% if (asset.checksum) { %><dt>SHA-256</dt><dd class="mindustry-copy-value"><code><%= asset.checksum %></code><button type="button" class="mindustry-copy-button" data-copy="<%= asset.checksum %>">复制</button><span class="mindustry-copy-status" aria-live="polite"></span></dd><% } %>
                   <% if (asset.downloadUrl) { %><dt>下载地址</dt><dd class="mindustry-copy-value"><code><%= asset.downloadUrl %></code><button type="button" class="mindustry-copy-button" data-copy="<%= asset.downloadUrl %>">复制</button><span class="mindustry-copy-status" aria-live="polite"></span></dd><% } %>
                   <% if (asset.source_repository) { %><dt>来源</dt><dd><%= asset.source_repository %></dd><% } %>

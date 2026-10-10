@@ -78,4 +78,4 @@ const mergeFeaturedAssets = (release, featuredDownloads) => {
   return deduplicateAssets(merged);
 };
 
-module.exports = { presentAsset, isPlayerDownload, mergeFeaturedAssets };
+module.exports = { presentAsset, isPlayerDownload, mergeFeaturedAssets, PLATFORM_LABELS };

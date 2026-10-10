@@ -284,9 +284,9 @@ function SyncProjects() {
       ) : (
         <div className="card !p-0 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table" style={{ minWidth: 940 }}>
               <thead>
-                <tr><th>项目</th><th>远端版本</th><th>本地版本</th><th>状态</th><th>上次检查</th><th>上次成功</th><th className="text-right">操作</th></tr>
+                <tr><th>项目</th><th className="whitespace-nowrap">远端版本</th><th className="whitespace-nowrap">本地版本</th><th className="whitespace-nowrap">状态</th><th className="whitespace-nowrap">上次检查</th><th className="whitespace-nowrap">上次成功</th><th className="text-right whitespace-nowrap">操作</th></tr>
               </thead>
               <tbody>
                 {projects.map((project) => (
@@ -301,8 +301,8 @@ function SyncProjects() {
                     </td>
                     <td className="text-sm" data-admin-style="text-secondary">{project.remote_version || '—'}</td>
                     <td className="text-sm" data-admin-style="text-secondary">{project.local_version || '—'}</td>
-                    <td>
-                      <span className={`badge ${STATUS_CLASS[project.status] || 'badge-neutral'}`}>{project.status_label}</span>
+                    <td className="whitespace-nowrap">
+                      <span className={`badge whitespace-nowrap ${STATUS_CLASS[project.status] || 'badge-neutral'}`}>{project.status_label}</span>
                       {project.status_reason && <p className="mt-1 max-w-xs truncate text-[11px]" data-admin-style="text-muted">{project.status_reason}</p>}
                     </td>
                     <td className="whitespace-nowrap text-xs" data-admin-style="text-muted">{date(project.last_check_at)}</td>

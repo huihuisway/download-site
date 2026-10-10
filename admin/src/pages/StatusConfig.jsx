@@ -104,8 +104,8 @@ function StatusConfig() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead><tr><th>项目</th><th>状态</th><th>远端</th><th>本地</th><th>影响总体</th><th>上次成功</th><th className="text-right">操作</th></tr></thead>
+            <table className="data-table" style={{ minWidth: 880 }}>
+              <thead><tr><th>项目</th><th className="whitespace-nowrap">状态</th><th className="whitespace-nowrap">远端</th><th className="whitespace-nowrap">本地</th><th className="whitespace-nowrap">影响总体</th><th className="whitespace-nowrap">上次成功</th><th className="text-right whitespace-nowrap">操作</th></tr></thead>
               <tbody>
                 {projects.map((project) => (
                   <tr key={project.id}>
@@ -113,7 +113,7 @@ function StatusConfig() {
                       <p className="font-medium" data-admin-style="text">{project.name}</p>
                       {project.status_reason && <p className="mt-0.5 max-w-sm truncate text-xs" data-admin-style="text-muted">{project.status_reason}</p>}
                     </td>
-                    <td><span className={`badge ${STATUS_CLASS[project.status] || 'badge-neutral'}`}>{project.status_label}</span></td>
+                    <td className="whitespace-nowrap"><span className={`badge whitespace-nowrap ${STATUS_CLASS[project.status] || 'badge-neutral'}`}>{project.status_label}</span></td>
                     <td className="text-sm" data-admin-style="text-secondary">{project.remote_version || '—'}</td>
                     <td className="text-sm" data-admin-style="text-secondary">{project.local_version || '—'}</td>
                     <td className="text-xs" data-admin-style="text-muted">{project.affects_global_status === false ? '否' : '是'}</td>

@@ -247,9 +247,9 @@ function Notices() {
       ) : (
         <div className="card !p-0 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table" style={{ minWidth: 880 }}>
               <thead>
-                <tr><th>标题</th><th>类型</th><th>目标范围</th><th>状态</th><th>生效时间</th><th>失效时间</th><th className="text-right">操作</th></tr>
+                <tr><th>标题</th><th className="whitespace-nowrap">类型</th><th className="whitespace-nowrap">目标范围</th><th className="whitespace-nowrap">状态</th><th className="whitespace-nowrap">生效时间</th><th className="whitespace-nowrap">失效时间</th><th className="text-right whitespace-nowrap">操作</th></tr>
               </thead>
               <tbody>
                 {notices.map((notice) => {
@@ -262,9 +262,9 @@ function Notices() {
                           {notice.source === 'system' ? '系统通知' : '人工通知'} · {notice.category_label} · P{notice.priority}
                         </p>
                       </td>
-                      <td><span className={`badge ${notice.type === 'critical' ? 'badge-error' : notice.type === 'warning' ? 'badge-warning' : notice.type === 'success' ? 'badge-success' : 'badge-info'}`}>{notice.type_label}</span></td>
-                      <td className="text-xs" data-admin-style="text-secondary">{notice.scope === 'global' ? '全站横幅' : notice.scope} · {notice.platform}</td>
-                      <td><span className={`badge ${state.cls}`}>{state.label}</span></td>
+                      <td className="whitespace-nowrap"><span className={`badge whitespace-nowrap ${notice.type === 'critical' ? 'badge-error' : notice.type === 'warning' ? 'badge-warning' : notice.type === 'success' ? 'badge-success' : 'badge-info'}`}>{notice.type_label}</span></td>
+                      <td className="whitespace-nowrap text-xs" data-admin-style="text-secondary">{notice.scope === 'global' ? '全站横幅' : notice.scope} · {notice.platform}</td>
+                      <td className="whitespace-nowrap"><span className={`badge whitespace-nowrap ${state.cls}`}>{state.label}</span></td>
                       <td className="whitespace-nowrap text-xs" data-admin-style="text-muted">{date(notice.start_at || notice.created_at)}</td>
                       <td className="whitespace-nowrap text-xs" data-admin-style="text-muted">{date(notice.end_at)}</td>
                       <td>
