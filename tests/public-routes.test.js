@@ -54,7 +54,7 @@ describe('public routes', () => {
     fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'guides', 'v1'), { recursive: true });
     fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'guides', 'v1', 'banner.png'), 'fake image');
     fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'empty'), { recursive: true });
-    sessionDir = path.join(__dirname, '..', 'data', 'sessions');
+    sessionDir = tmpEnv.sessionDir;
 
     const { db } = require('../src/db');
     db.data.download_logs = [];

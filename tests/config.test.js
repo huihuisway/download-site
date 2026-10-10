@@ -3,6 +3,7 @@ const assert = require('node:assert');
 
 const ORIGINAL_ENV = {
   NODE_ENV: process.env.NODE_ENV,
+  SESSION_DIR: process.env.SESSION_DIR,
   SESSION_SECRET: process.env.SESSION_SECRET,
   ADMIN_USERNAME: process.env.ADMIN_USERNAME,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,

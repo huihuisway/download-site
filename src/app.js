@@ -94,7 +94,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ===== Session 配置 =====
-const sessionDir = path.join(__dirname, '..', 'data', 'sessions');
+const sessionDir = config.sessionDir;
 fs.mkdirSync(sessionDir, { recursive: true });
 
 app.use(session({
