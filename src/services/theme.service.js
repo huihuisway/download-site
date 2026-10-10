@@ -2,6 +2,7 @@ const { db } = require('../db');
 
 // 可用主题列表
 const AVAILABLE_THEMES = [
+  { id: 'mdtbbs', name: 'MDTBBS 统一风格', description: 'MDT File 默认风格：左侧导航 + 蓝色品牌 + 0 圆角，与 MDTBBS 论坛一致' },
   { id: 'editorial', name: '编辑/杂志风', description: 'Noto Serif SC 衬线标题 + 纯黑白 + 侧栏导航' },
   { id: 'cloud', name: '经典网盘风', description: '卡片 + 圆角 + 表格 + 分类标签，像百度云盘' },
   { id: 'mirror', name: '镜像站/技术风', description: '纯表格 + 紧凑行 + 无多余留白，像 Debian 镜像站' },
@@ -10,13 +11,18 @@ const AVAILABLE_THEMES = [
 
 // 默认站点信息
 const DEFAULT_SITE_INFO = {
-  site_name: '文件下载站',
-  site_description: '轻量级文件下载服务',
+  site_name: 'MDT File',
+  site_description: 'MDTBBS 生态的统一下载与文件分发站',
   footer_text: 'Powered by Node.js',
   footer_links: JSON.stringify([
     { label: '管理后台', url: '/admin' },
     { label: '隐私政策', url: '/privacy' },
     { label: '服务使用协议', url: '/terms' },
+  ]),
+  external_links: JSON.stringify([
+    { label: 'MDTBBS 论坛', url: 'https://mdtbbs.cn/' },
+    { label: '文档', url: 'https://mdtbbs.cn/docs' },
+    { label: '帮助', url: 'https://mdtbbs.cn/help' },
   ]),
   icp_number: '',
   police_number: '',
@@ -34,7 +40,7 @@ const isSafeUrl = (url) => {
 const getSettingsArray = () => {
   if (!db.data.settings) {
     db.data.settings = [
-      { key: 'theme', value: 'editorial', updated_at: new Date().toISOString() },
+      { key: 'theme', value: defaultThemeId(), updated_at: new Date().toISOString() },
       ...Object.entries(DEFAULT_SITE_INFO).map(([key, value]) => ({
         key, value, updated_at: new Date().toISOString(),
       })),
@@ -106,10 +112,14 @@ const updateSettings = (updates) => {
 };
 
 // ===== 主题相关 =====
+function defaultThemeId() {
+  return AVAILABLE_THEMES[0].id;
+}
+
 const getTheme = () => {
-  const themeId = getSetting('theme', 'editorial');
+  const themeId = getSetting('theme', defaultThemeId());
   if (!AVAILABLE_THEMES.find((t) => t.id === themeId)) {
-    return 'editorial';
+    return defaultThemeId();
   }
   return themeId;
 };
@@ -132,6 +142,12 @@ const getSiteInfo = () => {
   } catch {
     footerLinks = [];
   }
+  let externalLinks = [];
+  try {
+    externalLinks = JSON.parse(all.external_links || '[]');
+  } catch {
+    externalLinks = [];
+  }
   return {
     site_name: all.site_name || DEFAULT_SITE_INFO.site_name,
     site_description: all.site_description || DEFAULT_SITE_INFO.site_description,
@@ -139,6 +155,7 @@ const getSiteInfo = () => {
     footer_links: footerLinks,
     icp_number: all.icp_number || '',
     police_number: all.police_number || '',
+    external_links: Array.isArray(externalLinks) ? externalLinks.filter((link) => link && isSafeUrl(link.url)) : [],
   };
 };
 
@@ -149,6 +166,12 @@ const updateSiteInfo = (info) => {
   if (info.footer_text !== undefined) updates.footer_text = info.footer_text;
   if (info.icp_number !== undefined) updates.icp_number = info.icp_number;
   if (info.police_number !== undefined) updates.police_number = info.police_number;
+  if (info.external_links !== undefined) {
+    const safeExternal = Array.isArray(info.external_links)
+      ? info.external_links.filter((link) => link && isSafeUrl(link.url))
+      : [];
+    updates.external_links = JSON.stringify(safeExternal);
+  }
   if (info.footer_links !== undefined) {
     // 过滤不安全的 URL（只允许 http/https）
     const safeLinks = Array.isArray(info.footer_links)

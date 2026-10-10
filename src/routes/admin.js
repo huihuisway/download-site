@@ -5,6 +5,10 @@ const fileService = require('../services/file.service');
 const statsService = require('../services/stats.service');
 const { syncDirectory } = require('../services/sync.service');
 const releaseSourceService = require('../services/release-source.service');
+const noticeService = require('../services/notice.service');
+const syncProjectService = require('../services/sync-project.service');
+const statusService = require('../services/status.service');
+const shellService = require('../services/shell.service');
 
 // 所有后台 API 需要鉴权
 router.use(requireAuth);
@@ -382,5 +386,148 @@ router.post('/releases/sources/:id/retry', async (req, res) => {
 });
 
 router.get('/releases/health', (req, res) => res.json(releaseSourceService.health()));
+
+// ===== 通知管理 =====
+router.get('/notices', (req, res) => {
+  try {
+    res.json({
+      notices: noticeService.list(),
+      types: noticeService.NOTICE_TYPES,
+      typeLabels: noticeService.TYPE_LABELS,
+      scopes: noticeService.NOTICE_SCOPES,
+      platforms: noticeService.NOTICE_PLATFORMS,
+      categories: noticeService.NOTICE_CATEGORIES,
+      categoryLabels: noticeService.CATEGORY_LABELS,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/notices', (req, res) => {
+  try {
+    res.status(201).json({ notice: noticeService.create(req.body) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/notices/:id', (req, res) => {
+  const notice = noticeService.get(req.params.id);
+  if (!notice) return res.status(404).json({ error: '通知不存在' });
+  return res.json({ notice });
+});
+
+router.put('/notices/:id', (req, res) => {
+  try {
+    const notice = noticeService.update(req.params.id, req.body);
+    if (!notice) return res.status(404).json({ error: '通知不存在' });
+    return res.json({ notice });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/notices/:id', (req, res) => {
+  if (!noticeService.remove(req.params.id)) return res.status(404).json({ error: '通知不存在' });
+  shellService.invalidateHeaderStatus();
+  return res.json({ deleted: true });
+});
+
+router.post('/notices/:id/enable', (req, res) => {
+  const notice = noticeService.setEnabled(req.params.id, true);
+  if (!notice) return res.status(404).json({ error: '通知不存在' });
+  return res.json({ notice });
+});
+
+router.post('/notices/:id/disable', (req, res) => {
+  const notice = noticeService.setEnabled(req.params.id, false);
+  if (!notice) return res.status(404).json({ error: '通知不存在' });
+  return res.json({ notice });
+});
+
+// ===== 项目同步管理 =====
+router.get('/sync-projects', (req, res) => {
+  try {
+    res.json({
+      projects: syncProjectService.list(),
+      statusLabels: syncProjectService.STATUS_LABELS,
+      sourceTypes: syncProjectService.SOURCE_TYPES,
+      sources: releaseSourceService.list(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/sync-projects', (req, res) => {
+  try {
+    res.status(201).json({ project: syncProjectService.create(req.body) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/sync-projects/:id', (req, res) => {
+  const project = syncProjectService.get(req.params.id);
+  if (!project) return res.status(404).json({ error: '项目不存在' });
+  return res.json({
+    project,
+    files: syncProjectService.listFiles(req.params.id)?.files || [],
+    chain: syncProjectService.buildChain(project),
+    dependency: syncProjectService.dependencyStatus(project),
+    events: syncProjectService.events(req.params.id, 30),
+  });
+});
+
+router.put('/sync-projects/:id', (req, res) => {
+  try {
+    const project = syncProjectService.update(req.params.id, req.body);
+    if (!project) return res.status(404).json({ error: '项目不存在' });
+    return res.json({ project });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/sync-projects/:id', (req, res) => {
+  if (!syncProjectService.remove(req.params.id)) return res.status(404).json({ error: '项目不存在' });
+  shellService.invalidateHeaderStatus();
+  return res.json({ deleted: true });
+});
+
+router.post('/sync-projects/:id/check', (req, res) => {
+  const project = syncProjectService.checkProject(req.params.id);
+  if (!project) return res.status(404).json({ error: '项目不存在' });
+  statusService.invalidateStatusCache();
+  shellService.invalidateHeaderStatus();
+  return res.json({ project });
+});
+
+router.post('/sync-projects/:id/sync', async (req, res) => {
+  try {
+    const result = await syncProjectService.syncProject(req.params.id);
+    if (!result) return res.status(404).json({ error: '项目不存在' });
+    statusService.invalidateStatusCache();
+    shellService.invalidateHeaderStatus();
+    if (result.error) return res.status(502).json({ error: result.error, project: result.project });
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== 状态配置（服务状态页会读取） =====
+router.get('/status', (req, res) => {
+  try {
+    statusService.invalidateStatusCache();
+    res.json({
+      status: statusService.buildStatus({ fresh: true }),
+      projects: syncProjectService.list(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;

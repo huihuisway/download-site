@@ -1,0 +1,32 @@
+<% const shellActive = typeof shellSection === 'string' ? shellSection : ''; %>
+<% const navLinks = (siteInfo.external_links && siteInfo.external_links.length) ? siteInfo.external_links : []; %>
+<% const shellActiveLinks = []; %>
+<input type="checkbox" id="mdt-drawer" class="mdt-drawer-toggle" aria-hidden="true" tabindex="-1">
+<label class="mdt-drawer-backdrop" for="mdt-drawer" aria-label="关闭导航菜单"></label>
+<div class="mdt-layout">
+  <aside class="mdt-sidebar" aria-label="主导航">
+    <nav class="mdt-nav">
+      <div class="mdt-nav-group">
+        <a class="mdt-nav-item<%= shellActive === 'home' ? ' is-active' : '' %>" href="/">首页</a>
+      </div>
+      <div class="mdt-nav-group">
+        <p class="mdt-nav-title">下载</p>
+        <a class="mdt-nav-item<%= shellActive === 'mindustry' ? ' is-active' : '' %>" href="/mindustry">Mindustry</a>
+        <a class="mdt-nav-item mdt-nav-sub<%= shellActive === 'files' ? ' is-active' : '' %>" href="/files">文件目录</a>
+      </div>
+      <div class="mdt-nav-group">
+        <p class="mdt-nav-title">站点</p>
+        <a class="mdt-nav-item<%= shellActive === 'status' ? ' is-active' : '' %>" href="/status">服务状态</a>
+        <a class="mdt-nav-item<%= shellActive === 'notices' ? ' is-active' : '' %>" href="/notices">通知公告</a>
+      </div>
+      <% if (navLinks.length) { %>
+        <div class="mdt-nav-group">
+          <p class="mdt-nav-title">外部链接</p>
+          <% navLinks.forEach(function (link) { %>
+            <a class="mdt-nav-item mdt-nav-external" href="<%= link.url %>"<% if (/^https?:/i.test(link.url)) { %> target="_blank" rel="noopener noreferrer"<% } %>><%= link.label %></a>
+          <% }); %>
+        </div>
+      <% } %>
+    </nav>
+  </aside>
+  <main class="mdt-main" id="mdt-main">

@@ -7,6 +7,9 @@ const statsService = require('../services/stats.service');
 const { db } = require('../db');
 const { buildManifest } = require('../services/mindustry-index.service');
 const { buildUpdateInfo } = require('../services/launcher-update.service');
+const statusService = require('../services/status.service');
+const noticeService = require('../services/notice.service');
+const syncProjectService = require('../services/sync-project.service');
 
 // 下载索引公开、无 API Key；仍经 IP 限流，便于启动器直接消费。
 router.get('/mindustry/manifest.json', apiLimiter, (req, res) => {
@@ -36,6 +39,85 @@ router.get('/launcher/update', apiLimiter, (req, res) => {
       },
     });
   }
+});
+
+// ===== 公开状态 / 通知接口 =====
+// 与 manifest 一样无 API Key，便于论坛与客户端直接消费：
+// 不包含内部报错堆栈、Token、服务器路径与私有仓库凭证。
+
+router.get('/status', apiLimiter, (req, res) => {
+  try {
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.json({ success: true, data: statusService.buildStatus({ requestId: req.id }) });
+  } catch (err) {
+    console.error('[api] 状态生成失败:', err.message);
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: '服务状态暂时不可用' } });
+  }
+});
+
+router.get('/status/projects', apiLimiter, (req, res) => {
+  try {
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    const projects = syncProjectService.listPublic().map((project) => ({
+      id: project.id,
+      name: project.name,
+      slug: project.slug,
+      description: project.description,
+      status: project.status,
+      status_label: project.status_label,
+      remote_version: project.remote_version,
+      local_version: project.local_version,
+      last_success_at: project.last_success_at,
+      last_check_at: project.last_check_at,
+      files: { expected: project.expected_files, synced: project.synced_files, failed: project.failed_files },
+      chain: syncProjectService.buildChain(project),
+    }));
+    res.json({ success: true, data: { projects } });
+  } catch (err) {
+    console.error('[api] 项目状态生成失败:', err.message);
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: '项目状态暂时不可用' } });
+  }
+});
+
+router.get('/notices', apiLimiter, (req, res) => {
+  try {
+    const category = noticeService.NOTICE_CATEGORIES.includes(req.query.type) ? req.query.type : '';
+    const platform = noticeService.NOTICE_PLATFORMS.includes(req.query.platform) ? req.query.platform : '';
+    const notices = noticeService.listPublic({ scope: req.query.scope, platform })
+      .filter((notice) => !category || notice.category === category)
+      .map((notice) => ({
+        id: notice.id,
+        title: notice.title,
+        content: notice.content,
+        type: notice.type,
+        type_label: notice.type_label,
+        category: notice.category,
+        category_label: notice.category_label,
+        scope: notice.scope,
+        platform: notice.platform,
+        version: notice.version,
+        dismissible: notice.dismissible,
+        start_at: notice.start_at,
+        end_at: notice.end_at,
+        action_label: notice.action_label,
+        action_url: notice.action_url,
+        source: notice.source,
+        created_at: notice.created_at,
+      }));
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+    res.json({ success: true, data: { notices } });
+  } catch (err) {
+    console.error('[api] 通知列表生成失败:', err.message);
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: '通知列表暂时不可用' } });
+  }
+});
+
+router.get('/notices/:id', apiLimiter, (req, res) => {
+  const notice = noticeService.get(req.params.id);
+  if (!notice || !notice.enabled) {
+    return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: '通知不存在' } });
+  }
+  return res.json({ success: true, data: { notice } });
 });
 
 // 所有 API v1 路由需要 API Key 认证；认证后按 Key 限流

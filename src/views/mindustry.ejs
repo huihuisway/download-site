@@ -1,4 +1,7 @@
-<%- include('partials/head', { title, currentTheme, siteInfo, description, canonicalUrl }) %>
+<%- include('partials/shell/head') %>
+<%- include('partials/shell/banner') %>
+<%- include('partials/shell/header') %>
+<%- include('partials/shell/sidebar') %>
 <% const games = manifest && Array.isArray(manifest.games) ? manifest.games : []; %>
 <% const mainGame = games.find(function(game) { return game.id === 'mindustry'; }); %>
 <% const stableReleases = mainGame ? mainGame.releases.filter(function(release) { return release.channel === 'stable'; }) : []; %>
@@ -10,14 +13,28 @@
 <% const defaultAsset = playerAssets.find(function(asset) { return asset.platform === 'windows'; }) || playerAssets.find(function(asset) { return asset.platform === 'desktop'; }) || playerAssets[0] || null; %>
 <% const versionName = featuredMatchesLatest ? featuredDownloads.build_name : (latestRelease ? latestRelease.build_name || latestRelease.tag : (featuredDownloads ? featuredDownloads.build_name : null)); %>
 <% const platformSummary = function(assets) { return [...new Set(assets.map(function(asset) { return presentAsset(asset).displayName; }))].join('、'); }; %>
-<main class="page-wrap mindustry-page">
-  <nav class="mindustry-breadcrumb" aria-label="面包屑导航"><a href="/">MDT File</a><span aria-hidden="true">/</span><span aria-current="page">Mindustry</span></nav>
+<nav class="mindustry-breadcrumb mdt-breadcrumb" aria-label="面包屑导航"><a href="/">MDT File</a><span aria-hidden="true">/</span><span aria-current="page">Mindustry</span></nav>
 
-  <header class="mindustry-heading">
-    <p class="mindustry-eyebrow">MDT File · 游戏版本镜像</p>
-    <h1>Mindustry</h1>
-    <p>像素工厂游戏版本下载中心</p>
+<section class="mindustry-page">
+  <header class="mindustry-heading mdt-page-head">
+    <div>
+      <p class="mindustry-eyebrow"><%= shellSection === 'mindustry' ? 'MDT File · 游戏版本镜像' : 'MDT File · 游戏版本镜像' %></p>
+      <h1 class="mdt-page-title">Mindustry</h1>
+      <p class="mdt-page-desc">像素工厂游戏版本下载中心</p>
+    </div>
+    <div class="mdt-page-actions">
+      <a class="mdt-secondary-link" href="/files/Mindustry">浏览 Mindustry 文件目录</a>
+      <a class="mdt-secondary-link" href="/status">同步状态</a>
+    </div>
   </header>
+
+  <% if (pageNotices && pageNotices.length) { %>
+    <% pageNotices.forEach(function (notice) { %>
+      <p class="mdt-hint" data-tone="<%= notice.type === 'critical' ? 'error' : notice.type === 'warning' ? 'warning' : 'none' %>">
+        <strong><%= notice.title %></strong><% if (notice.content) { %> — <%= notice.content %><% } %>
+      </p>
+    <% }); %>
+  <% } %>
 
   <% if (!manifest) { %>
     <section class="mindustry-state mindustry-state-error" role="alert">
@@ -90,14 +107,27 @@
     </section>
 
     <section class="mindustry-history" aria-labelledby="mindustry-history-heading">
-      <div class="mindustry-history-heading"><div><p class="mindustry-section-kicker">版本归档</p><h2 id="mindustry-history-heading">所有版本</h2></div><span><%= mainGame.releases.length %> 个版本</span></div>
+      <div class="mindustry-history-heading">
+        <div><p class="mindustry-section-kicker">版本归档</p><h2 id="mindustry-history-heading">所有版本</h2></div>
+        <span><%= mainGame.releases.length %> 个版本</span>
+      </div>
+      <div class="mindustry-version-toolbar">
+        <input type="search" id="mindustry-version-search" class="mindustry-version-search" placeholder="搜索版本，例如 146 / 151" aria-label="搜索版本" autocomplete="off">
+        <div class="mindustry-version-tabs" role="tablist" aria-label="版本筛选">
+          <button type="button" class="mindustry-version-tab is-active" data-version-filter="all" role="tab" aria-selected="true">全部版本</button>
+          <button type="button" class="mindustry-version-tab" data-version-filter="stable" role="tab" aria-selected="false">正式版</button>
+          <button type="button" class="mindustry-version-tab" data-version-filter="prerelease" role="tab" aria-selected="false">测试版</button>
+          <button type="button" class="mindustry-version-tab" data-version-filter="history" role="tab" aria-selected="false">历史版本</button>
+        </div>
+      </div>
+      <p class="mindustry-version-empty" id="mindustry-version-empty" hidden>没有匹配的版本，换个关键词试试。</p>
       <% if (!mainGame.releases.length) { %>
         <p class="mindustry-empty-history">当前暂无可用版本。</p>
       <% } else { %>
-        <div class="mindustry-version-list">
+        <div class="mindustry-version-list" id="mindustry-version-list">
           <% mainGame.releases.forEach(function(release, releaseIndex) { %>
             <% const releaseAssets = release === latestRelease ? latestAssets : release.assets.map(presentAsset); %>
-            <details class="mindustry-version-row">
+            <details class="mindustry-version-row" data-version="<%= (release.build_name || release.tag || '').replace(/"/g, '') %>" data-channel="<%= release.channel %>" data-index="<%= releaseIndex %>">
               <summary>
                 <span class="mindustry-version-main"><strong><%= release.build_name || release.tag %></strong><% if (releaseIndex === 0) { %><span class="mindustry-badge mindustry-badge-latest">最新</span><% } %></span>
                 <span class="mindustry-version-channel"><%= release.channel === 'prerelease' ? '预发布' : '正式版' %></span>
@@ -112,7 +142,10 @@
                   <% releaseAssets.forEach(function(asset) { %>
                     <article class="mindustry-version-file">
                       <div><h3><%= asset.displayName %></h3><p><%= asset.format %><% if (asset.fileSize) { %> · <%= formatFileSize(asset.fileSize) %><% } %></p></div>
-                      <% if (asset.downloadUrl) { %><a href="<%= asset.downloadUrl %>" data-track="download" data-file-id="<%= asset.file_id || '' %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">下载<span class="mindustry-sr-only"> <%= asset.displayName %></span></a><% } %>
+                      <div class="mindustry-version-file-actions">
+                        <% if (asset.downloadUrl) { %><a href="<%= asset.downloadUrl %>" data-track="download" data-file-id="<%= asset.file_id || '' %>" data-platform="<%= asset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">下载<span class="mindustry-sr-only"> <%= asset.displayName %></span></a><% } %>
+                        <% if (release.directory_href) { %><a class="mindustry-version-files-link" href="<%= release.directory_href %>">查看全部文件</a><% } %>
+                      </div>
                       <details class="mindustry-compact-details"><summary>文件详情</summary><dl><dt>原始文件名</dt><dd><code><%= asset.originalFilename %></code></dd><% if (asset.fileSize) { %><dt>大小</dt><dd><%= formatFileSize(asset.fileSize) %></dd><% } %><% if (asset.checksum) { %><dt>SHA-256</dt><dd class="mindustry-copy-value"><code><%= asset.checksum %></code><button type="button" class="mindustry-copy-button" data-copy="<%= asset.checksum %>">复制</button><span class="mindustry-copy-status" aria-live="polite"></span></dd><% } %><% if (asset.downloadUrl) { %><dt>下载地址</dt><dd class="mindustry-copy-value"><code><%= asset.downloadUrl %></code><button type="button" class="mindustry-copy-button" data-copy="<%= asset.downloadUrl %>">复制</button><span class="mindustry-copy-status" aria-live="polite"></span></dd><% } %><% if (asset.source_repository) { %><dt>来源</dt><dd><%= asset.source_repository %></dd><% } %></dl></details>
                     </article>
                   <% }); %>
@@ -134,11 +167,21 @@
 
   <footer class="mindustry-advanced-links">
     <p class="mindustry-section-kicker">高级功能</p>
-    <a href="/category/Mindustry">浏览原始文件目录</a>
+    <a href="/files/Mindustry">浏览原始文件目录</a>
     <a href="/api/v1/mindustry/manifest.json">Manifest API</a>
+    <a href="/status">服务与同步状态</a>
     <a href="https://mdtbbs.cn/" target="_blank" rel="noopener noreferrer">前往 MDTBBS 社区</a>
   </footer>
-</main>
+</section>
 <script id="mindustry-assets-data" type="application/json"><%- JSON.stringify(playerAssets.map(function(asset) { return { platform: asset.platform, displayName: asset.displayName, format: asset.format, fileSize: asset.fileSize, architecture: asset.architecture, downloadUrl: asset.downloadUrl, fileId: asset.file_id || '' }; })).replace(/</g, '\\u003c') %></script>
-<script src="/js/mindustry-download.js" defer></script>
-<%- include('partials/footer') %>
+<% if (mainGame && latestRelease && playerAssets.length) { %>
+  <div class="mindustry-sticky-action" aria-hidden="false">
+    <div class="mindustry-sticky-copy">
+      <strong id="mindustry-sticky-name"><%= defaultAsset.displayName %> · <%= versionName || latestRelease.tag %></strong>
+      <span id="mindustry-sticky-meta"><%= [defaultAsset.format, defaultAsset.fileSize ? formatFileSize(defaultAsset.fileSize) : null, defaultAsset.architecture].filter(Boolean).join(' · ') %></span>
+    </div>
+    <a class="mindustry-primary-download" id="mindustry-sticky-download" href="<%= defaultAsset.downloadUrl %>" data-track="download" data-file-id="<%= defaultAsset.file_id || '' %>" data-platform="<%= defaultAsset.platform %>" data-client-name="Mindustry Download Site" data-client-version="<%= appVersion %>">下载</a>
+  </div>
+<% } %>
+
+<%- include('partials/shell/footer') %>

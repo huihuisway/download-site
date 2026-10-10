@@ -24,9 +24,9 @@ describe('theme service', () => {
   });
 
   describe('主题管理', () => {
-    it('默认主题应为 editorial', () => {
+    it('默认主题应为 mdtbbs', () => {
       const themeService = require('../src/services/theme.service');
-      assert.strictEqual(themeService.getTheme(), 'editorial');
+      assert.strictEqual(themeService.getTheme(), 'mdtbbs');
     });
 
     it('应能切换主题', () => {
@@ -43,7 +43,8 @@ describe('theme service', () => {
     it('应返回可用主题列表', () => {
       const themeService = require('../src/services/theme.service');
       const themes = themeService.getAvailableThemes();
-      assert.ok(themes.length >= 4);
+      assert.ok(themes.length >= 5);
+      assert.ok(themes.some((t) => t.id === 'mdtbbs'));
       assert.ok(themes.some((t) => t.id === 'editorial'));
       assert.ok(themes.some((t) => t.id === 'terminal'));
       assert.ok(themes.some((t) => t.id === 'cloud'));
@@ -55,8 +56,9 @@ describe('theme service', () => {
     it('应返回默认站点信息', () => {
       const themeService = require('../src/services/theme.service');
       const info = themeService.getSiteInfo();
-      assert.strictEqual(info.site_name, '文件下载站');
+      assert.strictEqual(info.site_name, 'MDT File');
       assert.ok(Array.isArray(info.footer_links));
+      assert.ok(Array.isArray(info.external_links));
     });
 
     it('应能更新站点名称', () => {

@@ -1,0 +1,291 @@
+/* ============================================================
+   MDT File — 服务状态 / 项目同步 / 通知公告
+   ============================================================ */
+
+/* ===== 状态总览 ===== */
+.mdt-overall {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+}
+
+.mdt-overall[data-status="operational"] { border-left-color: var(--success); }
+.mdt-overall[data-status="degraded"] { border-left-color: var(--warning); }
+.mdt-overall[data-status="syncing"] { border-left-color: var(--info); }
+.mdt-overall[data-status="maintenance"] { border-left-color: var(--info); }
+.mdt-overall[data-status="outage"] { border-left-color: var(--error); }
+.mdt-overall[data-status="unknown"] { border-left-color: var(--border); }
+
+.mdt-overall-copy { min-width: 0; flex: 1; }
+.mdt-overall-copy h2 { font-size: 1.0625rem; font-weight: 700; }
+.mdt-overall-copy p { margin-top: 4px; color: var(--text-muted); font-size: 0.75rem; }
+.mdt-overall-refresh { font-variant-numeric: tabular-nums; }
+
+.mdt-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.mdt-status-card {
+  padding: var(--space-3) var(--space-4);
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.mdt-status-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.mdt-status-card-name { font-size: 0.875rem; font-weight: 600; }
+.mdt-status-card-detail { margin-top: var(--space-2); color: var(--text-muted); font-size: 0.75rem; overflow-wrap: anywhere; }
+
+/* ===== 项目同步 ===== */
+.mdt-project-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.mdt-project-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.mdt-project-name strong { font-size: 0.875rem; }
+.mdt-project-versions { margin-top: 4px; display: flex; flex-wrap: wrap; gap: var(--space-3); color: var(--text-muted); font-size: 0.75rem; }
+.mdt-project-versions code { font-family: var(--font-mono); color: var(--text-secondary); }
+.mdt-project-time { color: var(--text-muted); font-size: 0.75rem; text-align: right; white-space: nowrap; }
+.mdt-project-actions { display: flex; align-items: center; gap: var(--space-2); }
+
+.mdt-project-detail { display: none; padding: 0; }
+.mdt-project-item[open] > .mdt-project-detail { display: block; }
+.mdt-project-item > summary { cursor: pointer; list-style: none; }
+.mdt-project-item > summary::-webkit-details-marker { display: none; }
+.mdt-project-item > summary:hover { background: var(--bg-hover); }
+
+.mdt-detail-block { padding: var(--space-3) var(--space-3) var(--space-4); background: var(--muted); border-bottom: 1px solid var(--border-light); }
+.mdt-detail-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3) var(--space-4); }
+.mdt-detail-columns h4 { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+.mdt-detail-columns p { margin-top: 4px; font-size: 0.8125rem; overflow-wrap: anywhere; }
+.mdt-detail-columns code { font-family: var(--font-mono); }
+
+.mdt-file-status-list { margin-top: var(--space-3); border-top: 1px solid var(--border); }
+.mdt-file-status-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--border-light); font-size: 0.8125rem; }
+.mdt-file-status-row code { font-family: var(--font-mono); font-size: 0.75rem; overflow-wrap: anywhere; }
+
+/* 同步链 */
+.mdt-chain { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-3); }
+.mdt-chain-node { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--border); background: var(--card); font-size: 0.75rem; }
+.mdt-chain-node[data-state="done"] { border-color: var(--success-border); color: #2e7d32; }
+.mdt-chain-node[data-state="running"] { border-color: var(--info-border); color: #1565c0; }
+.mdt-chain-node[data-state="failed"] { border-color: var(--error-border); color: #c62828; }
+.mdt-chain-node[data-state="waiting"] { color: var(--text-muted); }
+.mdt-chain-arrow { color: var(--text-muted); font-size: 0.75rem; }
+
+[data-theme="dark"] .mdt-chain-node[data-state="done"] { color: #4ade80; }
+[data-theme="dark"] .mdt-chain-node[data-state="running"] { color: #60a5fa; }
+[data-theme="dark"] .mdt-chain-node[data-state="failed"] { color: #f87171; }
+
+/* ===== 通知公告 ===== */
+.mdt-notice-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+
+.mdt-filter {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.mdt-filter:hover { border-color: var(--primary); color: var(--primary); }
+.mdt-filter.is-active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.mdt-notice-list { margin-top: var(--space-3); border-top: 1px solid var(--border); }
+
+.mdt-notice-item {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.mdt-notice-item h3 { font-size: 0.875rem; font-weight: 600; }
+.mdt-notice-item h3 a { color: var(--text); }
+.mdt-notice-item h3 a:hover { color: var(--primary); }
+.mdt-notice-item p { margin-top: 4px; color: var(--text-secondary); font-size: 0.8125rem; line-height: 1.65; overflow-wrap: anywhere; }
+.mdt-notice-meta { color: var(--text-muted); font-size: 0.75rem; text-align: right; white-space: nowrap; }
+.mdt-notice-meta time { display: block; }
+
+.mdt-notice-type { border-color: var(--info-border); background: var(--info-bg); color: #1565c0; }
+.mdt-notice-type[data-type="success"] { border-color: var(--success-border); background: var(--success-bg); color: #2e7d32; }
+.mdt-notice-type[data-type="warning"] { border-color: var(--warning-border); background: var(--warning-bg); color: #b45309; }
+.mdt-notice-type[data-type="critical"] { border-color: var(--error-border); background: var(--error-bg); color: #c62828; }
+.mdt-notice-type[data-type="maintenance"] { border-color: var(--info-border); background: var(--info-bg); color: #1565c0; }
+
+[data-theme="dark"] .mdt-notice-type { color: #60a5fa; }
+[data-theme="dark"] .mdt-notice-type[data-type="success"] { color: #4ade80; }
+[data-theme="dark"] .mdt-notice-type[data-type="warning"] { color: #fbbf24; }
+[data-theme="dark"] .mdt-notice-type[data-type="critical"] { color: #f87171; }
+
+.mdt-notice-detail { padding: var(--space-4); background: var(--card); border: 1px solid var(--border); margin-top: var(--space-4); }
+.mdt-notice-detail h1 { font-size: 1.25rem; font-weight: 700; }
+.mdt-notice-detail .mdt-notice-detail-body { margin-top: var(--space-3); color: var(--text-secondary); font-size: 0.875rem; line-height: 1.8; white-space: pre-line; }
+.mdt-notice-detail-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+
+/* ===== 全局横幅 ===== */
+.mdt-banner-region:empty { display: none; }
+
+.mdt-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--info-bg);
+  color: var(--text);
+  font-size: 0.8125rem;
+}
+
+.mdt-banner[data-type="success"] { background: var(--success-bg); }
+.mdt-banner[data-type="warning"] { background: var(--warning-bg); }
+.mdt-banner[data-type="critical"] { background: var(--error-bg); }
+.mdt-banner[data-type="maintenance"] { background: var(--info-bg); }
+
+.mdt-banner-icon { flex: 0 0 auto; font-weight: 700; }
+.mdt-banner-body { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.mdt-banner-body a { margin-left: var(--space-2); font-weight: 600; white-space: nowrap; }
+.mdt-banner-close {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.mdt-banner-close:hover { color: var(--text); }
+
+/* ===== 空状态 / 提示块 ===== */
+.mdt-hint {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--muted);
+  border-left: 3px solid var(--primary);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.mdt-hint[data-tone="warning"] { border-left-color: var(--warning); }
+.mdt-hint[data-tone="error"] { border-left-color: var(--error); }
+
+@media (max-width: 900px) {
+  .mdt-project-row { grid-template-columns: minmax(0, 1fr); }
+  .mdt-project-time { text-align: left; }
+  .mdt-notice-item { grid-template-columns: 76px minmax(0, 1fr); }
+  .mdt-notice-meta { grid-column: 2; text-align: left; }
+  .mdt-status-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .mdt-file-status-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .mdt-toast-stack { right: var(--space-3); left: var(--space-3); bottom: var(--space-3); width: auto; }
+}
+
+/* ===== Mindustry 版本筛选与文件目录互通 ===== */
+.mindustry-history-heading { align-items: flex-end; }
+
+.mindustry-version-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.mindustry-version-search {
+  flex: 1 1 220px;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.mindustry-version-search:focus { border-color: var(--primary); outline: none; }
+
+.mindustry-version-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.mindustry-version-tab {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.mindustry-version-tab:hover { border-color: var(--primary); color: var(--primary); }
+.mindustry-version-tab.is-active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.mindustry-version-empty { margin-top: var(--space-4); color: var(--text-muted); font-size: 0.8125rem; }
+.mindustry-version-row[hidden] { display: none; }
+
+.mindustry-version-file-actions { display: flex; align-items: center; gap: var(--space-3); }
+.mindustry-version-files-link { display: inline-flex; min-height: 40px; align-items: center; color: var(--text-secondary); font-size: 0.78rem; }
+.mindustry-version-files-link:hover { color: var(--primary); }
+
+/* 手机端底部常驻下载条 */
+.mindustry-sticky-action {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.mindustry-sticky-copy { min-width: 0; flex: 1; }
+.mindustry-sticky-copy strong { display: block; font-size: 0.8125rem; }
+.mindustry-sticky-copy span { display: block; color: var(--text-muted); font-size: 0.6875rem; overflow-wrap: anywhere; }
+.mindustry-sticky-action .mindustry-primary-download { min-width: 0; flex: 0 0 auto; min-height: 44px; }
+
+@media (max-width: 760px) {
+  .mindustry-sticky-action { display: flex; }
+  .mindustry-page { padding-bottom: 84px; }
+  .mindustry-version-file { grid-template-columns: minmax(0, 1fr); }
+  .mindustry-version-file-actions { justify-content: space-between; }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .mindustry-sticky-action { display: none; }
+  .mindustry-page { padding-bottom: var(--space-6); }
+}
+
+/* 通知列表整行可点（扩大移动端热区） */
+.mdt-notice-item { cursor: pointer; }
+.mdt-notice-item:hover { background: var(--bg-hover); }

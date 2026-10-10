@@ -1,0 +1,95 @@
+<%- include('head') %>
+<%- include('../../partials/shell/banner') %>
+<%- include('../../partials/shell/header') %>
+<%- include('../../partials/shell/sidebar') %>
+
+<nav class="mdt-breadcrumb" aria-label="面包屑导航">
+  <a href="/files">文件目录</a>
+  <% if (ancestors && ancestors.length) { %>
+    <% ancestors.forEach(function (crumb, index) { %>
+      <span aria-hidden="true">/</span>
+      <% if (index === ancestors.length - 1) { %>
+        <span class="is-current"><%= crumb.name %></span>
+      <% } else { %>
+        <a href="<%= buildCategoryHref(crumb.path) %>"><%= crumb.name %></a>
+      <% } %>
+    <% }); %>
+  <% } %>
+</nav>
+
+<div class="mdt-page-head">
+  <div>
+    <h1 class="mdt-page-title"><%= file.file_name %></h1>
+    <p class="mdt-page-desc">
+      <%= formatFileSize(file.file_size) %>
+      <span class="mdt-status mdt-status-<%= fileSyncStatus(file) %>"><%= fileSyncLabel(file) %></span>
+      <% if (file.version_tag) { %>· 版本 <%= file.version_tag %><% } %>
+    </p>
+  </div>
+  <div class="mdt-page-actions">
+    <% if (parentHref) { %><a class="mdt-secondary-link" href="<%= parentHref %>">← 返回上一级</a><% } %>
+    <% if (releaseHref) { %><a class="mdt-secondary-link" href="<%= releaseHref %>">返回 Mindustry 版本下载页</a><% } %>
+  </div>
+</div>
+
+<% if (file.description) { %><p class="mdt-hint"><%= file.description %></p><% } %>
+
+<section class="mdt-section" aria-label="文件操作">
+  <div class="mdt-action-row">
+    <a class="mdt-primary-link" href="<%= downloadUrl %>" data-track="download" data-file-id="<%= file.id %>" data-platform="web">下载文件</a>
+    <button type="button" class="mdt-secondary-link" data-copy-text="<%= downloadUrl %>" data-copy-toast="已复制下载地址">复制链接</button>
+    <a class="mdt-secondary-link" href="<%= filePageHref %>">文件详情</a>
+  </div>
+</section>
+
+<div class="mdt-detail-grid">
+  <section class="mdt-panel" aria-labelledby="mdt-file-info">
+    <h2 class="mdt-panel-title" id="mdt-file-info">文件信息</h2>
+    <dl class="mdt-info-list">
+      <dt>文件名</dt><dd><%= file.file_name %></dd>
+      <dt>文件大小</dt><dd><%= formatFileSize(file.file_size) %></dd>
+      <dt>SHA-256</dt>
+      <dd class="mdt-copy-row">
+        <% if (file.sha256) { %>
+          <code><%= file.sha256 %></code>
+          <button type="button" class="mdt-secondary-link" data-copy-text="<%= file.sha256 %>" data-copy-toast="已复制 SHA-256">复制</button>
+        <% } else { %>
+          <span>校验值计算中，稍后刷新查看</span>
+        <% } %>
+      </dd>
+      <dt>更新时间</dt><dd><%= formatDate(file.file_mtime || file.updated_at) %></dd>
+      <dt>MIME</dt><dd><code><%= file.mime_type || 'application/octet-stream' %></code></dd>
+      <% if (file.version_tag || file.source_repository) { %>
+        <dt>来源</dt>
+        <dd>
+          <%= file.source_repository || 'MDT File' %><% if (file.version_tag) { %> / <%= file.version_tag %><% } %>
+          <% if (releaseHref) { %> · <a href="<%= releaseHref %>">在 Mindustry 下载页查看</a><% } %>
+        </dd>
+      <% } %>
+      <dt>同步状态</dt><dd><span class="mdt-status mdt-status-<%= fileSyncStatus(file) %>"><%= fileSyncLabel(file) %></span></dd>
+      <dt>下载次数</dt><dd><%= formatNumber(file.download_count) %></dd>
+      <% if (file.last_download_at) { %><dt>最后下载</dt><dd><%= formatDate(file.last_download_at) %></dd><% } %>
+      <dt>下载地址</dt>
+      <dd class="mdt-copy-row"><code><%= downloadUrl %></code><button type="button" class="mdt-secondary-link" data-copy-text="<%= downloadUrl %>" data-copy-toast="已复制下载地址">复制</button></dd>
+    </dl>
+  </section>
+
+  <section class="mdt-panel" aria-labelledby="mdt-file-more">
+    <h2 class="mdt-panel-title" id="mdt-file-more">相关操作</h2>
+    <div class="mdt-data-list">
+      <div class="mdt-data-row">
+        <div><h3>文件目录</h3><p><%= publicFilePath %></p></div>
+        <div class="mdt-data-actions"><a class="mdt-row-action" href="<%= parentHref %>">打开所在目录</a></div>
+      </div>
+      <% if (project) { %>
+        <div class="mdt-data-row">
+          <div><h3><%= project.name %></h3><p>同步状态：<%= project.status_label %><% if (project.status_reason) { %> · <%= project.status_reason %><% } %></p></div>
+          <div class="mdt-data-actions"><a class="mdt-row-action" href="/status#project-<%= project.id %>">查看项目</a></div>
+        </div>
+      <% } %>
+    </div>
+  </section>
+</div>
+
+<%- include('../../partials/download-track') %>
+<%- include('../../partials/shell/footer') %>

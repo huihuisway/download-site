@@ -42,7 +42,7 @@ class JsonDatabase {
       this.data.sessions = {};
     }
     if (!this.data.settings) {
-      this.data.settings = [{ key: 'theme', value: 'editorial', updated_at: new Date().toISOString() }];
+      this.data.settings = [{ key: 'theme', value: 'mdtbbs', updated_at: new Date().toISOString() }];
     }
     if (!this.data.api_keys) {
       this.data.api_keys = [];
@@ -58,6 +58,28 @@ class JsonDatabase {
     }
     if (!Array.isArray(this.data.release_history)) {
       this.data.release_history = [];
+    }
+    // MDT File：通知公告与项目同步状态
+    if (!Array.isArray(this.data.notices)) {
+      this.data.notices = [];
+    }
+    if (!Array.isArray(this.data.sync_projects)) {
+      this.data.sync_projects = [];
+    }
+    if (!Array.isArray(this.data.sync_project_files)) {
+      this.data.sync_project_files = [];
+    }
+    if (!Array.isArray(this.data.sync_events)) {
+      this.data.sync_events = [];
+    }
+    if (!this.data._nextNoticeId) {
+      this.data._nextNoticeId = 1;
+    }
+    if (!this.data._nextSyncProjectId) {
+      this.data._nextSyncProjectId = 1;
+    }
+    if (!this.data._nextSyncEventId) {
+      this.data._nextSyncEventId = 1;
     }
     if (!this.data._nextReleaseSourceId) {
       this.data._nextReleaseSourceId = 1;

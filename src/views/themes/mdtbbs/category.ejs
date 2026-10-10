@@ -1,0 +1,122 @@
+<%- include('head') %>
+<%- include('../../partials/shell/banner') %>
+<%- include('../../partials/shell/header') %>
+<%- include('../../partials/shell/sidebar') %>
+
+<nav class="mdt-breadcrumb" aria-label="面包屑导航">
+  <% if (breadcrumbs.length === 0) { %>
+    <span class="is-current" aria-current="page">文件目录</span>
+  <% } else { %>
+    <a href="/files">文件目录</a>
+    <% breadcrumbs.forEach(function (crumb, index) { %>
+      <span aria-hidden="true">/</span>
+      <% if (index === breadcrumbs.length - 1) { %>
+        <span class="is-current" aria-current="page"><%= crumb.name %></span>
+      <% } else { %>
+        <a href="<%= buildCategoryHref(crumb.path) %>"><%= crumb.name %></a>
+      <% } %>
+    <% }); %>
+  <% } %>
+</nav>
+
+<div class="mdt-page-head">
+  <div>
+    <h1 class="mdt-page-title"><%= isRoot ? '文件目录' : directoryName %></h1>
+    <p class="mdt-page-desc"><%= stats.file_count %> 个文件 · <%= formatNumber(stats.total_downloads) %> 次下载<% if (stats.total_size) { %> · <%= formatFileSize(stats.total_size) %><% } %></p>
+  </div>
+  <div class="mdt-page-actions">
+    <% if (parentHref) { %><a class="mdt-secondary-link" href="<%= parentHref %>">← 返回上一级</a><% } %>
+    <a class="mdt-secondary-link" href="/mindustry">Mindustry 版本下载</a>
+  </div>
+</div>
+
+<% if (currentProject) { %>
+  <p class="mdt-hint">此目录绑定项目：<strong><%= currentProject.name %></strong>
+    <span class="mdt-status mdt-status-<%= currentProject.status %>"><%= currentProject.status_label %></span>
+    <% if (currentProject.status_reason) { %>· <%= currentProject.status_reason %><% } %>
+    <a href="/status#project-<%= currentProject.id %>">查看同步详情</a>
+  </p>
+<% } %>
+
+<% if (directoryStatuses && Object.keys(directoryStatuses).length) { %>
+  <% const projectList = []; directoryStatuses.forEach(function (entry) { entry.projects.forEach(function (project) { if (!projectList.some(function (item) { return item.id === project.id; })) projectList.push(project); }); }); %>
+  <% if (projectList.length) { %>
+    <p class="mdt-hint" data-tone="none">本层目录涉及 <%= projectList.length %> 个同步项目：
+      <% projectList.forEach(function (project, index) { %><a href="/status#project-<%= project.id %>"><%= project.name %></a><span class="mdt-status mdt-status-<%= project.status %>"><%= project.status || 'unknown' %></span><% if (index < projectList.length - 1) { %> · <% } %><% }); %>
+    </p>
+  <% } %>
+<% } %>
+
+<% if (isEmpty) { %>
+  <p class="mdt-empty">此目录为空</p>
+<% } else { %>
+  <section class="mdt-section" aria-label="目录内容">
+    <div class="mdt-table-wrap">
+      <table class="mdt-table">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th class="mdt-col-status">状态</th>
+            <th class="mdt-col-size">大小</th>
+            <th class="mdt-col-time">更新时间</th>
+            <th class="mdt-col-action">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% directories.forEach(function (dir) { %>
+            <% const dirStatus = directoryStatuses && directoryStatuses[dir.path] ? directoryStatuses[dir.path] : null; %>
+            <tr>
+              <td><span class="mdt-name-cell"><span class="mdt-file-icon is-folder" aria-hidden="true">DIR</span><a href="<%= buildCategoryHref(dir.path) %>"><%= dir.name %>/</a></span></td>
+              <td><% if (dirStatus) { %><span class="mdt-status mdt-status-<%= dirStatus.status %>"><%= dirStatus.status_label %></span><% } else { %><span class="mdt-col-time">—</span><% } %></td>
+              <td class="mdt-col-size">—</td>
+              <td class="mdt-col-time"><%= dir.updatedAt ? formatDate(dir.updatedAt) : '—' %></td>
+              <td class="mdt-col-action"><a class="mdt-row-action" href="<%= buildCategoryHref(dir.path) %>">打开</a></td>
+            </tr>
+          <% }); %>
+          <% files.forEach(function (file) { %>
+            <tr>
+              <td>
+                <span class="mdt-name-cell"><span class="mdt-file-icon" aria-hidden="true"><%= getFileExt(file.file_name) %></span><a href="<%= buildFilePageUrl(file.file_path) %>"><%= file.file_name %></a></span>
+                <% if (file.description) { %><span class="mdt-file-desc"><%= file.description %></span><% } %>
+              </td>
+              <td><span class="mdt-status mdt-status-<%= fileSyncStatus(file) %>"><%= fileSyncLabel(file) %></span></td>
+              <td class="mdt-col-size"><%= formatFileSize(file.file_size) %></td>
+              <td class="mdt-col-time"><%= formatDate(file.file_mtime || file.updated_at) %></td>
+              <td class="mdt-col-action"><a class="mdt-row-action" href="<%= buildFileDownloadUrl(file.file_path) %>" data-track="download" data-file-id="<%= file.id %>" data-platform="web">下载</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="mdt-file-list">
+      <% directories.forEach(function (dir) { %>
+        <% const dirStatus = directoryStatuses && directoryStatuses[dir.path] ? directoryStatuses[dir.path] : null; %>
+        <div class="mdt-file-row">
+          <div>
+            <span class="mdt-file-row-name"><span class="mdt-file-icon is-folder" aria-hidden="true">DIR</span><a href="<%= buildCategoryHref(dir.path) %>"><%= dir.name %>/</a></span>
+            <span class="mdt-file-row-meta">
+              <% if (dirStatus) { %><span class="mdt-status mdt-status-<%= dirStatus.status %>"><%= dirStatus.status_label %></span><% } %>
+              <% if (dir.isEmpty) { %><span>空目录</span><% } %>
+            </span>
+          </div>
+          <a class="mdt-file-row-action" href="<%= buildCategoryHref(dir.path) %>">打开 →</a>
+        </div>
+      <% }); %>
+      <% files.forEach(function (file) { %>
+        <div class="mdt-file-row">
+          <div>
+            <span class="mdt-file-row-name"><span class="mdt-file-icon" aria-hidden="true"><%= getFileExt(file.file_name) %></span><a href="<%= buildFilePageUrl(file.file_path) %>"><%= file.file_name %></a></span>
+            <span class="mdt-file-row-meta">
+              <span><%= formatFileSize(file.file_size) %></span>
+              <span class="mdt-status mdt-status-<%= fileSyncStatus(file) %>"><%= fileSyncLabel(file) %></span>
+              <span><%= formatDate(file.file_mtime || file.updated_at) %></span>
+            </span>
+          </div>
+          <a class="mdt-file-row-action" href="<%= buildFileDownloadUrl(file.file_path) %>" data-track="download" data-file-id="<%= file.id %>" data-platform="web">下载</a>
+        </div>
+      <% }); %>
+    </div>
+  </section>
+<% } %>
+
+<%- include('../../partials/shell/footer') %>

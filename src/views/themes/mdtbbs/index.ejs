@@ -1,0 +1,135 @@
+<%- include('head') %>
+<%- include('../../partials/shell/banner') %>
+<%- include('../../partials/shell/header') %>
+<%- include('../../partials/shell/sidebar') %>
+
+<section class="mdt-home-intro">
+  <h1>MDT File</h1>
+  <p><%= siteInfo.site_description %></p>
+  <dl class="mdt-home-metrics">
+    <div class="mdt-home-metric"><dt>文件数量</dt><dd><%= formatNumber(totalFiles) %></dd></div>
+    <div class="mdt-home-metric"><dt>下载总量</dt><dd><%= formatNumber(totalDownloads) %></dd></div>
+    <% if (latestVersion) { %>
+      <div class="mdt-home-metric"><dt>Mindustry 最新版本</dt><dd><%= latestVersion %></dd></div>
+    <% } %>
+    <div class="mdt-home-metric"><dt>服务状态</dt><dd><%= headerStatus && headerStatus.status_short ? headerStatus.status_short : '状态未知' %></dd></div>
+  </dl>
+</section>
+
+<section class="mdt-section" aria-labelledby="mdt-home-download">
+  <div class="mdt-section-head">
+    <h2 class="mdt-section-title" id="mdt-home-download">下载入口</h2>
+    <span class="mdt-section-note">按用途选择</span>
+  </div>
+  <div class="mdt-entry-list">
+    <article class="mdt-entry">
+      <div>
+        <h3>Mindustry 版本下载</h3>
+        <p>获取推荐版本，以及 Windows / Android / Linux / macOS / 通用 JAR 安装包。</p>
+      </div>
+      <div class="mdt-entry-side"><a class="mdt-primary-link" href="/mindustry">前往下载</a></div>
+    </article>
+    <article class="mdt-entry">
+      <div>
+        <h3>文件目录</h3>
+        <p>直接浏览下载站的全部目录与文件，保留原始目录结构与校验信息。</p>
+      </div>
+      <div class="mdt-entry-side"><a class="mdt-secondary-link" href="/files">打开文件目录</a></div>
+    </article>
+    <article class="mdt-entry">
+      <div>
+        <h3>服务状态</h3>
+        <p><span class="mdt-status mdt-status-<%= headerStatus && headerStatus.status ? headerStatus.status : 'unknown' %>"><%= headerStatus && headerStatus.status_short ? headerStatus.status_short : '状态未知' %></span></p>
+        <p>查看下载、Manifest、Release 同步与下载节点的实时状态。</p>
+      </div>
+      <div class="mdt-entry-side"><a class="mdt-secondary-link" href="/status">查看状态</a></div>
+    </article>
+  </div>
+</section>
+
+<% if (recentNotices && recentNotices.length) { %>
+  <section class="mdt-section" aria-labelledby="mdt-home-notices">
+    <div class="mdt-section-head">
+      <h2 class="mdt-section-title" id="mdt-home-notices">最新通知</h2>
+      <a class="mdt-section-note" href="/notices">查看全部</a>
+    </div>
+    <ul class="mdt-notice-brief">
+      <% recentNotices.forEach(function (notice) { %>
+        <li>
+          <span class="mdt-status mdt-notice-type" data-type="<%= notice.type %>"><%= notice.type_label %></span>
+          <a href="/notices/<%= notice.id %>"><%= notice.title %></a>
+          <time datetime="<%= notice.start_at || notice.created_at %>"><%= formatDate(notice.start_at || notice.created_at) %></time>
+        </li>
+      <% }); %>
+    </ul>
+  </section>
+<% } %>
+
+<% if (syncProjects && syncProjects.length) { %>
+  <section class="mdt-section" aria-labelledby="mdt-home-projects">
+    <div class="mdt-section-head">
+      <h2 class="mdt-section-title" id="mdt-home-projects">项目同步状态</h2>
+      <a class="mdt-section-note" href="/status">全部项目</a>
+    </div>
+    <div class="mdt-data-list">
+      <% syncProjects.slice(0, 4).forEach(function (project) { %>
+        <div class="mdt-data-row">
+          <div>
+            <h3><%= project.name %></h3>
+            <p><%= project.status_reason || (project.remote_version ? `版本 ${project.remote_version}` : '') %></p>
+          </div>
+          <div class="mdt-project-versions">
+            <% if (project.remote_version) { %><span>远端 <code><%= project.remote_version %></code></span><% } %>
+            <% if (project.local_version) { %><span>本地 <code><%= project.local_version %></code></span><% } %>
+          </div>
+          <span class="mdt-status mdt-status-<%= project.status %>"><%= project.status_label %></span>
+        </div>
+      <% }); %>
+    </div>
+  </section>
+<% } %>
+
+<section class="mdt-section" aria-labelledby="mdt-home-dirs">
+  <div class="mdt-section-head">
+    <h2 class="mdt-section-title" id="mdt-home-dirs">下载站目录</h2>
+    <a class="mdt-section-note" href="/files">浏览全部</a>
+  </div>
+  <% if (directories.length) { %>
+    <div class="mdt-table-wrap">
+      <table class="mdt-table">
+        <thead><tr><th>名称</th><th class="mdt-col-status">状态</th><th class="mdt-col-size">大小</th><th class="mdt-col-time">更新时间</th><th class="mdt-col-action">操作</th></tr></thead>
+        <tbody>
+          <% directories.forEach(function (dir) { %>
+            <% const dirStatus = directoryStatus && directoryStatus[dir.path] ? directoryStatus[dir.path] : null; %>
+            <tr>
+              <td><span class="mdt-name-cell"><span class="mdt-file-icon is-folder" aria-hidden="true">DIR</span><a href="<%= buildCategoryHref(dir.path) %>"><%= dir.name %></a></span></td>
+              <td><% if (dirStatus) { %><span class="mdt-status mdt-status-<%= dirStatus.status %>"><%= dirStatus.status_label %></span><% } else { %><span class="mdt-col-time">—</span><% } %></td>
+              <td class="mdt-col-size">—</td>
+              <td class="mdt-col-time">—</td>
+              <td class="mdt-col-action"><a class="mdt-row-action" href="<%= buildCategoryHref(dir.path) %>">打开</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="mdt-file-list">
+      <% directories.forEach(function (dir) { %>
+        <% const dirStatus = directoryStatus && directoryStatus[dir.path] ? directoryStatus[dir.path] : null; %>
+        <div class="mdt-file-row">
+          <div>
+            <span class="mdt-file-row-name"><span class="mdt-file-icon is-folder" aria-hidden="true">DIR</span><a href="<%= buildCategoryHref(dir.path) %>"><%= dir.name %></a></span>
+            <span class="mdt-file-row-meta">
+              <% if (dirStatus) { %><span class="mdt-status mdt-status-<%= dirStatus.status %>"><%= dirStatus.status_label %></span><% } %>
+              <% if (dir.isEmpty) { %><span>空目录</span><% } %>
+            </span>
+          </div>
+          <a class="mdt-file-row-action" href="<%= buildCategoryHref(dir.path) %>">打开 →</a>
+        </div>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <p class="mdt-empty">下载站暂时还没有目录。管理员可在后台创建目录并上传文件。</p>
+  <% } %>
+</section>
+
+<%- include('../../partials/shell/footer') %>
