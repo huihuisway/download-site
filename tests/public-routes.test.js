@@ -7,6 +7,7 @@ const http = require('http');
 process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
 const { setupTmpEnv } = require('./helpers/tmp-env');
+const { ensureAdminFixture } = require('./helpers/admin-fixture');
 const tmpEnv = setupTmpEnv('public-routes');
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
@@ -97,6 +98,9 @@ describe('public routes', () => {
       asset_type: 'desktop',
     });
     db._save();
+
+    // 缺后台构建产物时补夹具，保证干净检出也能跑（见 helpers/admin-fixture）
+    ensureAdminFixture();
 
     const app = require('../src/app');
     server = await new Promise((resolve) => {

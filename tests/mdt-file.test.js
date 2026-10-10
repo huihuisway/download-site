@@ -8,6 +8,7 @@ process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
 process.env.SESSION_SECRET = 'c'.repeat(32);
 const { setupTmpEnv } = require('./helpers/tmp-env');
+const { ensureAdminFixture } = require('./helpers/admin-fixture');
 const tmpEnv = setupTmpEnv('mdt-file');
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
@@ -67,6 +68,9 @@ describe('MDT File 前台与后台', () => {
 
     const syncProjects = require('../src/services/sync-project.service');
     syncProjects.create({ name: 'Mindustry Android', slug: 'mindustry-android', source_id: 1, local_path: 'Mindustry/Main/Stable/v151/android' });
+
+    // 缺后台构建产物时补夹具，保证干净检出也能跑（见 helpers/admin-fixture）
+    ensureAdminFixture();
 
     const app = require('../src/app');
     server = await new Promise((resolve) => {
