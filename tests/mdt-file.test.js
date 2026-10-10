@@ -230,6 +230,41 @@ describe('MDT File 前台与后台', () => {
     // 版本搜索与筛选
     assert.match(mindustry.body, /搜索版本/);
     assert.match(mindustry.body, /历史版本/);
+    // 每个版本都有稳定的直达锚点与复制链接入口
+    assert.match(mindustry.body, /id="version-v151"/);
+    assert.match(mindustry.body, /data-version-link="v151"/);
+  });
+
+  it('?v= 支持链接直达指定版本，命中的那条默认展开', async () => {
+    for (const query of ['v=v151', 'v=151', 'version=v151']) {
+      const response = await request(server, `/mindustry?${query}`);
+      assert.strictEqual(response.statusCode, 200, `${query} 应正常渲染`);
+      assert.match(response.body, /data-version-target="v151"/, `${query} 应标记目标版本`);
+      assert.match(response.body, new RegExp(`id="version-v151"[^>]*\\bopen\\b`), `${query} 命中的版本应默认展开`);
+      assert.match(response.body, /已定位到版本/);
+    }
+  });
+
+  it('查不到的版本给出提示而不是报错，并保持全部版本可见', async () => {
+    const response = await request(server, '/mindustry?v=v999.9');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.body, /没有找到版本/);
+    assert.doesNotMatch(response.body, /data-version-target/);
+    // 未被定位时版本行保持折叠
+    assert.doesNotMatch(response.body, /<details class="mindustry-version-row [^"]*" id="version-v151"[^>]*\bopen\b/);
+  });
+
+  it('版本查询不影响其他参数，且回显内容会被 HTML 转义', async () => {
+    const response = await request(server, `/mindustry?v=${encodeURIComponent('<img src=x onerror=alert(1)>')}`);
+    assert.strictEqual(response.statusCode, 200);
+    assert.doesNotMatch(response.body, /<img src=x onerror/);
+    assert.match(response.body, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  });
+
+  it('文件详情页回链带上所属版本，点回去能落在同一条版本上', async () => {
+    const page = await request(server, '/Mindustry/Main/Stable/v151/android/app.apk');
+    assert.strictEqual(page.statusCode, 200);
+    assert.match(page.body, /\/mindustry\?v=v151/);
   });
 
   it('公开接口不泄露内部信息', async () => {

@@ -13,6 +13,8 @@
 <% const defaultAsset = playerAssets.find(function(asset) { return asset.platform === 'windows'; }) || playerAssets.find(function(asset) { return asset.platform === 'desktop'; }) || playerAssets[0] || null; %>
 <% const versionName = featuredMatchesLatest ? featuredDownloads.build_name : (latestRelease ? latestRelease.build_name || latestRelease.tag : (featuredDownloads ? featuredDownloads.build_name : null)); %>
 <% const platformSummary = function(assets) { return [...new Set(assets.map(function(asset) { return presentAsset(asset).displayName; }))].join('、'); }; %>
+<% const versionQuery = typeof requestedVersion === 'string' ? requestedVersion : ''; %>
+<% const versionTarget = versionQuery && mainGame ? findReleaseForQuery(mainGame.releases, versionQuery) : null; %>
 <nav class="mindustry-breadcrumb mdt-breadcrumb" aria-label="面包屑导航"><a href="/">MDT File</a><span aria-hidden="true">/</span><span aria-current="page">Mindustry</span></nav>
 
 <section class="mindustry-page">
@@ -128,6 +130,18 @@
         <div><p class="mindustry-section-kicker">版本归档</p><h2 id="mindustry-history-heading">所有版本</h2></div>
         <span><%= mainGame.releases.length %> 个版本</span>
       </div>
+      <% if (versionQuery) { %>
+        <% if (versionTarget) { %>
+          <p class="mdt-hint mindustry-version-hint" id="mindustry-version-hint">
+            已定位到版本 <strong><%= versionTarget.build_name || versionTarget.tag %></strong>（<%= versionTarget.channel === 'prerelease' ? '预发布' : '正式版' %>），该版本已在下面展开。
+            <a href="/mindustry">查看全部版本</a>
+          </p>
+        <% } else { %>
+          <p class="mdt-hint mindustry-version-hint" id="mindustry-version-hint" data-tone="warning" role="status">
+            没有找到版本「<%= versionQuery %>」，已按全部版本显示。可以试试 v160.4 这样的写法，或<a href="/mindustry">查看全部版本</a>。
+          </p>
+        <% } %>
+      <% } %>
       <div class="mindustry-version-toolbar">
         <input type="search" id="mindustry-version-search" class="mindustry-version-search" placeholder="搜索版本，例如 146 / 151" aria-label="搜索版本" autocomplete="off">
         <div class="mindustry-version-tabs" role="tablist" aria-label="版本筛选">
@@ -143,9 +157,12 @@
         <p class="mindustry-empty-history">当前暂无可用版本。</p>
       <% } else { %>
         <div class="mindustry-version-list" id="mindustry-version-list">
+          <% const versionAnchors = new Set(); %>
           <% mainGame.releases.forEach(function(release, releaseIndex) { %>
             <% const releaseAssets = release === latestRelease ? latestAssets : release.assets.map(presentAsset); %>
-            <details class="mindustry-version-row" data-version="<%= (release.build_name || release.tag || '').replace(/"/g, '') %>" data-channel="<%= release.channel %>" data-index="<%= releaseIndex %>">
+            <% const versionAnchor = versionAnchorFor(release, versionAnchors); versionAnchors.add(versionAnchor); %>
+            <% const versionIsTarget = release === versionTarget; %>
+            <details class="mindustry-version-row<%= versionIsTarget ? ' is-target' : '' %>" id="<%= versionAnchor %>"<% if (versionIsTarget) { %> data-version-target="<%= release.tag || release.build_name || '' %>" open<% } %> data-version="<%= (release.build_name || release.tag || '').replace(/"/g, '') %>" data-version-tag="<%= (release.tag || release.build_name || '').replace(/"/g, '') %>" data-channel="<%= release.channel %>" data-index="<%= releaseIndex %>">
               <summary>
                 <span class="mindustry-version-main"><strong><%= release.build_name || release.tag %></strong><% if (releaseIndex === 0) { %><span class="mindustry-badge mindustry-badge-latest">最新</span><% } %></span>
                 <span class="mindustry-version-channel"><%= release.channel === 'prerelease' ? '预发布' : '正式版' %></span>
@@ -154,6 +171,11 @@
                 <span class="mindustry-version-toggle" aria-hidden="true">查看文件</span>
               </summary>
               <div class="mindustry-version-files">
+                <div class="mindustry-version-share">
+                  <span>版本链接</span>
+                  <button type="button" class="mindustry-version-link" data-version-link="<%= release.tag || release.build_name || '' %>" data-version-anchor="<%= versionAnchor %>">复制直达链接</button>
+                  <span class="mindustry-copy-status" aria-live="polite"></span>
+                </div>
                 <% if (!releaseAssets.length) { %>
                   <p class="mindustry-empty-history">当前版本暂无可下载文件。</p>
                 <% } else { %>
