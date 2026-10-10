@@ -236,7 +236,11 @@ const renderDirectory = (res, { currentPath, directoryName }) => {
   return renderTheme(res, 'category', {
     title: `${directory.isRoot ? '文件目录' : directory.currentPath} - ${siteInfo.site_name}`,
     description: `${siteInfo.site_name} 文件目录：浏览全部目录与文件，保留原始目录结构、大小与校验信息。`,
-    canonicalUrl: `${config.siteUrl}/files`,
+    // /files/* 与 /category/* 是同一份内容：canonical 统一指向 /files 入口，
+    // 否则搜索引擎会把同一目录当成两个页面
+    canonicalUrl: directory.isRoot
+      ? `${config.siteUrl}/files`
+      : `${config.siteUrl}/files/${encodePublicFilePath(directory.currentPath)}`,
     currentPath: directory.currentPath,
     isRoot: directory.isRoot,
     directoryName: directoryName || '文件目录',
@@ -432,6 +436,7 @@ router.get('/notices/:id', (req, res) => {
   return res.render('notice', {
     title: `${notice.title} - MDT File`,
     description: notice.content || notice.title,
+    canonicalUrl: `${config.siteUrl}/notices/${notice.id}`,
     currentTheme: themeService.getTheme(),
     siteInfo: themeService.getSiteInfo(),
     pageScripts: [],
@@ -507,6 +512,8 @@ router.get('/privacy', (req, res) => {
   const privacyContent = fs.readFileSync(path.join(__dirname, '..', 'views', 'partials', 'privacy-policy.ejs'), 'utf-8');
   return res.render('legal', {
     title: '隐私政策',
+    description: `${themeService.getSiteInfo().site_name} 的隐私政策。`,
+    canonicalUrl: `${config.siteUrl}/privacy`,
     siteInfo: themeService.getSiteInfo(),
     currentTheme: themeService.getTheme(),
     legalContent: privacyContent,
@@ -520,6 +527,8 @@ router.get('/terms', (req, res) => {
   const termsContent = fs.readFileSync(path.join(__dirname, '..', 'views', 'partials', 'terms-of-service.ejs'), 'utf-8');
   return res.render('legal', {
     title: '服务使用协议',
+    description: `${themeService.getSiteInfo().site_name} 的服务使用协议。`,
+    canonicalUrl: `${config.siteUrl}/terms`,
     siteInfo: themeService.getSiteInfo(),
     currentTheme: themeService.getTheme(),
     legalContent: termsContent,
@@ -625,8 +634,11 @@ router.get('*', (req, res, next) => {
   const fileHref = directoryHrefBuilder('/files/x');
   const parentPath = folderTreeService.getParentFolderPath(resolved.file.file_path);
   const project = req.npcSyncContext.projectForFile(resolved.file);
+  const filePagePath = buildFilePageUrl(resolved.file.file_path);
   return renderTheme(res, 'file', {
     title: `${resolved.file.file_name} - ${siteInfo.site_name}`,
+    description: `${resolved.file.file_name}（${formatFileSize(resolved.file.file_size)}）下载与校验信息，来自 ${siteInfo.site_name}。`,
+    canonicalUrl: `${config.siteUrl}${filePagePath}`,
     file: resolved.file,
     publicFilePath: resolved.publicFilePath,
     filePageHref: buildFilePageUrl(resolved.file.file_path),

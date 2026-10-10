@@ -422,4 +422,28 @@ describe('public routes', () => {
     const sitemap = await request(server, '/sitemap.xml');
     assert.doesNotMatch(sitemap.body, /<!DOCTYPE html>/);
   });
+  it('canonical 应保留目录子路径，/category 入口归一化到 /files', async () => {
+    const deep = await request(server, '/files/docs/guides');
+    assert.match(deep.body, /<link rel="canonical" href="https:\/\/file\.mdtbbs\.cn\/files\/docs\/guides">/);
+
+    const legacy = await request(server, '/category/docs/guides');
+    assert.match(legacy.body, /<link rel="canonical" href="https:\/\/file\.mdtbbs\.cn\/files\/docs\/guides">/);
+  });
+
+  it('文件详情页应带 canonical 与 description', async () => {
+    const response = await request(server, '/docs/a.txt');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.body, /<link rel="canonical" href="https:\/\/file\.mdtbbs\.cn\/docs\/a\.txt">/);
+    assert.match(response.body, /<meta name="description" content="a\.txt（[^"]+）下载与校验信息/);
+    assert.match(response.body, /<meta property="og:title"/);
+  });
+
+  it('privacy / terms 应带 canonical 与 description', async () => {
+    for (const [target, marker] of [['/privacy', '隐私政策'], ['/terms', '服务使用协议']]) {
+      const response = await request(server, target);
+      assert.strictEqual(response.statusCode, 200);
+      assert.match(response.body, new RegExp(`<link rel="canonical" href="https:\\/\\/file\\.mdtbbs\\.cn\\${target}">`));
+      assert.match(response.body, new RegExp(`<meta name="description" content="[^"]*${marker}`));
+    }
+  });
 });
