@@ -13,6 +13,12 @@ const shellService = require('../services/shell.service');
 // 所有后台 API 需要鉴权
 router.use(requireAuth);
 
+// 后台响应含统计、通知草稿、同步配置等，不允许任何中间层缓存
+router.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
 // ===== 统计看板 =====
 router.get('/stats', (req, res) => {
   try {

@@ -336,6 +336,15 @@ describe('MDT File 前台与后台', () => {
     assert.strictEqual(response.statusCode, 401);
   });
 
+  it('后台 API 与登录端点应禁止中间层缓存', async () => {
+    const apiResponse = await request(server, '/api/admin/notices', { headers: { Cookie: cookie } });
+    assert.strictEqual(apiResponse.statusCode, 200);
+    assert.strictEqual(apiResponse.headers['cache-control'], 'no-store');
+
+    const authResponse = await request(server, '/auth/me');
+    assert.strictEqual(authResponse.headers['cache-control'], 'no-store');
+  });
+
   it('新增前缀不会被文件详情页 catch-all 吞掉', async () => {
     for (const target of ['/status', '/notices', '/files']) {
       const response = await request(server, target);

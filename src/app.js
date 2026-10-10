@@ -161,6 +161,11 @@ app.use(attachUser);
 
 // ===== OAuth 路由 =====
 const oauthRouter = express.Router();
+// 登录/回调/会话查询含授权码与用户信息，任何中间层都不得缓存
+oauthRouter.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 oauthRouter.get('/login', oauthController.startOAuthFlow);
 oauthRouter.get('/callback', oauthController.handleCallback);
 oauthRouter.get('/logout', oauthController.logout);
