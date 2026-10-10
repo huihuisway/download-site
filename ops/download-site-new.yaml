@@ -1,7 +1,7 @@
 # 非敏感的部署清单；应用不会自动读取此文件。
 # 线上秘密只保存在服务器 /disk-1/file/download-site/.env 中。
 schema_version: 1
-verified_at: "2026-10-08"
+verified_at: "2026-10-10"
 
 server:
   host: "64.90.0.99"
@@ -23,6 +23,19 @@ server:
     node: "/usr/local/bin/node"
     node_version: "24.21.0"
     app_port: 3322
+
+mindops_agent:
+  systemd_service: "mindops-download-site-agent.service"
+  release_group: "download-site"
+  service_account: "mindops-download-site"
+  api_bind: "127.0.0.1:5150"
+  config_file: "/etc/mindops/download-site.json"
+  signing_environment_file: "/etc/mindops/download-site.env"
+  audit_file: "/disk-1/file/MindOps/download-site/agent-data/audit.jsonl"
+  backup_directory: "/disk-1/file/MindOps/download-site/backups"
+  app_service: "download-site.service"
+  repository: "origin/master"
+  deploy_steps: ["npm ci", "npm test", "npm run build"]
 
 network:
   direct_app_port_from_external_network: "blocked"

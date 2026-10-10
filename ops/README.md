@@ -24,6 +24,19 @@ ssh download-site-new
 - 3322 端口由 `download-site-port-guard.service` 限制为本机访问。不要开放公网 3322。
 - OpenResty 的 80/443 尚未配置下载站反向代理；新机尚未接管现有域名/CDN 流量。
 
+## MindOps 部署
+
+新机运行独立的 `mindops-download-site-agent.service`，发布组为 `download-site`，成员只有 `download-site.service`。Agent API 仅监听 `127.0.0.1:5150`；不要将 5150 暴露到公网。
+
+- 非敏感配置：`/etc/mindops/download-site.json`
+- HMAC 密钥环境文件：`/etc/mindops/download-site.env`（root 所有，权限 `600`，只留在服务器）
+- 审计：`/disk-1/file/MindOps/download-site/agent-data/audit.jsonl`
+- 发布前数据备份：`/disk-1/file/MindOps/download-site/backups/`
+- 服务账号：`mindops-download-site`；仅获准通过 sudo 启停 `download-site.service`
+- 发布源：应用仓库 `origin/master`；发布门禁执行 `npm ci`、`npm test`、`npm run build`，成功后检查 `http://127.0.0.1:3322/`
+
+应用 Git 工作树由 Ops 账号更新；运行账号 `download-site` 对应用代码只读，对 `data/` 和下载目录保留运行所需权限。不要把 HMAC 密钥、服务器 `.env` 或 SSH 私钥写入 Git。
+
 常用只读检查：
 
 ```bash
