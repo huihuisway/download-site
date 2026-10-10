@@ -1,7 +1,8 @@
 <% const banners = (typeof globalNotices === 'object' && globalNotices ? globalNotices : []).filter(function (notice) { return notice.scope === 'global'; }).slice(0, 2); %>
 <div class="mdt-banner-region" role="region" aria-label="站内公告">
   <% banners.forEach(function (notice) { %>
-    <div class="mdt-banner" data-type="<%= notice.type %>" data-notice-id="<%= notice.id %>"<%= notice.dismissible ? ' data-dismissible="1"' : '' %>>
+    <%# 关闭记忆以「通知 id + 更新时间」为键：管理员改了内容后会重新出现 %>
+    <div class="mdt-banner" data-type="<%= notice.type %>" data-notice-key="<%= notice.id %>@<%= notice.updated_at %>"<%= notice.dismissible ? ' data-dismissible="1"' : '' %>>
       <span class="mdt-banner-icon" aria-hidden="true"><%= notice.type === 'critical' ? '!' : notice.type === 'warning' || notice.type === 'maintenance' ? '△' : 'i' %></span>
       <span class="mdt-banner-body">
         <strong><%= notice.title %></strong><% if (notice.content) { %> — <%= notice.content %><% } %>

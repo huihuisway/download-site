@@ -45,8 +45,8 @@
   const hideDismissed = () => {
     const dismissed = readDismissed();
     if (!dismissed.length) return;
-    document.querySelectorAll('[data-notice-id]').forEach((banner) => {
-      if (dismissed.includes(String(banner.dataset.noticeId))) banner.remove();
+    document.querySelectorAll('[data-notice-key]').forEach((banner) => {
+      if (dismissed.includes(String(banner.dataset.noticeKey))) banner.remove();
     });
   };
 
@@ -55,10 +55,11 @@
   document.addEventListener('click', (event) => {
     const closeButton = event.target.closest('[data-dismiss-notice]');
     if (closeButton) {
-      const id = String(closeButton.dataset.dismissNotice);
-      const banner = closeButton.closest('[data-notice-id]');
-      if (banner) banner.remove();
-      writeDismissed([...readDismissed(), id]);
+      const banner = closeButton.closest('[data-notice-key]');
+      if (banner) {
+        writeDismissed([...readDismissed(), String(banner.dataset.noticeKey)]);
+        banner.remove();
+      }
       return;
     }
 

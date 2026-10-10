@@ -207,6 +207,21 @@ describe('MDT File 前台与后台', () => {
     assert.strictEqual(detail.statusCode, 404);
   });
 
+  it('全局横幅带可关闭标记，通知改版后 key 会变化', async () => {
+    const noticeService = require('../src/services/notice.service');
+    const first = noticeService.create({ title: '横幅测试', type: 'info', scope: 'global', dismissible: true });
+    const home = await request(server, '/');
+    assert.match(home.body, new RegExp(`data-notice-key="${first.id}@`));
+    assert.match(home.body, /data-dismiss-notice=/);
+    assert.match(home.body, /mdt-shell\.js/);
+
+    const updated = noticeService.update(first.id, { content: '改过了' });
+    const after = await request(server, '/');
+    assert.match(after.body, new RegExp(`data-notice-key="${first.id}@${updated.updated_at}"`));
+    assert.notStrictEqual(first.updated_at, updated.updated_at);
+    noticeService.remove(first.id);
+  });
+
   it('Mindustry 页面与文件目录双向可达', async () => {
     const mindustry = await request(server, '/mindustry');
     assert.strictEqual(mindustry.statusCode, 200);

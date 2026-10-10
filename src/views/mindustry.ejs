@@ -43,10 +43,23 @@
       <div class="mindustry-state-actions"><a class="mindustry-secondary-link" href="/mindustry">重新加载</a><a class="mindustry-secondary-link" href="/category/Mindustry">浏览文件目录</a></div>
     </section>
   <% } else if (!mainGame || (!latestRelease && !featuredDownloads)) { %>
+    <% const syncingProjects = (syncProjects || []).filter(function (project) { return project.status === 'syncing' || project.status === 'delayed' || project.status === 'pending'; }); %>
     <section class="mindustry-state" role="status">
-      <h2>当前暂无可用版本</h2>
-      <p>版本清单暂时没有可下载的 Mindustry 版本。</p>
-      <a class="mindustry-secondary-link" href="/category/Mindustry">浏览文件目录</a>
+      <% if (syncingProjects.length) { %>
+        <h2>新版本正在同步</h2>
+        <p><%= syncingProjects[0].name %> 正在同步，版本列表稍后刷新即可看到；已有版本不受影响。</p>
+        <div class="mindustry-state-actions">
+          <a class="mindustry-secondary-link" href="/status">查看同步进度</a>
+          <a class="mindustry-secondary-link" href="/files/Mindustry">浏览文件目录</a>
+        </div>
+      <% } else { %>
+        <h2>当前暂无可用版本</h2>
+        <p>版本清单暂时没有可下载的 Mindustry 版本。</p>
+        <div class="mindustry-state-actions">
+          <a class="mindustry-secondary-link" href="/category/Mindustry">浏览文件目录</a>
+          <a class="mindustry-secondary-link" href="/status">查看同步状态</a>
+        </div>
+      <% } %>
     </section>
   <% } else { %>
     <section class="mindustry-latest" aria-labelledby="mindustry-current-title">
