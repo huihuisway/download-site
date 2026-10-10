@@ -370,4 +370,25 @@ describe('public routes', () => {
     assert.match(response.body, /此目录为空/);
     assert.match(response.body, /返回上一级/);
   });
+  it('动态 HTML 应带 no-cache，避免 CDN 启发式长缓存', async () => {
+    for (const target of ['/', '/files', '/status', '/notices', '/mindustry', '/privacy']) {
+      const response = await request(server, target);
+      assert.strictEqual(response.statusCode, 200, `${target} 应可访问`);
+      assert.match(response.headers['cache-control'] || '', /no-cache/, `${target} 应带 no-cache`);
+    }
+  });
+
+  it('404 页面也应带 no-cache', async () => {
+    const response = await request(server, '/no-such-page-xyz');
+    assert.strictEqual(response.statusCode, 404);
+    assert.match(response.headers['cache-control'] || '', /no-cache/);
+  });
+
+  it('HTML 的 no-cache 不应覆盖静态资源与下载的缓存策略', async () => {
+    const css = await request(server, '/css/clean-blue-base.css');
+    assert.match(css.headers['cache-control'], /max-age=3600/);
+
+    const download = await request(server, '/d/docs/a.txt');
+    assert.doesNotMatch(download.headers['cache-control'] || '', /no-cache/);
+  });
 });
