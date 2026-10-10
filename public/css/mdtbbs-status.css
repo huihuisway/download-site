@@ -292,3 +292,6 @@
 /* 通知列表整行可点（扩大移动端热区） */
 .mdt-notice-item { cursor: pointer; }
 .mdt-notice-item:hover { background: var(--bg-hover); }
+
+/* 通知详情标题间距（替代行内 style，CSP 不允许行内样式） */
+.mdt-notice-detail > h1 { margin-top: var(--space-3); }

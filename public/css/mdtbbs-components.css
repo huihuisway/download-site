@@ -322,3 +322,10 @@
 .mdt-legal ul, .mdt-legal ol { margin: 0 0 var(--space-3) var(--space-5); }
 .mdt-legal a { color: var(--primary); }
 .mdt-legal code { font-family: var(--font-mono); font-size: 0.8125rem; }
+
+/* ===== 面板内标题间距（替代行内 style：CSP style-src 'self' 会拦截行内样式） ===== */
+.mdt-panel > .mdt-page-title { margin-top: var(--space-3); }
+.mdt-panel > .mdt-action-row { margin-top: var(--space-4); }
+
+/* 项目详情里的子标题（状态页） */
+.mdt-subsection-title { margin-top: var(--space-4); font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
