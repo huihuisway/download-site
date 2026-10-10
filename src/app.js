@@ -24,6 +24,7 @@ const apiV1Routes = require('./routes/api-v1');
 // 中间件
 const { attachUser, hasAdminAccess } = require('./middleware/auth');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { applyCachePolicy } = require('./middleware/htmlCache');
 const { loginLimiter } = require('./middleware/rateLimit');
 
 // 服务初始化
@@ -45,6 +46,10 @@ app.set('views', path.join(__dirname, 'views'));
 // 只信任明确数量的反向代理，避免公网客户端伪造 X-Forwarded-* 头。
 // 必须在 session 中间件之前设置，否则 secure cookie 无法在代理后正常下发。
 app.set('trust proxy', Number.isInteger(config.trustProxyHops) ? config.trustProxyHops : 1);
+
+// 动态响应缓存策略：HTML 一律 no-cache（CDN 不得按启发式缓存），
+// 必须早于路由注册，且不覆盖路由自己设置的缓存头
+app.use(applyCachePolicy);
 
 // 为每个请求生成 CSP nonce，供模板中的内联 <script> 使用
 app.use((req, res, next) => {
