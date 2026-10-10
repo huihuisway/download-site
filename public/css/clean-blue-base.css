@@ -158,10 +158,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .mindustry-version-row[open] .mindustry-version-toggle { font-size: 0; }
 .mindustry-version-row[open] .mindustry-version-toggle::after { content: '收起'; font-size: 0.78rem; }
 .mindustry-version-files { padding: 0 0 var(--space-3) var(--space-3); }
-.mindustry-version-file { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(100px, auto); align-items: center; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--border-light); }
+.mindustry-version-file { display: grid; grid-template-columns: minmax(160px, 1fr) auto minmax(100px, auto); align-items: center; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--border-light); }
 .mindustry-version-file h3 { font-size: 0.85rem; font-weight: 600; }
 .mindustry-version-file p { margin-top: 2px; color: var(--text-muted); font-size: 0.75rem; }
-.mindustry-version-file > a { display: inline-flex; min-height: 40px; align-items: center; color: var(--primary); font-size: 0.82rem; font-weight: 600; }
+.mindustry-version-file > a, .mindustry-version-file-actions a { display: inline-flex; min-height: 40px; align-items: center; color: var(--primary); font-size: 0.82rem; font-weight: 600; }
 .mindustry-compact-details { min-width: 100px; }
 .mindustry-compact-details dl { padding-bottom: var(--space-2); }
 .mindustry-state { margin: var(--space-5) 0; padding: var(--space-5) 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -199,8 +199,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .mindustry-version-channel, .mindustry-version-date { grid-column: 1; }
   .mindustry-version-platforms { grid-column: 1; }
   .mindustry-version-toggle { grid-column: 2; grid-row: 1 / span 4; }
-  .mindustry-version-file { grid-template-columns: minmax(0, 1fr) auto; gap: 0 var(--space-3); }
-  .mindustry-version-file > a { grid-column: 2; grid-row: 1; }
+  .mindustry-version-file { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .mindustry-version-file > a, .mindustry-version-file-actions { grid-column: 1; grid-row: auto; }
   .mindustry-version-file .mindustry-compact-details { grid-column: 1 / -1; }
   .mindustry-version-files { padding-left: var(--space-2); }
   .mindustry-advanced-links { align-items: flex-start; flex-direction: column; gap: var(--space-2); }

@@ -57,6 +57,23 @@ download-site/
 └── tests/                # 测试（node:test）
 ```
 
+## 前台页面
+
+MDT File 是 MDTBBS 生态的统一文件分发站，所有前台页面共用同一套外壳
+（顶部 Header + 左侧导航，见 `src/views/partials/shell/`）：
+
+| 路径 | 说明 |
+|---|---|
+| `/` | MDT File 首页：下载入口、服务状态、最新通知、项目同步概览 |
+| `/mindustry` | Mindustry 下载中心：设备识别、推荐版本、平台切换、版本搜索与历史版本 |
+| `/files`（含 `/files/*`） | 统一文件目录；旧的 `/category/*` 继续可用且保持原 URL 结构 |
+| `/status` | 服务状态与项目同步状态（含同步链、项目文件、失败原因） |
+| `/notices`、`/notices/:id` | 通知中心与通知详情 |
+| `/<文件路径>`、`/d/<文件路径>` | 文件详情页 / 真实下载（Range、断点续传、中文文件名不变） |
+
+Mindustry 页面与文件目录双向打通：目录页有「Mindustry 版本下载」，版本列表每个 Release
+提供「查看全部文件」跳到对应原始目录；文件详情页标注来源版本并可跳回下载页。
+
 ## 目录分类
 
 文件按物理子目录组织，支持任意层级嵌套，分类从路径自动推断：
@@ -69,18 +86,62 @@ downloads/
 └── images/
 ```
 
+目录可以绑定同步项目（项目配置里的「本地目录」），绑定后目录行会显示聚合后的同步状态
+（已同步 / 同步中 / 部分完成 / 同步延迟 / 同步失败）。没有绑定项目的目录不显示状态。
+
 ## 主题
 
-内置 4 套主题，在管理后台「主题设置」中切换（存于 `settings` 表）：
+内置 5 套主题，在管理后台「主题设置」中切换（存于 `settings` 表）：
 
 | 主题 | 风格 |
 |---|---|
+| `mdtbbs` | **MDT File 默认**：MDTBBS 统一视觉，左侧导航 + 蓝色品牌 + 0 圆角 |
 | `editorial` | 编辑/杂志风：衬线标题 + 纯黑白 + 侧栏导航 |
 | `cloud` | 经典网盘风：卡片 + 圆角 + 分类标签 |
 | `mirror` | 镜像站/技术风：紧凑表格，类 Debian 镜像站 |
 | `terminal` | 暗色终端风：深色背景 + 等宽字体 |
 
-字体（Inter / Geist Mono）自托管于 `public/fonts/`，不依赖 Google Fonts。
+`/`、`/mindustry`、`/status`、`/notices` 使用 `mdtbbs` 的完整外壳；旧主题仍可选，
+不会导致既有配置失效。字体（Inter / Geist Mono）自托管于 `public/fonts/`，不依赖 Google Fonts。
+
+## 通知公告
+
+`notice.service` 维护正式的 Notice 模型（类型 / 分类 / 作用域 / 平台 / 版本 / 优先级 /
+生效与失效时间 / 按钮 / 是否可关闭），前台分三级展示：
+
+1. **Global Banner** —— `scope=global` 的通知显示在每页顶部，可被访客关闭（localStorage 记忆）；
+2. **页面 Notice** —— 按 `scope`（home / mindustry / directory / download / status）落到对应页面；
+3. **Toast** —— 只用于「下载已开始 / 已复制 / 复制失败」这类操作反馈，不承担公告。
+
+系统通知（同步延迟、同步失败、恢复）由 `sync-project.service` 依据项目状态自动生成，
+用 `dedupe_key` 保证同一项目同一状态只有一条，恢复后自动撤下；后台人工通知与系统通知
+以 `source` 字段区分。后台「通知管理」支持新建、编辑、删除、启停、定时发布/结束、预览。
+
+## 服务状态与项目同步
+
+`status.service` 汇总六项核心检查（文件下载、Manifest、数据库、Release 同步、GitHub API、
+CDN / 下载节点），全部是本地判断，不做外网请求，状态页因此不会被上游拖慢。
+
+`sync-project.service` 在既有 Release Source 之上加了一层「项目」视角，用于支持任意数量的
+同步项目（不写死 Mindustry）：状态由来源状态、已同步记录与本地文件三者推导，支持
+`synced / syncing / pending / partial / delayed / failed / unknown`。从未成功同步过的新项目
+判为「等待同步」而不是「同步延迟」，同步延迟归入「内容同步中」而非服务故障 —— 一个失败的
+子项目不会让整站看起来宕机。项目还支持依赖声明（仅数据结构与展示）与同步链展示
+（上游版本 → 构建任务 → MDT Release → MDT File Sync → 下载节点）。
+
+## 公开接口
+
+无需 API Key，带短缓存：
+
+| 接口 | 说明 |
+|---|---|
+| `GET /api/v1/status` | 总体状态 + 六项核心服务 + 项目状态摘要 |
+| `GET /api/v1/status/projects` | 项目列表（含同步链） |
+| `GET /api/v1/notices` | 通知列表（支持 `type` / `scope` / `platform` 筛选） |
+| `GET /api/v1/notices/:id` | 通知详情 |
+| `GET /api/v1/mindustry/manifest.json` | Mindustry 版本清单 |
+
+以上接口不返回内部报错堆栈、Token、服务器路径或私有仓库凭证。
 
 ## GitHub Releases 自动同步
 

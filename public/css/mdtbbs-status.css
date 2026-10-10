@@ -269,16 +269,19 @@
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
 }
 
-.mindustry-sticky-copy { min-width: 0; flex: 1; }
+
 .mindustry-sticky-copy strong { display: block; font-size: 0.8125rem; }
 .mindustry-sticky-copy span { display: block; color: var(--text-muted); font-size: 0.6875rem; overflow-wrap: anywhere; }
-.mindustry-sticky-action .mindustry-primary-download { min-width: 0; flex: 0 0 auto; min-height: 44px; }
+/* 基础样式在窄屏把主按钮设成 width:100%，常驻条里必须让位给文案列 */
+.mindustry-sticky-action .mindustry-primary-download { width: auto; min-width: 96px; flex: 0 0 auto; min-height: 44px; padding: 0 var(--space-4); }
+.mindustry-sticky-copy { min-width: 0; flex: 1 1 auto; }
 
 @media (max-width: 760px) {
   .mindustry-sticky-action { display: flex; }
   .mindustry-page { padding-bottom: 84px; }
   .mindustry-version-file { grid-template-columns: minmax(0, 1fr); }
   .mindustry-version-file-actions { justify-content: space-between; }
+  .mindustry-version-file .mindustry-compact-details { grid-column: 1; }
 }
 
 @media (orientation: landscape) and (max-height: 560px) {

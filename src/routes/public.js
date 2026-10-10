@@ -178,6 +178,7 @@ router.use((req, res, next) => {
   res.locals.siteInfo = themeService.getSiteInfo();
   res.locals.fileSyncStatus = syncContext.fileStatus;
   res.locals.fileSyncLabel = syncContext.fileStatusLabel;
+  res.locals.statusLabel = (status) => syncProjectService.STATUS_LABELS[status] || '状态未知';
   res.locals.currentUser = res.locals.currentUser || null;
   res.locals.shellSection = shellService.sectionFor(req.path);
   res.locals.headerStatus = shellService.headerStatus();

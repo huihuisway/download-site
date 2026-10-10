@@ -43,7 +43,7 @@
   <% const projectList = []; Object.keys(directoryStatuses).forEach(function (key) { (directoryStatuses[key].projects || []).forEach(function (project) { if (!projectList.some(function (item) { return item.id === project.id; })) projectList.push(project); }); }); %>
   <% if (projectList.length) { %>
     <p class="mdt-hint" data-tone="none">本层目录涉及 <%= projectList.length %> 个同步项目：
-      <% projectList.forEach(function (project, index) { %><a href="/status#project-<%= project.id %>"><%= project.name %></a><span class="mdt-status mdt-status-<%= project.status %>"><%= project.status || 'unknown' %></span><% if (index < projectList.length - 1) { %> · <% } %><% }); %>
+      <% projectList.forEach(function (project, index) { %><a href="/status#project-<%= project.id %>"><%= project.name %></a><span class="mdt-status mdt-status-<%= project.status %>"><%= statusLabel(project.status) %></span><% if (index < projectList.length - 1) { %> · <% } %><% }); %>
     </p>
   <% } %>
 <% } %>

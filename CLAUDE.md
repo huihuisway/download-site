@@ -50,16 +50,28 @@ CSP nonce 中间件必须在 helmet 之前。
 
 `src/views/themes/<name>/` 下各有 `index / category / file / 404 / error` 五个模板，
 共用 `src/views/partials/`（head / footer / error-card）。当前主题存在 `settings`
-表，由 `theme.service.js` 读取。
+表，由 `theme.service.js` 读取。默认主题是 `mdtbbs`（MDT File 统一外壳）。
 
+- `mdtbbs` 主题的页面由 `src/views/partials/shell/` 的 head / banner / header /
+  sidebar / footer 拼装，外壳数据（导航高亮、顶部服务状态、全局横幅）来自
+  `shell.service.js`；`/status`、`/notices`、`/mindustry` 也直接 include 这套 shell，
+  换主题时这几页的导航外观会跟着变（有意如此）。
 - `error.ejs` 已抽取为共享 `partials/error-card.ejs`，各主题只是 3 行 include。
 - `404.ejs` **有意保持各主题不同**（各自的文案风格），不要合并。
 - 渲染错误页统一走 `src/utils/render-theme.js` 的 `renderThemeError`。
+- **EJS include 不要传 data 对象引用未定义变量**：`include('x', { foo })` 在 `foo`
+  未定义时会抛 `ReferenceError`。shell partial 一律用 `include('x')` 继承 locals，
+  并用 `typeof foo !== 'undefined'` 兜底。
 
 ### 路由陷阱：前台 catch-all
 
 `src/routes/public.js` 末尾的 `router.get('*')` 会把任何未匹配路径当作文件详情页。
 新增顶层路由时**必须**同步把前缀加进同文件的 `RESERVED_ROOTS`，否则会被它吞掉。
+目前保留前缀含 `files` / `status` / `notices`。
+
+`/files/*` 与 `/category/*` 是同一份渲染逻辑的两个入口：目录链接前缀由
+`directoryHrefBuilder(req.path)` 按当前入口生成，从旧 `/category` 进来不会被改写成
+`/files`（旧链接的行为不做无谓变更）。
 
 同时注意编码：`/d/*` 的通配参数由 Express 自动解码，而 catch-all 用的是原始
 `req.path`（需手动 `decodeURIComponent`）。生成链接一律用 `utils/public-paths.js`
@@ -72,6 +84,18 @@ CSP nonce 中间件必须在 helmet 之前。
 OAuth 用户看 `ADMIN_ALLOWED_EMAILS` 白名单，**白名单为空则任意 OAuth 用户可进后台**。
 
 `/api/v1` 走独立的 API Key 认证（`middleware/apiKeyAuth.js`），Key 只存 SHA-256 哈希。
+
+### 通知与同步状态
+
+- `notice.service` 是正式的 Notice 模型。`upsertSystemNotice(dedupeKey, …)` 只保留
+  一条同 key 的系统通知，内容不变时**不**刷新 `updated_at`；`resolveSystemNotice`
+  用于状态恢复时撤下。人工通知与系统通知以 `source` 区分。
+- `sync-project.service` 包装在 Release Source 之上，**不要**再写第二套 GitHub
+  Release 同步器：`syncProject()` 直接调 `releaseSourceService.sync()`。
+- 项目状态是推导出来的，不是手填的。注意 `Date.parse(0)` 会把数字 0 解析成 2000 年，
+  判断「从未同步」必须用 `parseTime()`（见该文件顶部注释）。
+- 项目状态变化必须调 `invalidatePublicStatus()`，否则 `status.service` 的 20 秒缓存
+  和 `shell.service` 的顶部状态缓存会让页面显示旧值。
 
 ### 下载路由
 
@@ -92,6 +116,20 @@ Content-Length 并破坏续传。
 - 改动 `admin/` 下的代码后需 `npm run build:admin`，产物 `public/admin/` 不入版本库。
 - 管理后台是静态产物，**无法注入 CSP nonce**：需要在后台页面执行的内联脚本必须
   抽成 `public/js/` 下的外部文件。
+
+## 前端验证
+
+无头浏览器已装（`chromium`）。CDP 直连可精确量布局，比截图更可靠：
+
+```bash
+chromium --headless=new --no-sandbox --disable-http-cache \
+  --user-data-dir=/tmp/cp --remote-debugging-port=9222 about:blank &
+# 然后用 Runtime.evaluate 量 getBoundingClientRect / documentElement.scrollWidth
+```
+
+**注意**：`--screenshot=` 与 `Page.captureScreenshot` 都可能命中磁盘缓存，改完 CSS 后
+看到的仍是旧图。验证前先清 `--user-data-dir` 或用 `?v=N` 破缓存，否则会误判成布局没生效
+（真机上已踩过一次）。
 
 ## 未来工作
 
