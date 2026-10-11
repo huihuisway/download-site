@@ -7,6 +7,7 @@ const http = require('http');
 process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
 const { setupTmpEnv } = require('./helpers/tmp-env');
+const { ensureAdminFixture } = require('./helpers/admin-fixture');
 const tmpEnv = setupTmpEnv('public-routes');
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
@@ -53,7 +54,7 @@ describe('public routes', () => {
     fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'guides', 'v1'), { recursive: true });
     fs.writeFileSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'guides', 'v1', 'banner.png'), 'fake image');
     fs.mkdirSync(path.join(process.env.DOWNLOAD_DIR, 'docs', 'empty'), { recursive: true });
-    sessionDir = path.join(__dirname, '..', 'data', 'sessions');
+    sessionDir = tmpEnv.sessionDir;
 
     const { db } = require('../src/db');
     db.data.download_logs = [];
@@ -97,6 +98,9 @@ describe('public routes', () => {
       asset_type: 'desktop',
     });
     db._save();
+
+    // 缺后台构建产物时补夹具，保证干净检出也能跑（见 helpers/admin-fixture）
+    ensureAdminFixture();
 
     const app = require('../src/app');
     server = await new Promise((resolve) => {
@@ -369,5 +373,77 @@ describe('public routes', () => {
     assert.strictEqual(response.statusCode, 200);
     assert.match(response.body, /此目录为空/);
     assert.match(response.body, /返回上一级/);
+  });
+  it('动态 HTML 应带 no-cache，避免 CDN 启发式长缓存', async () => {
+    for (const target of ['/', '/files', '/status', '/notices', '/mindustry', '/privacy']) {
+      const response = await request(server, target);
+      assert.strictEqual(response.statusCode, 200, `${target} 应可访问`);
+      assert.match(response.headers['cache-control'] || '', /no-cache/, `${target} 应带 no-cache`);
+    }
+  });
+
+  it('404 页面也应带 no-cache', async () => {
+    const response = await request(server, '/no-such-page-xyz');
+    assert.strictEqual(response.statusCode, 404);
+    assert.match(response.headers['cache-control'] || '', /no-cache/);
+  });
+
+  it('HTML 的 no-cache 不应覆盖静态资源与下载的缓存策略', async () => {
+    const css = await request(server, '/css/clean-blue-base.css');
+    assert.match(css.headers['cache-control'], /max-age=3600/);
+
+    const download = await request(server, '/d/docs/a.txt');
+    assert.doesNotMatch(download.headers['cache-control'] || '', /no-cache/);
+  });
+  it('robots.txt 应屏蔽后台/接口/下载直链并声明 sitemap', async () => {
+    const response = await request(server, '/robots.txt');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.headers['content-type'], /text\/plain/);
+    assert.match(response.body, /Disallow: \/admin/);
+    assert.match(response.body, /Disallow: \/api\//);
+    assert.match(response.body, /Disallow: \/d\//);
+    assert.match(response.body, /Sitemap: https:\/\/file\.mdtbbs\.cn\/sitemap\.xml/);
+  });
+
+  it('sitemap.xml 应是合法 XML 且不收录后台与下载直链', async () => {
+    const response = await request(server, '/sitemap.xml');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.headers['content-type'], /application\/xml/);
+    assert.match(response.body, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
+    assert.match(response.body, /<loc>https:\/\/file\.mdtbbs\.cn\/files<\/loc>/);
+    assert.match(response.body, /<loc>https:\/\/file\.mdtbbs\.cn\/mindustry<\/loc>/);
+    assert.doesNotMatch(response.body, /<loc>[^<]*\/admin/);
+    assert.doesNotMatch(response.body, /<loc>[^<]*\/d\//);
+  });
+
+  it('robots.txt / sitemap.xml 不应被文件详情页 catch-all 截获', async () => {
+    const robots = await request(server, '/robots.txt');
+    assert.doesNotMatch(robots.body, /<!DOCTYPE html>/);
+    const sitemap = await request(server, '/sitemap.xml');
+    assert.doesNotMatch(sitemap.body, /<!DOCTYPE html>/);
+  });
+  it('canonical 应保留目录子路径，/category 入口归一化到 /files', async () => {
+    const deep = await request(server, '/files/docs/guides');
+    assert.match(deep.body, /<link rel="canonical" href="https:\/\/file\.mdtbbs\.cn\/files\/docs\/guides">/);
+
+    const legacy = await request(server, '/category/docs/guides');
+    assert.match(legacy.body, /<link rel="canonical" href="https:\/\/file\.mdtbbs\.cn\/files\/docs\/guides">/);
+  });
+
+  it('文件详情页应带 canonical 与 description', async () => {
+    const response = await request(server, '/docs/a.txt');
+    assert.strictEqual(response.statusCode, 200);
+    assert.match(response.body, /<link rel="canonical" href="https:\/\/file\.mdtbbs\.cn\/docs\/a\.txt">/);
+    assert.match(response.body, /<meta name="description" content="a\.txt（[^"]+）下载与校验信息/);
+    assert.match(response.body, /<meta property="og:title"/);
+  });
+
+  it('privacy / terms 应带 canonical 与 description', async () => {
+    for (const [target, marker] of [['/privacy', '隐私政策'], ['/terms', '服务使用协议']]) {
+      const response = await request(server, target);
+      assert.strictEqual(response.statusCode, 200);
+      assert.match(response.body, new RegExp(`<link rel="canonical" href="https:\\/\\/file\\.mdtbbs\\.cn\\${target}">`));
+      assert.match(response.body, new RegExp(`<meta name="description" content="[^"]*${marker}`));
+    }
   });
 });

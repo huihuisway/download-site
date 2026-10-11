@@ -11,10 +11,10 @@
     var statusLabel = type === 'pending' ? '等待审核' : type === 'rejected' ? '审核未通过' : type === 'not_found' ? '文件不存在' : type === 'sync' ? '正在同步' : '出错了';
   %>
   <p><span class="mdt-status mdt-status-<%= type === 'pending' || type === 'sync' ? 'syncing' : type === 'rejected' || type === 'not_found' ? 'failed' : 'degraded' %>"><%= statusLabel %></span></p>
-  <h1 class="mdt-page-title" style="margin-top: var(--space-3)"><%= title %></h1>
+  <h1 class="mdt-page-title"><%= title %></h1>
   <% if (typeof fileName !== 'undefined' && fileName) { %><p class="mdt-page-desc"><code><%= fileName %></code></p><% } %>
   <p class="mdt-hint"><%= message %></p>
-  <div class="mdt-action-row" style="margin-top: var(--space-4)">
+  <div class="mdt-action-row">
     <% if (type === 'not_found') { %>
       <a class="mdt-primary-link" href="/files">返回文件目录</a>
       <a class="mdt-secondary-link" href="/mindustry">Mindustry 版本下载</a>

@@ -13,9 +13,14 @@ const config = {
   // 文件存储
   downloadDir: path.resolve(process.env.DOWNLOAD_DIR || './downloads'),
   dbPath: path.resolve(process.env.DB_PATH || './data/stats.db'),
+  sessionDir: path.resolve(
+    process.env.SESSION_DIR || path.join(__dirname, '..', '..', 'data', 'sessions'),
+  ),
   maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || MAX_FILE_SIZE,
   // 下载链接和公开清单使用独立下载域名，避免把来源站地址写入 API 响应。
   downloadBaseUrl: process.env.DOWNLOAD_BASE_URL || '',
+  // 站点公开地址：canonical / og:url / robots / sitemap 的绝对 URL 前缀
+  siteUrl: (process.env.SITE_URL || 'https://file.mdtbbs.cn').replace(/\/+$/, ''),
 
   // GitHub Releases 自动同步
   releaseSync: {

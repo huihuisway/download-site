@@ -41,28 +41,30 @@
     if (!copied) throw new Error('copy failed');
   };
 
-  document.querySelectorAll('[data-copy-text]').forEach((button) => {
+  // 复制反馈统一由 mdt-shell.js 的事件委托处理（含 Toast 与复制失败兜底）；
+  // 这里只补旧主题的行内状态位（.sha-copy-status），避免同一按钮被两处处理、
+  // 点一次弹两个 Toast。
+  document.querySelectorAll('.sha-row [data-copy-text], .term-sha-row [data-copy-text]').forEach((button) => {
+    if (button.dataset.copyHandled === '1') return;
+    button.dataset.copyHandled = '1';
     button.addEventListener('click', async () => {
       const value = button.dataset.copyText || '';
-      const row = button.closest('.sha-row, .term-sha-row, .mindustry-asset-hash');
+      const row = button.closest('.sha-row, .term-sha-row');
       const status = row?.querySelector('.sha-copy-status');
+      if (!status) return;
       try {
         if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
         else fallbackCopy(value);
-        if (status) status.textContent = '已复制';
-        if (!status && typeof window.mdtToast === 'function') window.mdtToast('已复制', 'success', 2000);
+        status.textContent = '已复制';
       } catch {
         try {
           fallbackCopy(value);
-          if (status) status.textContent = '已复制';
-          if (!status && typeof window.mdtToast === 'function') window.mdtToast('已复制', 'success', 2000);
+          status.textContent = '已复制';
         } catch {
-          // 没有行内状态位时用全局 Toast 兜底，保证「复制失败」可见
-          if (status) status.textContent = '复制失败';
-          if (!status && typeof window.mdtToast === 'function') window.mdtToast('复制失败', 'error', 2600);
+          status.textContent = '复制失败';
         }
       }
-      window.setTimeout(() => { if (status) status.textContent = ''; }, 1800);
+      window.setTimeout(() => { status.textContent = ''; }, 1800);
     });
   });
 })();

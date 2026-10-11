@@ -1,0 +1,79 @@
+# 非敏感的部署清单；应用不会自动读取此文件。
+# 线上秘密只保存在服务器 /disk-1/file/download-site/.env 中。
+schema_version: 1
+verified_at: "2026-10-10"
+
+server:
+  host: "64.90.0.99"
+  hostname: "RainYun-Zo7xNqTV"
+  ssh:
+    alias: "download-site-new"
+    user: "root"
+    port: 22
+    proxy_jump: "root@211.101.247.246"
+    authentication: "public key only"
+    local_public_key: "~/.ssh/id_ed25519.pub"
+  paths:
+    app: "/disk-1/file/download-site"
+    downloads: "/disk-1/file/app-file"
+    database: "/disk-1/file/download-site/data/stats.db"
+    environment_file: "/disk-1/file/download-site/.env"
+  runtime:
+    systemd_service: "download-site.service"
+    node: "/usr/local/bin/node"
+    node_version: "24.21.0"
+    app_port: 3322
+
+mindops_agent:
+  systemd_service: "mindops-download-site-agent.service"
+  release_group: "download-site"
+  service_account: "mindops-download-site"
+  api_bind: "127.0.0.1:5150"
+  config_file: "/etc/mindops/download-site.json"
+  signing_environment_file: "/etc/mindops/download-site.env"
+  audit_file: "/disk-1/file/MindOps/download-site/agent-data/audit.jsonl"
+  backup_directory: "/disk-1/file/MindOps/download-site/backups"
+  app_service: "download-site.service"
+  repository: "origin/master"
+  deploy_steps: ["npm ci", "npm test", "npm run build"]
+
+network:
+  direct_app_port_from_external_network: "blocked"
+  port_guard_service: "download-site-port-guard.service"
+  openresty_ports: [80, 443]
+  download_site_proxy_configured: false
+  public_dns_or_cdn_cutover: false
+
+release_sync:
+  enabled: true
+  scheduler_interval_ms: 3600000
+  mindustry_android_release_repository: "huihuisway/download-site"
+  scope: "all enabled release source records in data/stats.db"
+  sources:
+    - repository: "ch-BookBanana/BookMdtLauncher"
+      enabled: true
+      include_prereleases: true
+      include_drafts: false
+      interval_ms: 3600000
+      target_category: "BookMdtLauncher"
+      asset_include_pattern: '^BookMindustryLauncher\.exe$'
+      allow_executable_assets: true
+      executable_asset_code_allowlist: "ch-bookbanana/bookmdtlauncher"
+      download_path_pattern: "/disk-1/file/app-file/BookMdtLauncher/<tag>/BookMindustryLauncher.exe"
+    - repository: "huihuisway/download-site"
+      source_id: 7
+      enabled: true
+      include_prereleases: false
+      include_drafts: false
+      interval_ms: 3600000
+      target_category: "Mindustry"
+      asset_include_pattern: '^Mindustry-MDT-Android-v?[0-9]+(\.[0-9]+){0,2}\.apk$'
+      sync_latest_only: true
+      keep_all_releases: true
+      download_path_pattern: "/disk-1/file/app-file/Mindustry/Main/Stable/<version>/android/Mindustry-MDT-Android-<version>.apk"
+      build_type: "MDT community build; MDT signing certificate, not Anuken-signed"
+
+security:
+  credentials_in_repository: false
+  ssh_private_key_in_repository: false
+  server_env_file_must_remain_server_only: true

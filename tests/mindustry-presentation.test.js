@@ -1,5 +1,7 @@
-const { describe, it } = require('node:test');
+const { describe, it, after } = require('node:test');
 const assert = require('node:assert/strict');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('mindustry-presentation');
 const {
   presentAsset,
   isPlayerDownload,
@@ -8,6 +10,8 @@ const {
   versionAnchorFor,
 } = require('../src/services/mindustry-presentation.service');
 const { compareVersionTags } = require('../src/services/mindustry-index.service');
+
+after(() => tmpEnv.cleanup());
 
 describe('Mindustry presentation helpers', () => {
   it('presents Android, Windows, Linux and JAR downloads with readable labels', () => {

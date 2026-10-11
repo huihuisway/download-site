@@ -8,6 +8,7 @@ process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
 process.env.SESSION_SECRET = 'c'.repeat(32);
 const { setupTmpEnv } = require('./helpers/tmp-env');
+const { ensureAdminFixture } = require('./helpers/admin-fixture');
 const tmpEnv = setupTmpEnv('mdt-file');
 process.env.ADMIN_USERNAME = 'testadmin';
 process.env.ADMIN_PASSWORD = 'testpass123';
@@ -67,6 +68,9 @@ describe('MDT File 前台与后台', () => {
 
     const syncProjects = require('../src/services/sync-project.service');
     syncProjects.create({ name: 'Mindustry Android', slug: 'mindustry-android', source_id: 1, local_path: 'Mindustry/Main/Stable/v151/android' });
+
+    // 缺后台构建产物时补夹具，保证干净检出也能跑（见 helpers/admin-fixture）
+    ensureAdminFixture();
 
     const app = require('../src/app');
     server = await new Promise((resolve) => {
@@ -365,6 +369,15 @@ describe('MDT File 前台与后台', () => {
   it('后台接口未登录时返回 401', async () => {
     const response = await request(server, '/api/admin/notices');
     assert.strictEqual(response.statusCode, 401);
+  });
+
+  it('后台 API 与登录端点应禁止中间层缓存', async () => {
+    const apiResponse = await request(server, '/api/admin/notices', { headers: { Cookie: cookie } });
+    assert.strictEqual(apiResponse.statusCode, 200);
+    assert.strictEqual(apiResponse.headers['cache-control'], 'no-store');
+
+    const authResponse = await request(server, '/auth/me');
+    assert.strictEqual(authResponse.headers['cache-control'], 'no-store');
   });
 
   it('新增前缀不会被文件详情页 catch-all 吞掉', async () => {

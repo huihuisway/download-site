@@ -77,6 +77,15 @@ CSP nonce 中间件必须在 helmet 之前。
 `req.path`（需手动 `decodeURIComponent`）。生成链接一律用 `utils/public-paths.js`
 与 `folder-tree.service.js` 的 `buildCategoryHref`，它们按段编码。
 
+### 缓存策略
+
+- **动态 HTML 一律 `no-cache`**：`middleware/htmlCache.js` 在 `writeHead` 时给未显式设置
+  Cache-Control 的 `text/html`（含 304）补 `no-cache`。CDN（EdgeOne）会按 Last-Modified
+  做启发式缓存，不加这个头时页面可能被缓存数天（线上出现过文件详情页缓存 6 天）。
+- 路由要覆盖这个默认值就自己 `res.setHeader('Cache-Control', …)`，中间件不会动已有头。
+- `/api/admin` 与 `/auth` 显式 `no-store`；`/api/v1` 走各自的短缓存；静态资源 1 小时
+  （字体 30 天 immutable）；`/d/*` 由 `res.download` 处理。
+
 ### 认证
 
 三条路径：OAuth（MindAuth）、本地管理员账号、以及 `DEV_ADMIN_BYPASS=1` 的开发旁路
@@ -134,10 +143,15 @@ chromium --headless=new --no-sandbox --disable-http-cache \
 ## 未来工作
 
 - 迁移到 SQLite（可去掉约 500 行正则 SQL 模拟，获得索引、增量写与多进程安全）
-- `styleSrc` 目前仍需 `unsafe-inline`（主题模板含大段内联样式）
+- ~~`styleSrc` 目前仍需 `unsafe-inline`~~ 已是 `style-src 'self'`：模板里**不要用行内 `style=`**，
+  会被浏览器静默丢弃（间距消失且无报错，真机上踩过一次）；需要差异间距就加 CSS 类
 - `LOG_LEVEL` 已读入配置但未接线，全站仍用带 `[tag]` 前缀的 console
 - 管理后台无前端测试；`alert`/`confirm` 反馈与弹窗可访问性有待改进
 
 ## 版本号
 
 公共页脚显示 `v` 加 Git 提交计数，例如 `v1234`。每新增一个 commit，服务启动后版本号自动增加；没有 `.git` 的部署环境可通过 `APP_VERSION=v1234` 指定固定版本。
+
+## 新服务器运维配置
+
+涉及下载站新机 `64.90.0.99` 时先阅读 `ops/README.md` 和 `ops/download-site-new.yaml`。本机 SSH 别名是 `download-site-new`；不要把服务器 `.env` 或 SSH 私钥复制进仓库。

@@ -1,5 +1,7 @@
-const { describe, it } = require('node:test');
+const { describe, it, after } = require('node:test');
 const assert = require('node:assert/strict');
+const { setupTmpEnv } = require('./helpers/tmp-env');
+const tmpEnv = setupTmpEnv('oauth-callback');
 
 process.env.OAUTH_AUTHORIZE_URL = 'https://auth.example.test/api/authorize';
 process.env.OAUTH_TOKEN_URL = 'https://auth.example.test/api/token';
@@ -10,6 +12,8 @@ process.env.OAUTH_CALLBACK_URL = 'https://file.example.test/auth/callback';
 
 const { config } = require('../src/config');
 const { handleCallback } = require('../src/routes/oauth');
+
+after(() => tmpEnv.cleanup());
 
 const jsonResponse = (data) => ({
   ok: true,
