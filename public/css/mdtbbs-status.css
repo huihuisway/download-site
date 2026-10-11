@@ -248,6 +248,16 @@
 .mindustry-version-empty { margin-top: var(--space-4); color: var(--text-muted); font-size: 0.8125rem; }
 .mindustry-version-row[hidden] { display: none; }
 
+/* 版本直达：?v= / #version-* 命中的那一条给个可见标记，并在滚动定位时避开吸顶 Header */
+.mindustry-version-hint { margin: 0 0 var(--space-3); }
+.mindustry-version-row { scroll-margin-top: calc(var(--mdt-header-height, 56px) + var(--space-3)); }
+/* 用 box-shadow + 底色标记命中行，不动 padding（否则整行内容会跳一下） */
+.mindustry-version-row.is-target > summary { background: var(--bg-hover); box-shadow: inset 3px 0 0 var(--primary); }
+.mindustry-version-row.is-target .mindustry-version-main strong { color: var(--primary); }
+.mindustry-version-share { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; color: var(--text-muted); font-size: 0.75rem; }
+.mindustry-version-link { min-height: 32px; padding: 0 var(--space-3); border: 1px solid var(--border); background: var(--card); color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 0.75rem; }
+.mindustry-version-link:hover { border-color: var(--primary); color: var(--primary); }
+
 .mindustry-version-file-actions { display: flex; align-items: center; gap: var(--space-3); }
 .mindustry-version-files-link { display: inline-flex; min-height: 40px; align-items: center; color: var(--text-secondary); font-size: 0.78rem; }
 .mindustry-version-files-link:hover { color: var(--primary); }

@@ -88,29 +88,90 @@
     status.textContent = '未能识别设备，已提供当前版本的可用下载；你也可以手动切换平台。';
   }
 
-  document.querySelectorAll('.mindustry-copy-button').forEach((button) => button.addEventListener('click', async () => {
-    const row = button.closest('.mindustry-copy-value');
-    const feedback = row?.querySelector('.mindustry-copy-status');
-    const value = button.dataset.copy || '';
-    try {
-      if (navigator.clipboard?.writeText) {
+  const fallbackCopy = (value) => {
+    const input = document.createElement('textarea');
+    input.value = value;
+    input.readOnly = true;
+    input.className = 'clipboard-fallback';
+    document.body.appendChild(input);
+    input.select();
+    const copied = document.execCommand('copy');
+    input.remove();
+    if (!copied) throw new Error('clipboard unavailable');
+  };
+
+  // Clipboard API 会被权限或「文档未聚焦」拒掉，这时退回 execCommand（与 file-actions.js 一致）
+  const copyText = async (value) => {
+    if (navigator.clipboard?.writeText) {
+      try {
         await navigator.clipboard.writeText(value);
-      } else {
-        const input = document.createElement('textarea');
-        input.value = value;
-        input.className = 'clipboard-fallback';
-        document.body.appendChild(input);
-        input.select();
-        const copied = document.execCommand('copy');
-        input.remove();
-        if (!copied) throw new Error('clipboard unavailable');
-      }
+        return;
+      } catch { /* 落到 execCommand 兜底 */ }
+    }
+    fallbackCopy(value);
+  };
+
+  const copyWithFeedback = async (value, feedback) => {
+    try {
+      await copyText(value);
       if (feedback) feedback.textContent = '已复制';
     } catch (error) {
       if (feedback) feedback.textContent = '复制失败';
       console.error('[mindustry] 复制失败:', error);
     }
+  };
+
+  document.querySelectorAll('.mindustry-copy-button').forEach((button) => button.addEventListener('click', () => {
+    const row = button.closest('.mindustry-copy-value');
+    copyWithFeedback(button.dataset.copy || '', row?.querySelector('.mindustry-copy-status'));
   }));
+
+  // ===== 版本直达链接 =====
+  // ?v= 的展开与提示由服务端完成（无 JS 也能用），这里只做滚动定位；
+  // #version-* 形式的锚点链接则在加载时补上展开动作。
+  // 直达链接同时带 ?v= 与 #version-*：前者让 SSR 直接展开（分享到不支持 JS 的客户端也有效），
+  // 后者让人在已打开的页面上点链接能立刻跳到那一条。
+  const versionUrlFor = (tag, anchorId) => {
+    const params = new URLSearchParams(window.location.search);
+    if (tag) params.set('v', tag);
+    else params.delete('v');
+    const query = params.toString();
+    return `${window.location.pathname}${query ? `?${query}` : ''}${anchorId ? `#${anchorId}` : ''}`;
+  };
+
+  // smooth=false 用于首次加载：从别的页面跳进来时再滚一段反而像页面在抖
+  const focusVersionRow = (row, smooth) => {
+    if (!row || row.hidden) return false;
+    row.open = true;
+    row.classList.add('is-target');
+    row.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : 'auto' });
+    return true;
+  };
+
+  const hashRowOf = () => {
+    const hash = String(window.location.hash || '');
+    return hash.startsWith('#version-') ? document.getElementById(hash.slice(1)) : null;
+  };
+
+  // 展开某个版本时把地址栏换成可分享的直达链接；收起不动，免得链接指向一个看不见的版本
+  // （是否高亮交给 focusVersionRow，手动展开不该伪装成「链接定位到的那条」）
+  const versionHint = document.getElementById('mindustry-version-hint');
+  versionRows.forEach((row) => row.addEventListener('toggle', () => {
+    if (!row.open) return;
+    window.history.replaceState(null, '', versionUrlFor(row.dataset.versionTag, row.id));
+    // 手动展开后地址栏已经指向真实版本，「没找到」的提示不再成立
+    if (versionHint?.dataset.tone === 'warning') versionHint.remove();
+  }));
+
+  document.querySelectorAll('[data-version-link]').forEach((button) => button.addEventListener('click', () => {
+    const anchor = button.dataset.versionAnchor || '';
+    const url = new URL(versionUrlFor(button.dataset.versionLink, anchor), window.location.origin).toString();
+    copyWithFeedback(url, button.parentElement?.querySelector('.mindustry-copy-status'));
+  }));
+
+  // hash 优先：#version-* 精确到某一条；否则用服务端按 ?v= 展开的那条
+  focusVersionRow(hashRowOf() || document.querySelector('[data-version-target]'), false);
+  window.addEventListener('hashchange', () => focusVersionRow(hashRowOf(), true));
 
   // 版本筛选：搜索框 + 正式版/测试版/历史版本 三档
   let activeFilter = 'all';

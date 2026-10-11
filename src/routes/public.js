@@ -17,6 +17,7 @@ const { downloadLimiter, countDownloadLimiter } = require('../middleware/rateLim
 const { renderThemeError } = require('../utils/render-theme');
 const { buildManifest } = require('../services/mindustry-index.service');
 const mindustryPresentation = require('../services/mindustry-presentation.service');
+const { findReleaseForQuery, versionAnchorFor } = mindustryPresentation;
 const {
   normalizePublicFilePath,
   encodePublicFilePath,
@@ -167,9 +168,11 @@ const buildSyncContext = () => {
   };
 };
 
+// 带 ?v= 回下载页：从某个文件详情点回去时直接落在它所属的那一条版本上
 const releasePageHref = (file) => {
   if (!file || !file.game_id) return null;
-  return '/mindustry';
+  const tag = typeof file.version_tag === 'string' ? file.version_tag.trim() : '';
+  return tag ? `/mindustry?v=${encodeURIComponent(tag)}` : '/mindustry';
 };
 
 // EJS 辅助函数注入
@@ -342,6 +345,12 @@ router.get(['/files', '/files/*'], (req, res) => {
   return renderDirectory(res, { currentPath, directoryName: name });
 });
 
+// ?v= / ?version= 都接受；数组（?v=a&v=b）取第一个字符串，超长查询截断后只用于回显
+const requestedVersionQuery = (query) => {
+  const raw = typeof query.v === 'string' ? query.v : (typeof query.version === 'string' ? query.version : '');
+  return raw.trim().slice(0, 64);
+};
+
 const renderMindustry = (req, res) => {
   const siteInfo = themeService.getSiteInfo();
   let manifest = null;
@@ -351,7 +360,9 @@ const renderMindustry = (req, res) => {
     console.error('[mindustry] 版本清单生成失败:', err.message);
   }
   const projects = syncProjectService.listPublic().filter((project) => /mindustry/i.test(project.name) || /Mindustry/i.test(project.local_path || ''));
+  // 目前只有 mindustry 一个游戏有版本页，所以页面级定位只认这一个 game
   return res.render('mindustry', {
+    requestedVersion: requestedVersionQuery(req.query),
     title: 'Mindustry 下载 - 最新版与历史版本 | MDT File',
     description: '由 MDT File 提供的 Mindustry 游戏版本镜像，可下载当前可用平台版本，并浏览历史 Build。',
     canonicalUrl: `${config.siteUrl}/mindustry`,
@@ -362,6 +373,9 @@ const renderMindustry = (req, res) => {
     pageNotices: noticeService.listPublic({ scope: 'mindustry' }).filter((notice) => notice.scope !== 'global').slice(0, 2),
     syncProjects: projects,
     pageScripts: ['/js/mindustry-download.js'],
+    // 版本定位辅助：模板里按 ?v= 找目标行、生成唯一的 #version-* 锚点
+    findReleaseForQuery,
+    versionAnchorFor,
     shellSection: 'mindustry',
     headerStatus: shellService.headerStatus(),
     globalNotices: shellService.globalNotices(),
